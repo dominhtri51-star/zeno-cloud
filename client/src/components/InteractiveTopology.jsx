@@ -21,8 +21,9 @@ export default function InteractiveTopology({
   // Trạng thái sạc pin (Charging): khi batteryPower < 0 (nhận điện từ PV / Lưới)
   const isBatteryDischarging = batteryPower >= 0;
 
-  // Hiệu chuẩn Tải Dự Phòng: Hiển thị = Thực tế - 34W (nếu < 5W thì làm tròn là 0W)
-  const displayBackupPower = backupPower < 5 ? 0 : Math.round(backupPower);
+  // Hiệu chuẩn Tải Dự Phòng: Hiển thị = Tải thật - 34W (làm tròn, nếu < 3W thì = 0W)
+  const adjustedBackup = Math.round(backupPower - 34);
+  const displayBackupPower = adjustedBackup < 3 ? 0 : adjustedBackup;
 
   // Hiệu chuẩn Lưới Điện: Nếu giá trị tuyệt đối < 5W thì làm tròn về 0W (nịnh người dùng, loại bỏ gợn nhiễu cảm biến)
   const displayGridPower = Math.abs(gridPower) < 5 ? 0 : Math.round(gridPower);

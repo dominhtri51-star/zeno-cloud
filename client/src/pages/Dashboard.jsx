@@ -281,29 +281,29 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
           />
 
           {/* 3 THẺ ĐO ĐẠC SENSOR THỜI GIAN THỰC */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3.5">
-            <div className="bg-[#0b101e] border border-slate-800/90 py-2.5 sm:py-4 px-1.5 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-emerald-500/40">
-              <span className="text-[9px] sm:text-[11px] text-slate-400 block font-bold uppercase tracking-wider truncate">ĐIỆN ÁP PIN</span>
-              <span className="text-sm sm:text-2xl font-black text-emerald-400 font-mono mt-0.5 sm:mt-1 block">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            <div className="bg-[#0b101e] border border-slate-800/90 py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-emerald-500/40">
+              <span className="text-[10px] sm:text-xs text-slate-400 block font-bold uppercase tracking-wider truncate">ĐIỆN ÁP PIN</span>
+              <span className="text-base sm:text-2xl font-black text-emerald-400 font-mono mt-1 block">
                 {flowData.batteryVoltage} V
               </span>
-              <span className="text-[8px] sm:text-[10px] text-slate-500 font-mono block truncate whitespace-nowrap">Dung lượng: {flowData.batterySoc}%</span>
+              <span className="text-[9px] sm:text-xs text-slate-500 font-mono block truncate">Dung lượng: {flowData.batterySoc}%</span>
             </div>
             
-            <div className="bg-[#0b101e] border border-slate-800/90 py-2.5 sm:py-4 px-1.5 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-cyan-500/40">
-              <span className="text-[9px] sm:text-[11px] text-slate-400 block font-bold uppercase tracking-wider truncate">ĐIỆN ÁP LƯỚI</span>
-              <span className="text-sm sm:text-2xl font-black text-cyan-400 font-mono mt-0.5 sm:mt-1 block">
-                {flowData.gridVoltage} V
+            <div className="bg-[#0b101e] border border-slate-800/90 py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-cyan-500/40">
+              <span className="text-[10px] sm:text-xs text-slate-400 block font-bold uppercase tracking-wider truncate">ĐIỆN ÁP LƯỚI</span>
+              <span className="text-base sm:text-2xl font-black text-cyan-400 font-mono mt-1 block">
+                {Math.round(flowData.gridVoltage)} V
               </span>
-              <span className="text-[8px] sm:text-[10px] text-slate-500 font-mono block truncate whitespace-nowrap">Tần số: 50.0 Hz</span>
+              <span className="text-[9px] sm:text-xs text-slate-500 font-mono block truncate">Tần số: 50.0 Hz</span>
             </div>
 
-            <div className="bg-[#0b101e] border border-slate-800/90 py-2.5 sm:py-4 px-1.5 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-amber-500/40">
-              <span className="text-[9px] sm:text-[11px] text-slate-400 block font-bold uppercase tracking-wider truncate">NHIỆT ĐỘ MÁY</span>
-              <span className="text-sm sm:text-2xl font-black text-amber-400 font-mono mt-0.5 sm:mt-1 block">
+            <div className="bg-[#0b101e] border border-slate-800/90 py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-amber-500/40">
+              <span className="text-[10px] sm:text-xs text-slate-400 block font-bold uppercase tracking-wider truncate">NHIỆT ĐỘ MÁY</span>
+              <span className="text-base sm:text-2xl font-black text-amber-400 font-mono mt-1 block">
                 {flowData.temperature}°C
               </span>
-              <span className="text-[8px] sm:text-[10px] text-slate-500 font-mono block truncate whitespace-nowrap">Tản nhiệt tối ưu</span>
+              <span className="text-[9px] sm:text-xs text-slate-500 font-mono block truncate">Tản nhiệt tối ưu</span>
             </div>
           </div>
         </div>

@@ -12,7 +12,7 @@ export default function Login({ onLoginSuccess }) {
   const { login, register, loading } = useAuth();
   
   // Tab Switcher: 'login' | 'register' | 'forgot'
-  const [authMode, setAuthMode] = useState('register'); // Mặc định mở tab Đăng Ký theo yêu cầu
+  const [authMode, setAuthMode] = useState('login'); // Mặc định mở tab Đăng Nhập theo yêu cầu
 
   // ================= LOGIN FORM STATE =================
   const [loginAccount, setLoginAccount] = useState('');

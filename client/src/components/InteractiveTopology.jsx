@@ -38,8 +38,8 @@ export default function InteractiveTopology({
         </div>
       </div>
 
-      {/* 2. Khung vẽ sơ đồ trung tâm với Inverter và 5 thẻ trắng bo góc sạch đẹp */}
-      <div className="relative w-full min-h-[360px] xs:min-h-[390px] sm:min-h-[460px] md:min-h-[500px] flex items-center justify-center">
+      {/* 2. Khung vẽ sơ đồ trung tâm với Inverter và 5 thẻ kính mờ thông thoáng */}
+      <div className="relative w-full min-h-[400px] xs:min-h-[420px] sm:min-h-[480px] md:min-h-[500px] flex items-center justify-center py-2">
         
         {/* SVG Circuit Lines Layer */}
         <svg 
@@ -154,7 +154,7 @@ export default function InteractiveTopology({
         </svg>
 
         {/* ================= INVERTER TRUNG TÂM ================= */}
-        <div className="relative z-10 flex flex-col items-center justify-center -translate-y-4 sm:-translate-y-8 scale-90 sm:scale-100">
+        <div className="relative z-10 flex flex-col items-center justify-center -translate-y-2 sm:-translate-y-4 scale-85 xs:scale-90 sm:scale-100">
           <InverterUnit
             batteryVoltage={batteryVoltage}
             gridVoltage={gridVoltage}
@@ -162,29 +162,29 @@ export default function InteractiveTopology({
           />
         </div>
 
-        {/* ================= 5 THẺ TRẮNG BO GÓC ================= */}
+        {/* ================= 5 THẺ KÍNH MỜ (FROSTED GLASS) THÔNG THOÁNG ================= */}
 
         {/* 1. TOP LEFT: PIN MẶT TRỜI */}
-        <div className="absolute top-1 left-1 sm:top-3 sm:left-3 md:top-4 md:left-4 z-20 w-[30%] max-w-[130px] min-w-[92px] bg-white text-slate-900 rounded-xl sm:rounded-2xl p-1.5 sm:p-3 shadow-xl flex flex-col items-center text-center border border-slate-100/90">
-          <div className="w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-amber-400 flex items-center justify-center text-white mb-0.5 sm:mb-1 shadow-md shadow-amber-400/30">
-            <Sun className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+        <div className="absolute top-1 left-1 sm:top-3 sm:left-3 md:top-4 md:left-4 z-20 w-[31%] max-w-[130px] min-w-[92px] bg-[#0c1322]/80 hover:bg-[#0c1322]/95 backdrop-blur-md text-white rounded-2xl p-1.5 sm:p-3 shadow-xl flex flex-col items-center text-center border border-slate-700/60 hover:border-amber-400/50 transition-all duration-200">
+          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-400 mb-0.5 sm:mb-1 shadow-md shadow-amber-400/20">
+            <Sun className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
           </div>
-          <span className="text-[9px] sm:text-[11px] font-bold text-slate-700 leading-tight">Pin mặt trời</span>
-          <span className="text-xs sm:text-lg font-black text-sky-600 font-mono mt-0.5">
+          <span className="text-[9px] sm:text-[11px] font-bold text-slate-300 leading-tight">Pin mặt trời</span>
+          <span className="text-xs sm:text-base font-black text-cyan-400 font-mono mt-0.5">
             {pvPower}W
           </span>
-          <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-[8px] sm:text-[10px] font-mono font-bold text-slate-600 mt-0.5 sm:mt-1 bg-slate-100 px-1.5 py-0.5 rounded-full border border-slate-200/80 w-full overflow-hidden truncate">
-            <span className="truncate">PV1: <b className="text-amber-600 font-extrabold">{pv1Power || 0}</b></span>
-            <span className="text-slate-300">|</span>
-            <span className="truncate">PV2: <b className="text-amber-600 font-extrabold">{pv2Power || 0}</b></span>
+          <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-[8px] sm:text-[10px] font-mono font-bold text-slate-400 mt-0.5 sm:mt-1 bg-slate-950/80 px-1.5 py-0.5 rounded-full border border-slate-800 w-full overflow-hidden truncate">
+            <span className="truncate">PV1: <b className="text-amber-400 font-extrabold">{pv1Power || 0}</b></span>
+            <span className="text-slate-600">|</span>
+            <span className="truncate">PV2: <b className="text-amber-400 font-extrabold">{pv2Power || 0}</b></span>
           </div>
         </div>
 
         {/* 2. TOP RIGHT: LƯỚI ĐIỆN */}
-        <div className="absolute top-1 right-1 sm:top-3 sm:right-3 md:top-4 md:right-4 z-20 w-[30%] max-w-[130px] min-w-[92px] bg-white text-slate-900 rounded-xl sm:rounded-2xl p-1.5 sm:p-3 shadow-xl flex flex-col items-center text-center border border-slate-100/90">
-          <div className="w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-sky-500 flex items-center justify-center text-white mb-0.5 sm:mb-1 shadow-md shadow-sky-500/30">
+        <div className="absolute top-1 right-1 sm:top-3 sm:right-3 md:top-4 md:right-4 z-20 w-[31%] max-w-[130px] min-w-[92px] bg-[#0c1322]/80 hover:bg-[#0c1322]/95 backdrop-blur-md text-white rounded-2xl p-1.5 sm:p-3 shadow-xl flex flex-col items-center text-center border border-slate-700/60 hover:border-sky-400/50 transition-all duration-200">
+          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 mb-0.5 sm:mb-1 shadow-md shadow-sky-500/20">
             <svg 
-              className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" 
+              className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-sky-400" 
               viewBox="0 0 24 24" 
               fill="none" 
               stroke="currentColor" 
@@ -199,42 +199,42 @@ export default function InteractiveTopology({
               <path d="M8.5 7 L15.5 13 M15.5 7 L8.5 13" />
             </svg>
           </div>
-          <span className="text-[9px] sm:text-[11px] font-bold text-slate-700 leading-tight">Lưới điện</span>
-          <span className="text-xs sm:text-lg font-black text-sky-600 font-mono mt-0.5">
+          <span className="text-[9px] sm:text-[11px] font-bold text-slate-300 leading-tight">Lưới điện</span>
+          <span className="text-xs sm:text-base font-black text-cyan-400 font-mono mt-0.5">
             {displayGridPower}W
           </span>
         </div>
 
         {/* 3. BOTTOM LEFT: PIN LƯU TRỮ */}
-        <div className="absolute bottom-1 left-1 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4 z-20 w-[31%] max-w-[125px] min-w-[92px] bg-white text-slate-900 rounded-xl sm:rounded-2xl p-1.5 sm:p-3 shadow-xl flex flex-col items-center text-center border border-slate-100/90">
-          <div className="px-1.5 sm:px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[9px] sm:text-[10px] font-bold flex items-center gap-0.5 sm:gap-1 mb-0.5 sm:mb-1 shadow-sm">
+        <div className="absolute bottom-1 left-1 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4 z-20 w-[31%] max-w-[125px] min-w-[92px] bg-[#0c1322]/80 hover:bg-[#0c1322]/95 backdrop-blur-md text-white rounded-2xl p-1.5 sm:p-3 shadow-xl flex flex-col items-center text-center border border-slate-700/60 hover:border-emerald-400/50 transition-all duration-200">
+          <div className="px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[8px] sm:text-[10px] font-bold flex items-center gap-0.5 sm:gap-1 mb-0.5 sm:mb-1 shadow-sm">
             <Battery className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             <span>{batterySoc}%</span>
           </div>
-          <span className="text-[9px] sm:text-[11px] font-bold text-slate-700 leading-tight">Pin lưu trữ</span>
-          <span className="text-xs sm:text-lg font-black text-sky-600 font-mono mt-0.5">
+          <span className="text-[9px] sm:text-[11px] font-bold text-slate-300 leading-tight truncate w-full">Pin lưu trữ</span>
+          <span className="text-xs sm:text-base font-black text-cyan-400 font-mono mt-0.5">
             {Math.abs(batteryPower)}W
           </span>
         </div>
 
         {/* 4. BOTTOM MIDDLE: TẢI DỰ PHÒNG */}
-        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 sm:bottom-3 z-20 w-[31%] max-w-[125px] min-w-[92px] bg-white text-slate-900 rounded-xl sm:rounded-2xl p-1.5 sm:p-3 shadow-xl flex flex-col items-center text-center border border-slate-100/90">
-          <div className="w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-amber-500 flex items-center justify-center text-white mb-0.5 sm:mb-1 shadow-md shadow-amber-500/30">
-            <Shield className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 sm:bottom-3 z-20 w-[31%] max-w-[125px] min-w-[92px] bg-[#0c1322]/80 hover:bg-[#0c1322]/95 backdrop-blur-md text-white rounded-2xl p-1.5 sm:p-3 shadow-xl flex flex-col items-center text-center border border-slate-700/60 hover:border-amber-400/50 transition-all duration-200">
+          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 mb-0.5 sm:mb-1 shadow-md shadow-amber-500/20">
+            <Shield className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
           </div>
-          <span className="text-[9px] sm:text-[11px] font-bold text-slate-700 leading-tight truncate w-full">Tải dự phòng</span>
-          <span className="text-xs sm:text-lg font-black text-sky-600 font-mono mt-0.5">
+          <span className="text-[9px] sm:text-[11px] font-bold text-slate-300 leading-tight truncate w-full">Tải dự phòng</span>
+          <span className="text-xs sm:text-base font-black text-cyan-400 font-mono mt-0.5">
             {displayBackupPower}W
           </span>
         </div>
 
         {/* 5. BOTTOM RIGHT: TẢI HÒA LƯỚI */}
-        <div className="absolute bottom-1 right-1 sm:bottom-3 sm:right-3 md:bottom-4 md:right-4 z-20 w-[31%] max-w-[125px] min-w-[92px] bg-white text-slate-900 rounded-xl sm:rounded-2xl p-1.5 sm:p-3 shadow-xl flex flex-col items-center text-center border border-slate-100/90">
-          <div className="w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white mb-0.5 sm:mb-1 shadow-md shadow-emerald-500/30">
-            <Home className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
+        <div className="absolute bottom-1 right-1 sm:bottom-3 sm:right-3 md:bottom-4 md:right-4 z-20 w-[31%] max-w-[125px] min-w-[92px] bg-[#0c1322]/80 hover:bg-[#0c1322]/95 backdrop-blur-md text-white rounded-2xl p-1.5 sm:p-3 shadow-xl flex flex-col items-center text-center border border-slate-700/60 hover:border-emerald-400/50 transition-all duration-200">
+          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 mb-0.5 sm:mb-1 shadow-md shadow-emerald-500/20">
+            <Home className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-emerald-400" />
           </div>
-          <span className="text-[9px] sm:text-[11px] font-bold text-slate-700 leading-tight truncate w-full">Tải hòa lưới</span>
-          <span className="text-xs sm:text-lg font-black text-sky-600 font-mono mt-0.5">
+          <span className="text-[9px] sm:text-[11px] font-bold text-slate-300 leading-tight truncate w-full">Tải hòa lưới</span>
+          <span className="text-xs sm:text-base font-black text-cyan-400 font-mono mt-0.5">
             {loadPower}W
           </span>
         </div>

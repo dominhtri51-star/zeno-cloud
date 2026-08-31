@@ -1,0 +1,46 @@
+{
+  "default": {
+    "electricityPrice": 2800,
+    "tariffType": "FLAT",
+    "peakPrice": 3450,
+    "normalPrice": 1850,
+    "offPeakPrice": 1250,
+    "feedInTariff": 1000,
+    "currency": "VND",
+    "installedCapacityKw": 12,
+    "pv1CapacityKw": 6,
+    "pv2CapacityKw": 6,
+    "solarPanelType": "Mono Perc Tier 1 (550W)",
+    "panelEfficiency": 98,
+    "batteryType": "LiFePO4",
+    "batteryCapacityKwh": 10.24,
+    "batteryAh": 200,
+    "batteryVoltageNominal": 51.2,
+    "minSoc": 20,
+    "maxSoc": 100,
+    "updatedAt": "2026-08-30T23:01:42.142Z"
+  },
+  "users": {
+    "dungkiep": {
+      "electricityPrice": 3200,
+      "tariffType": "FLAT",
+      "peakPrice": 3450,
+      "normalPrice": 1850,
+      "offPeakPrice": 1250,
+      "feedInTariff": 1000,
+      "currency": "VND",
+      "installedCapacityKw": 15.5,
+      "pv1CapacityKw": 8,
+      "pv2CapacityKw": 7.5,
+      "solarPanelType": "Mono Perc Tier 1 (550W)",
+      "panelEfficiency": 98,
+      "batteryType": "LiFePO4",
+      "batteryCapacityKwh": 14.34,
+      "batteryAh": 280,
+      "batteryVoltageNominal": 51.2,
+      "minSoc": 20,
+      "maxSoc": 100,
+      "updatedAt": "2026-08-30T23:03:21.015Z"
+    }
+  }
+}

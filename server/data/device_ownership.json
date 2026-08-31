@@ -1,0 +1,195 @@
+{
+  "users": {
+    "sungo.vn": {
+      "userType": 1,
+      "roleName": "👑 Tổng Phân Phối (Distributor)",
+      "userName": "SUNGO SOLAR VIỆT NAM (Master)",
+      "company": "SUNGO Clean Energy Corp",
+      "password": "sungo@100%",
+      "cellphone": "0901234567",
+      "email": "admin@sungo.vn",
+      "createdAt": "2026-08-31T06:54:00.000Z"
+    },
+    "newtech.sg": {
+      "userType": 2,
+      "roleName": "🏢 Đại Lý (Dealer)",
+      "userName": "Đại Lý Newtech Solar (Nguyễn Hồng Sơn)",
+      "company": "Newtech Solar Solutions Co., Ltd",
+      "password": "newtech.sg123",
+      "cellphone": "0938123456",
+      "email": "newtech.sg@gmail.com",
+      "dealerCode": "DL_NEWTECH",
+      "technicianCode": "DL_NEWTECH",
+      "createdAt": "2026-08-31T09:25:43.095Z"
+    },
+    "tuan_solar": {
+      "userType": 2,
+      "roleName": "🏢 Đại Lý (Dealer)",
+      "userName": "Đại Lý Tuấn Solar Miền Nam",
+      "company": "Tuấn Solar Energy",
+      "password": "123456",
+      "cellphone": "0918765432",
+      "email": "tuan@sungo.vn",
+      "dealerCode": "DL_TUANSOLAR",
+      "technicianCode": "DL_TUANSOLAR",
+      "createdAt": "2026-08-31T08:00:00.000Z"
+    },
+    "thodien_mientay": {
+      "userType": 2,
+      "roleName": "🏢 Đại Lý (Dealer)",
+      "userName": "Đại Lý Trần Văn Hưng (Miền Tây)",
+      "company": "Điện Mặt Trời Miền Tây",
+      "password": "123456",
+      "cellphone": "0933445566",
+      "email": "hung.solar@gmail.com",
+      "dealerCode": "DL_MIENTAY",
+      "technicianCode": "DL_MIENTAY",
+      "createdAt": "2026-08-31T09:42:26.474Z"
+    },
+    "dungkiep": {
+      "userType": 3,
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "userName": "dungkiep",
+      "company": "Hộ Gia Đình",
+      "password": "",
+      "cellphone": "0912345678",
+      "email": "dungkiep@sungo.vn",
+      "createdAt": "2026-08-31T07:38:26.965Z",
+      "phoneLinked": true
+    },
+    "vothehien1006": {
+      "userType": 3,
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "userName": "Khách Hàng Võ Thế Hiển",
+      "company": "Hộ Gia Đình",
+      "password": "",
+      "cellphone": "",
+      "email": "vothehien1006@sungo.vn",
+      "createdAt": "2026-08-31T08:26:05.743Z"
+    },
+    "chuhanatest": {
+      "userType": 3,
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "userName": "Chủ Nhà Dũng Kiệp (zenoPlant)",
+      "company": "Hộ Gia Đình",
+      "password": "123456",
+      "cellphone": "0912345678",
+      "email": "chuhanatest@sungo.vn",
+      "createdAt": "2026-08-31T08:44:14.432Z"
+    },
+    "zeno_home_9200": {
+      "userType": 3,
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "userName": "Anh Nam (Chủ Nhà Thảo Điền)",
+      "company": "Biệt Thự Thảo Điền",
+      "password": "Password123!",
+      "cellphone": "0988776655",
+      "email": "zeno_home_9200@gmail.com",
+      "createdAt": "2026-08-31T09:46:30.572Z"
+    },
+    "sungo123": {
+      "userType": 3,
+      "roleName": "Chủ Nhà / Người Dùng Cuối (View-Only)",
+      "userName": "sungo123",
+      "company": "Hộ gia đình",
+      "password": "",
+      "cellphone": "",
+      "email": "sungo123@sungo.vn",
+      "createdAt": "2026-08-31T11:50:34.601Z"
+    }
+  },
+  "devices": {
+    "465132145264787456": {
+      "deviceId": "465132145264787456",
+      "dtuCode": "35282147608648059097",
+      "serialNumber": "3528214760-1",
+      "stationId": "454586755050340353",
+      "stationName": "canh",
+      "distributor": "sungo.vn",
+      "installer": "tuan_solar",
+      "customer": "sungo123",
+      "isConfigLocked": false,
+      "status": "ONLINE",
+      "claimedAt": "2026-08-31T11:03:05.372Z"
+    },
+    "498807992030822400": {
+      "deviceId": "498807992030822400",
+      "serialNumber": "5037108978-1",
+      "dtuCode": "50371089784075173825",
+      "stationId": "498807992005656576",
+      "stationName": "zenoPlant",
+      "distributor": "sungo.vn",
+      "installer": "newtech.sg",
+      "customer": "dungkiep",
+      "isConfigLocked": false,
+      "status": "ONLINE",
+      "autoIngestedAt": "2026-08-31T07:38:26.965Z",
+      "sharedInstallers": [
+        "newtech.sg"
+      ]
+    },
+    "495450468187602944": {
+      "deviceId": "495450468187602944",
+      "serialNumber": "4163930009-1",
+      "dtuCode": "41639300099725757805",
+      "stationId": "495450468162437120",
+      "stationName": "Hien_newtech.sgPlant",
+      "distributor": "sungo.vn",
+      "installer": "newtech.sg",
+      "customer": "vothehien1006",
+      "isConfigLocked": false,
+      "status": "ONLINE",
+      "autoIngestedAt": "2026-08-31T08:26:05.743Z"
+    },
+    "178817432746814411": {
+      "deviceId": "178817432746814411",
+      "dtuCode": "60749699196447581049",
+      "serialNumber": "6074969919-1",
+      "stationId": "178817432746558411",
+      "stationName": "phúc trung",
+      "distributor": "sungo.vn",
+      "installer": "tuan_solar",
+      "customer": "",
+      "isConfigLocked": false,
+      "status": "OFFLINE",
+      "claimedAt": "2026-08-31T11:05:27.468Z"
+    }
+  },
+  "shares": [
+    {
+      "shareId": "SH-1788172948153",
+      "stationId": "498807992005656576",
+      "customerAccount": "dungkiep",
+      "dealerAccount": "newtech.sg",
+      "dealerName": "Đại Lý Newtech Solar (Nguyễn Hồng Sơn)",
+      "dealerEmail": "newtech.sg@gmail.com",
+      "dealerCompany": "Newtech Solar Solutions Co., Ltd",
+      "permissions": [
+        "VIEW",
+        "CONFIG"
+      ],
+      "createdAt": "2026-08-31T10:42:28.153Z",
+      "updatedAt": "2026-08-31T10:42:44.906Z"
+    }
+  ],
+  "technicianCodes": [
+    {
+      "code": "DL_NEWTECH",
+      "name": "Mã Kích Hoạt Đại Lý Newtech Solar",
+      "createdAt": "2026-08-31T00:00:00.000Z",
+      "usageCount": 0
+    },
+    {
+      "code": "DL_TUANSOLAR",
+      "name": "Mã Kích Hoạt Đại Lý Tuấn Solar",
+      "createdAt": "2026-08-31T00:00:00.000Z",
+      "usageCount": 0
+    },
+    {
+      "code": "DL_MIENTAY",
+      "name": "Mã Kích Hoạt Đại Lý Miền Tây",
+      "createdAt": "2026-08-31T00:00:00.000Z",
+      "usageCount": 0
+    }
+  ]
+}

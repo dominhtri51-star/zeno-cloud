@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # 1. Zeno Web Application & Backend API
+  zeno-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zeno_solar_app
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - NODE_ENV=production
+      - DB_HOST=zeno-db
+      - DB_PORT=5432
+      - DB_USER=solar_admin
+      - DB_PASSWORD=SolarPass123!
+      - DB_NAME=zeno_solar
+      - SISELI_BASE_URL=https://solar.siseli.com/apis
+      - SISELI_TIMEZONE=Asia/Ho_Chi_Minh
+      - SISELI_LANGUAGE=vi
+    depends_on:
+      zeno-db:
+        condition: service_healthy
+    networks:
+      - zeno-network
+
+  # 2. PostgreSQL Database (TablePlus Connection Ready)
+  zeno-db:
+    image: postgres:15-alpine
+    container_name: zeno_postgres_db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=solar_admin
+      - POSTGRES_PASSWORD=SolarPass123!
+      - POSTGRES_DB=zeno_solar
+    volumes:
+      - zeno_pgdata:/var/lib/postgresql/data
+      - ./server/src/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U solar_admin -d zeno_solar"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zeno-network
+
+volumes:
+  zeno_pgdata:
+    driver: local
+
+networks:
+  zeno-network:
+    driver: bridge

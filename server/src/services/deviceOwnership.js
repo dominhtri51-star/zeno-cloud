@@ -1,0 +1,626 @@
+const fs = require('fs');
+const path = require('path');
+
+class DeviceOwnershipService {
+  constructor() {
+    this.storageFile = path.join(__dirname, '../../data/device_ownership.json');
+    this.data = this.loadData();
+  }
+
+  loadData() {
+    try {
+      if (fs.existsSync(this.storageFile)) {
+        const raw = fs.readFileSync(this.storageFile, 'utf8');
+        return JSON.parse(raw);
+      }
+    } catch (e) {
+      console.warn('[DeviceOwnership] Không thể đọc device_ownership.json:', e.message);
+    }
+    return {
+      users: {
+        'sungo123': { userType: 1, roleName: 'Tổng Phân Phối (Distributor)', userName: 'Zeno Master Distributor', company: 'Zeno Clean Energy Corp' },
+        'zeno_admin': { userType: 1, roleName: 'Tổng Phân Phối (Distributor)', userName: 'Zeno System Admin', company: 'Zeno Clean Energy Corp' },
+        'tuan_solar': { userType: 2, roleName: 'Thợ Lắp Đặt / Đại Lý (Installer)', userName: 'Phạm Minh Tuấn (Kỹ thuật)', company: 'Tuấn Solar Miền Nam' },
+        'kt_phamminh': { userType: 2, roleName: 'Thợ Lắp Đặt / Đại Lý (Installer)', userName: 'Phạm Minh Tuấn (Kỹ thuật)', company: 'Tuấn Solar Miền Nam' },
+        'demo_dealer': { userType: 2, roleName: 'Thợ Lắp Đặt / Đại Lý (Installer)', userName: 'Đại Lý Năng Lượng Zeno (Demo)', company: 'Zeno Clean Energy Co., Ltd.' },
+        'demo_installer': { userType: 2, roleName: 'Thợ Lắp Đặt / Đại Lý (Installer)', userName: 'Đội Kỹ Thuật Lắp Đặt', company: 'Zeno Installer Partner' },
+        'dungkiep': { userType: 3, roleName: 'Chủ Nhà / Người Dùng Cuối (View-Only)', userName: 'Chủ Hộ zenoPlant (Dũng Kiệp)', company: 'Gia đình' },
+        'anh_nam_q7': { userType: 3, roleName: 'Chủ Nhà / Người Dùng Cuối (View-Only)', userName: 'Nguyễn Văn Nam (Chủ nhà)', company: 'Villa Thảo Điền' },
+        'demo_homeowner': { userType: 3, roleName: 'Chủ Nhà / Người Dùng Cuối (View-Only)', userName: 'Khách Hàng Hộ Gia Đình', company: 'Gia đình' }
+      },
+      devices: {
+        '465132145264787456': {
+          deviceId: '465132145264787456',
+          serialNumber: '3528214760-1',
+          dtuCode: '35282147608648059097',
+          stationName: 'sungoPlant',
+          distributor: 'sungo123',
+          installer: 'tuan_solar',
+          customer: 'anh_nam_q7',
+          isConfigLocked: true,
+          status: 'ONLINE'
+        },
+        '498807992030822400': {
+          deviceId: '498807992030822400',
+          serialNumber: '5037108978-1',
+          dtuCode: '50371089784075173825',
+          stationName: 'zenoPlant',
+          distributor: 'sungo123',
+          installer: 'tuan_solar',
+          customer: 'dungkiep',
+          isConfigLocked: true,
+          status: 'ONLINE'
+        }
+      }
+    };
+  }
+
+  saveData() {
+    try {
+      const dir = path.dirname(this.storageFile);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(this.storageFile, JSON.stringify(this.data, null, 2), 'utf8');
+    } catch (e) {
+      console.warn('[DeviceOwnership] Lỗi ghi device_ownership.json:', e.message);
+    }
+  }
+
+  getUserRole(account) {
+    const acc = String(account || '').toLowerCase().trim();
+
+    // 1. CẤP 1: 👑 TỔNG PHÂN PHỐI (CHỈ DUY NHẤT 1 TÀI KHOẢN sungo.vn - FULL QUYỀN)
+    if (acc === 'sungo.vn' || acc === 'admin@sungo.vn') {
+      return {
+        userType: 1,
+        roleName: '👑 Tổng Phân Phối (Distributor)',
+        userName: 'SUNGO SOLAR VIỆT NAM (Master)',
+        company: 'SUNGO Clean Energy Corp',
+        canConfig: true,
+        canAssign: true,
+        canViewAll: true
+      };
+    }
+
+    // 2. Tra cứu trong bảng users
+    if (this.data.users && this.data.users[acc]) {
+      const u = this.data.users[acc];
+      // Bảo vệ: Nếu ai đó sửa JSON thành 1 thì hạ xuống 2
+      const cleanType = (u.userType === 1 && acc !== 'sungo.vn') ? 2 : (u.userType === 2 ? 2 : 3);
+      const cleanRoleName = cleanType === 2 ? '🏢 Đại Lý (Dealer)' : '🏠 Người Tiêu Dùng Cuối (End-User)';
+      return {
+        userType: cleanType,
+        roleName: cleanRoleName,
+        userName: u.userName || acc,
+        company: u.company || (cleanType === 2 ? 'Đại Lý Phân Phối' : 'Hộ Gia Đình'),
+        canConfig: cleanType === 2,
+        canAssign: cleanType === 2,
+        canViewAll: false
+      };
+    }
+
+    // 3. CẤP 2: 🏢 ĐẠI LÝ (DEALER)
+    if (acc.includes('dealer') || acc.includes('daily') || acc.includes('tho') || acc.includes('kt_') || acc.includes('installer') || acc.includes('newtech')) {
+      return {
+        userType: 2,
+        roleName: '🏢 Đại Lý (Dealer)',
+        userName: acc,
+        company: 'Đại Lý Phân Phối & Lắp Đặt',
+        canConfig: true,
+        canAssign: true,
+        canViewAll: false
+      };
+    }
+
+    // 4. CẤP 3: 🏠 NGƯỜI TIÊU DÙNG CUỐI (END-USER)
+    return {
+      userType: 3,
+      roleName: '🏠 Người Tiêu Dùng Cuối (End-User)',
+      userName: acc,
+      company: 'Hộ Gia Đình',
+      canConfig: false,
+      canAssign: false,
+      canViewAll: false
+    };
+  }
+
+  canUserConfig(userType, account, deviceId) {
+    if (userType === 1) return true; // Tổng phân phối full quyền
+    if (userType === 2) return true; // Đại lý có quyền cài đặt thông số biến tần cho trạm phụ trách / được chia sẻ
+    // userType === 3 (Người tiêu dùng cuối) -> Tuyệt đối không được can thiệp cấu hình thô Inverter
+    return false;
+  }
+
+  claimDevice({ dtuCode, serialNumber, stationName, distributor = 'sungo.vn', installer = '', customer = '', realDeviceId = null, realStationId = null, isOnline = false }) {
+    this.data = this.loadData();
+    const cleanDtu = String(dtuCode || serialNumber || '').trim();
+    const cleanSn = String(serialNumber || cleanDtu).trim();
+
+    // Tìm xem thiết bị đã có trong danh sách chưa theo Mã DTU hoặc SN
+    let existingKey = Object.keys(this.data.devices || {}).find(k => {
+      const d = this.data.devices[k];
+      return (d.dtuCode && d.dtuCode === cleanDtu) || (d.serialNumber && d.serialNumber === cleanSn);
+    });
+
+    const baseNum = Date.now().toString() + Math.floor(10000 + Math.random() * 90000).toString();
+    const deviceId = realDeviceId ? String(realDeviceId) : (existingKey || baseNum.substring(0, 18));
+    const stationId = realStationId ? String(realStationId) : (this.data.devices[deviceId]?.stationId || (BigInt(deviceId) - 256000n).toString());
+
+    this.data.devices[deviceId] = {
+      deviceId,
+      dtuCode: cleanDtu,
+      serialNumber: cleanSn,
+      stationId,
+      stationName: stationName || `Trạm DTU ${cleanDtu.slice(-6)}`,
+      distributor: 'sungo.vn',
+      installer: installer || '',
+      customer: customer || '',
+      isConfigLocked: false,
+      status: isOnline ? 'ONLINE' : 'OFFLINE',
+      claimedAt: new Date().toISOString()
+    };
+    this.saveData();
+    return this.data.devices[deviceId];
+  }
+
+  deleteStation(stationIdOrName) {
+    if (!stationIdOrName) return false;
+    const target = String(stationIdOrName).toLowerCase().trim();
+    let deletedCount = 0;
+    
+    // Xóa tất cả các thiết bị thuộc trạm này
+    Object.keys(this.data.devices).forEach(devId => {
+      const dev = this.data.devices[devId];
+      const matchId = String(dev.stationId || '').toLowerCase() === target;
+      const matchDevId = String(dev.deviceId || '').toLowerCase() === target;
+      const matchName = String(dev.stationName || '').toLowerCase() === target;
+      if (matchId || matchDevId || matchName) {
+        delete this.data.devices[devId];
+        deletedCount++;
+      }
+    });
+
+    if (deletedCount > 0) {
+      this.saveData();
+      return true;
+    }
+    return false;
+  }
+
+  deleteDevice(deviceIdOrSn) {
+    if (!deviceIdOrSn) return false;
+    const target = String(deviceIdOrSn).toLowerCase().trim();
+    let foundKey = null;
+
+    Object.keys(this.data.devices).forEach(devId => {
+      const dev = this.data.devices[devId];
+      if (
+        String(dev.deviceId).toLowerCase() === target ||
+        String(dev.serialNumber).toLowerCase() === target ||
+        String(dev.dtuCode).toLowerCase() === target
+      ) {
+        foundKey = devId;
+      }
+    });
+
+    if (foundKey) {
+      delete this.data.devices[foundKey];
+      this.saveData();
+      return true;
+    }
+    return false;
+  }
+
+  assignDevice({ deviceId, installer, customer, isConfigLocked = true }) {
+    if (this.data.devices[deviceId]) {
+      if (installer !== undefined) this.data.devices[deviceId].installer = installer;
+      if (customer !== undefined) this.data.devices[deviceId].customer = customer;
+      if (isConfigLocked !== undefined) this.data.devices[deviceId].isConfigLocked = isConfigLocked;
+      this.saveData();
+      return this.data.devices[deviceId];
+    }
+    return null;
+  }
+
+  registerUser({ account, password, userType = 3, roleName, userName, company, cellphone, email, serialNumber, technicianCode }) {
+    const acc = String(account).toLowerCase().trim();
+    const type = parseInt(userType, 10) || 3;
+    let computedRoleName = roleName;
+    if (!computedRoleName) {
+      if (type === 1) computedRoleName = 'Tổng Phân Phối (Distributor)';
+      else if (type === 2) computedRoleName = 'Thợ Lắp Đặt / Đại Lý (Installer)';
+      else computedRoleName = 'Chủ Nhà / Người Dùng Cuối (View-Only)';
+    }
+
+    this.data.users[acc] = {
+      userType: type,
+      roleName: computedRoleName,
+      userName: userName || account,
+      company: company || (type === 1 ? 'Zeno Clean Energy Corp' : type === 2 ? 'Đội Kỹ Thuật Lắp Đặt' : 'Gia đình'),
+      password: password || '',
+      cellphone: cellphone || '',
+      email: email || `${acc}@zenosolar.vn`,
+      technicianCode: type === 2 ? (technicianCode ? String(technicianCode).trim().toUpperCase() : `KT_${acc.toUpperCase()}`) : (technicianCode ? String(technicianCode).trim().toUpperCase() : null),
+      createdAt: new Date().toISOString()
+    };
+
+    // Nếu người dùng cung cấp Serial Number biến tần lúc đăng ký
+    if (serialNumber && serialNumber.trim()) {
+      const sn = serialNumber.trim();
+      const snPrefix = sn.split('-')[0].toLowerCase();
+      let existingDevKey = Object.keys(this.data.devices).find(k => {
+        const d = this.data.devices[k];
+        const dSn = String(d.serialNumber || '').toLowerCase();
+        const dDtu = String(d.dtuCode || '').toLowerCase();
+        const target = sn.toLowerCase();
+        return dSn === target || 
+               dDtu === target || 
+               (snPrefix.length >= 6 && dSn.startsWith(snPrefix)) || 
+               (snPrefix.length >= 6 && target.startsWith(dSn.split('-')[0])) ||
+               (snPrefix.length >= 6 && dDtu.includes(snPrefix));
+      });
+
+      if (existingDevKey) {
+        if (type === 3) {
+          this.data.devices[existingDevKey].customer = acc;
+        } else if (type === 2) {
+          this.data.devices[existingDevKey].installer = acc;
+        }
+      } else {
+        const newDevId = 'DEV-' + Date.now();
+        this.data.devices[newDevId] = {
+          deviceId: newDevId,
+          serialNumber: sn,
+          dtuCode: sn,
+          stationName: `Trạm Năng Lượng ${userName || acc}`,
+          distributor: 'sungo123',
+          installer: type === 2 ? acc : 'tuan_solar',
+          customer: type === 3 ? acc : '',
+          isConfigLocked: true,
+          status: 'ONLINE',
+          claimedAt: new Date().toISOString()
+        };
+      }
+    }
+
+    this.saveData();
+    return this.getUserRole(acc);
+  }
+
+  // Tự động thu nạp tài khoản khách hàng cũ từ Cloud Hãng và gán quyền quản lý cho tài khoản tổng sungo.vn
+  ingestUserAndStationsFromCloud({ account, userName, email, cellphone, userType = 3, stations = [] }) {
+    const acc = String(account).toLowerCase().trim();
+    const type = parseInt(userType, 10) || 3;
+    const computedRoleName = type === 1 ? 'Tổng Phân Phối (Distributor)' : (type === 2 ? 'Thợ Lắp Đặt / Đại Lý (Installer)' : 'Chủ Nhà / Người Dùng Cuối (View-Only)');
+
+    if (!this.data.users[acc]) {
+      this.data.users[acc] = {
+        userType: type,
+        roleName: computedRoleName,
+        userName: userName || account,
+        company: 'Hộ gia đình',
+        password: '',
+        cellphone: cellphone || '',
+        email: email || `${acc}@sungo.vn`,
+        createdAt: new Date().toISOString()
+      };
+    } else {
+      if (userName) this.data.users[acc].userName = userName;
+      if (email) this.data.users[acc].email = email;
+      if (cellphone) this.data.users[acc].cellphone = cellphone;
+    }
+
+    // Tự động thu nạp tất cả trạm và thiết bị của khách hàng gán về tài khoản Tổng sungo.vn
+    if (stations && Array.isArray(stations)) {
+      stations.forEach(st => {
+        if (st.devices && Array.isArray(st.devices)) {
+          st.devices.forEach(dev => {
+            const devId = String(dev.deviceId || dev.id);
+            if (!this.data.devices[devId]) {
+              this.data.devices[devId] = {
+                deviceId: devId,
+                serialNumber: dev.serialNumber || '',
+                dtuCode: dev.dtuCode || dev.dtuDtuid || '',
+                stationId: String(st.stationId || st.id),
+                stationName: st.stationName || st.name || 'Trạm năng lượng',
+                distributor: 'sungo.vn', // Gán quyền quản lý cao nhất cho sungo.vn!
+                installer: '',
+                customer: acc,
+                isConfigLocked: false,
+                status: dev.isOnline !== false ? 'ONLINE' : 'OFFLINE',
+                autoIngestedAt: new Date().toISOString()
+              };
+            } else {
+              this.data.devices[devId].customer = acc;
+              this.data.devices[devId].distributor = 'sungo.vn';
+              if (dev.serialNumber) this.data.devices[devId].serialNumber = dev.serialNumber;
+              if (dev.dtuCode) this.data.devices[devId].dtuCode = dev.dtuCode;
+            }
+          });
+        }
+      });
+    }
+
+    this.saveData();
+    return this.data.users[acc];
+  }
+
+  toggleLock(deviceId, isLocked) {
+    if (this.data.devices[deviceId]) {
+      this.data.devices[deviceId].isConfigLocked = isLocked;
+      this.saveData();
+      return true;
+    }
+    return false;
+  }
+
+  // ================= CHIA SẺ TRẠM CHO ĐẠI LÝ (BẢO MẬT 100% - KHÔNG GỢI Ý) =================
+  getAvailableDealers() {
+    // Bảo mật kinh doanh: Không cung cấp danh sách đại lý công khai
+    return [];
+  }
+
+  shareStation({ stationId, customerAccount, dealerIdentifier, permissions = ['VIEW', 'CONFIG'] }) {
+    if (!stationId) throw new Error('Mã trạm không hợp lệ!');
+    if (!dealerIdentifier || !String(dealerIdentifier).trim()) {
+      throw new Error('Vui lòng nhập chính xác Mã Đại Lý, Mã Kích Hoạt hoặc Email của Đại Lý!');
+    }
+
+    // Luôn nạp lại dữ liệu mới nhất từ file
+    this.data = this.loadData();
+
+    const targetQuery = String(dealerIdentifier).trim().toLowerCase();
+    const custAcc = String(customerAccount || '').trim().toLowerCase();
+
+    // 1. Tìm đại lý theo account, email, cellphone, hoặc mã đại lý
+    let targetDealer = null;
+
+    if (this.data.users) {
+      Object.keys(this.data.users).forEach(acc => {
+        const u = this.data.users[acc];
+        const uDealerCode = String(u.dealerCode || u.technicianCode || '').toLowerCase();
+        const uEmail = String(u.email || '').toLowerCase();
+        const uPhone = String(u.cellphone || '').toLowerCase();
+        const uAcc = acc.toLowerCase();
+
+        if (
+          uAcc === targetQuery ||
+          (uEmail && uEmail === targetQuery) ||
+          (uPhone && uPhone === targetQuery) ||
+          (uDealerCode && uDealerCode === targetQuery)
+        ) {
+          // Bắt buộc đối tượng được chia sẻ phải là Cấp 2: Đại Lý (không chia sẻ cho Master hay chủ nhà)
+          if (u.userType === 2 && acc !== 'sungo.vn') {
+            targetDealer = {
+              account: acc,
+              userName: u.userName || acc,
+              email: u.email || `${acc}@sungo.vn`,
+              company: u.company || 'Đại Lý Phân Phối & Lắp Đặt',
+              userType: 2,
+              roleName: '🏢 Đại Lý (Dealer)'
+            };
+          }
+        }
+      });
+    }
+
+    // 2. Nếu tìm theo mã kích hoạt riêng biệt (VD: DL_NEWTECH, DL_TUANSOLAR)
+    if (!targetDealer && this.data.technicianCodes) {
+      const matchedCode = this.data.technicianCodes.find(tc => 
+        String(tc.code).trim().toLowerCase() === targetQuery
+      );
+      if (matchedCode) {
+        // Tìm xem đại lý nào sở hữu code này hoặc match theo tên mã
+        let matchedAcc = Object.keys(this.data.users || {}).find(acc => {
+          const u = this.data.users[acc];
+          const uCode = String(u.dealerCode || u.technicianCode || '').toLowerCase();
+          return uCode === targetQuery;
+        });
+
+        // Fallback theo quy tắc đặt mã đại lý (VD: DL_NEWTECH -> newtech.sg, DL_TUANSOLAR -> tuan_solar)
+        if (!matchedAcc) {
+          if (targetQuery.includes('newtech')) matchedAcc = 'newtech.sg';
+          else if (targetQuery.includes('tuan')) matchedAcc = 'tuan_solar';
+          else if (targetQuery.includes('mientay')) matchedAcc = 'thodien_mientay';
+        }
+
+        if (matchedAcc && this.data.users[matchedAcc]) {
+          const u = this.data.users[matchedAcc];
+          targetDealer = {
+            account: matchedAcc,
+            userName: u.userName || matchedAcc,
+            email: u.email || `${matchedAcc}@sungo.vn`,
+            company: u.company || 'Đại Lý Phân Phối & Lắp Đặt',
+            userType: 2,
+            roleName: '🏢 Đại Lý (Dealer)'
+          };
+        }
+      }
+    }
+
+    // 3. Nếu vẫn không tìm thấy bất kỳ Đại Lý Cấp 2 nào hợp lệ -> BÁO LỖI NGAY
+    if (!targetDealer) {
+      throw new Error(`Không tìm thấy Đại Lý nào khớp với thông tin [${dealerIdentifier}]. Vui lòng kiểm tra lại chính xác 100% Mã Đại Lý hoặc Email do đơn vị lắp đặt cung cấp!`);
+    }
+
+    if (!this.data.shares) {
+      this.data.shares = [];
+    }
+
+    const sId = String(stationId);
+    const dealerAcc = targetDealer.account.toLowerCase();
+
+    // Kiểm tra xem đã chia sẻ cho đại lý này chưa
+    const existingIndex = this.data.shares.findIndex(s => 
+      String(s.stationId) === sId && s.dealerAccount.toLowerCase() === dealerAcc
+    );
+
+    const shareItem = {
+      shareId: 'SH-' + Date.now(),
+      stationId: sId,
+      customerAccount: custAcc,
+      dealerAccount: dealerAcc,
+      dealerName: targetDealer.userName || dealerAcc,
+      dealerEmail: targetDealer.email || '',
+      dealerCompany: targetDealer.company || 'Đại lý kỹ thuật',
+      permissions: permissions || ['VIEW', 'CONFIG'],
+      createdAt: new Date().toISOString()
+    };
+
+    if (existingIndex >= 0) {
+      this.data.shares[existingIndex] = {
+        ...this.data.shares[existingIndex],
+        permissions: permissions || ['VIEW', 'CONFIG'],
+        updatedAt: new Date().toISOString()
+      };
+    } else {
+      this.data.shares.push(shareItem);
+    }
+
+    // Cập nhật installer và sharedInstallers cho tất cả thiết bị thuộc trạm này
+    Object.keys(this.data.devices || {}).forEach(devId => {
+      const dev = this.data.devices[devId];
+      if (String(dev.stationId) === sId || String(dev.deviceId) === sId || dev.stationName === sId) {
+        if (!dev.sharedInstallers) dev.sharedInstallers = [];
+        if (!dev.sharedInstallers.includes(dealerAcc)) {
+          dev.sharedInstallers.push(dealerAcc);
+        }
+        if (!dev.installer) {
+          dev.installer = dealerAcc;
+        }
+      }
+    });
+
+    this.saveData();
+    return {
+      success: true,
+      message: `Đã chia sẻ quyền quản trị trạm cho đại lý ${targetDealer.userName || dealerAcc} thành công!`,
+      share: shareItem,
+      dealer: targetDealer
+    };
+  }
+
+  getStationShares(stationId, customerAccount) {
+    if (!this.data.shares) this.data.shares = [];
+    const sId = String(stationId);
+    return this.data.shares.filter(s => String(s.stationId) === sId);
+  }
+
+  revokeStationShare({ stationId, dealerAccount, customerAccount }) {
+    if (!this.data.shares) this.data.shares = [];
+    const sId = String(stationId);
+    const dAcc = String(dealerAccount || '').trim().toLowerCase();
+
+    const initialLen = this.data.shares.length;
+    this.data.shares = this.data.shares.filter(s => 
+      !(String(s.stationId) === sId && s.dealerAccount.toLowerCase() === dAcc)
+    );
+
+    // Gỡ quyền khỏi các thiết bị
+    Object.keys(this.data.devices || {}).forEach(devId => {
+      const dev = this.data.devices[devId];
+      if (String(dev.stationId) === sId || String(dev.deviceId) === sId || dev.stationName === sId) {
+        if (dev.sharedInstallers) {
+          dev.sharedInstallers = dev.sharedInstallers.filter(acc => acc.toLowerCase() !== dAcc);
+        }
+        if (dev.installer && dev.installer.toLowerCase() === dAcc) {
+          dev.installer = (dev.sharedInstallers && dev.sharedInstallers[0]) || '';
+        }
+      }
+    });
+
+    this.saveData();
+    return {
+      success: true,
+      message: `Đã thu hồi quyền quản trị của đại lý ${dealerAccount} đối với trạm này!`
+    };
+  }
+
+  // Quản lý Mã Kỹ Thuật Viên / Thợ Lắp Đặt
+  getTechnicianCodes() {
+    if (!this.data.technicianCodes || !Array.isArray(this.data.technicianCodes)) {
+      this.data.technicianCodes = [
+        { code: 'KT8888', name: 'Đội Kỹ Thuật Tổng Công Ty SUNGO', createdAt: '2026-08-31T00:00:00.000Z', usageCount: 2 },
+        { code: 'SUNGO_KT', name: 'Mã Kỹ Thuật Viên Chính Hãng SUNGO', createdAt: '2026-08-31T00:00:00.000Z', usageCount: 1 },
+        { code: 'TECH-SUNGO-2026', name: 'Mã Kỹ Sư Lắp Đặt Miền Nam', createdAt: '2026-08-31T00:00:00.000Z', usageCount: 0 },
+        { code: 'KTV-ZENO-2026', name: 'Mã Đối Tác Kỹ Thuật Zeno Solar', createdAt: '2026-08-31T00:00:00.000Z', usageCount: 0 }
+      ];
+      this.saveData();
+    }
+    return this.data.technicianCodes;
+  }
+
+  verifyTechnicianCode(code) {
+    if (!code) return false;
+    const clean = String(code).trim().toUpperCase();
+    const codes = this.getTechnicianCodes();
+    const found = codes.find(c => c.code.toUpperCase() === clean);
+    if (found) {
+      found.usageCount = (found.usageCount || 0) + 1;
+      this.saveData();
+      return true;
+    }
+    return false;
+  }
+
+  addTechnicianCode({ code, name }) {
+    if (!code) return null;
+    const clean = String(code).trim().toUpperCase();
+    const codes = this.getTechnicianCodes();
+    if (codes.some(c => c.code.toUpperCase() === clean)) {
+      return null;
+    }
+    const newEntry = {
+      code: clean,
+      name: name || `Mã Kỹ Thuật Viên ${clean}`,
+      createdAt: new Date().toISOString(),
+      usageCount: 0
+    };
+    codes.unshift(newEntry);
+    this.saveData();
+    return newEntry;
+  }
+
+  deleteTechnicianCode(code) {
+    if (!code) return false;
+    const clean = String(code).trim().toUpperCase();
+    const codes = this.getTechnicianCodes();
+    const idx = codes.findIndex(c => c.code.toUpperCase() === clean);
+    if (idx !== -1) {
+      codes.splice(idx, 1);
+      this.saveData();
+      return true;
+    }
+    return false;
+  }
+
+  setTechnicianCodeForUser(account, code) {
+    const acc = String(account).toLowerCase().trim();
+    if (!this.data.users[acc]) {
+      this.data.users[acc] = {
+        userType: 2,
+        roleName: 'Thợ Lắp Đặt / Đại Lý (Installer)',
+        userName: account,
+        createdAt: new Date().toISOString()
+      };
+    }
+    const cleanCode = String(code).trim().toUpperCase();
+    this.data.users[acc].technicianCode = cleanCode;
+    this.data.users[acc].userType = 2;
+    this.data.users[acc].roleName = 'Thợ Lắp Đặt / Đại Lý (Installer)';
+    this.saveData();
+    return cleanCode;
+  }
+
+  getTechnicianCodeForUser(account) {
+    const acc = String(account).toLowerCase().trim();
+    return this.data.users[acc]?.technicianCode || null;
+  }
+
+  save() {
+    return this.saveData();
+  }
+}
+
+module.exports = new DeviceOwnershipService();

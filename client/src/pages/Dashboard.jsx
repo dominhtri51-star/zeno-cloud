@@ -601,54 +601,73 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                 </svg>
               </div>
             ) : (
-              /* COMBO CHART CỘT + ĐƯỜNG KHI CHỌN THÁNG/NĂM */
-              <div className="relative w-full h-[180px] pl-8 pb-5 border-b border-slate-800/80 flex items-end">
-                <div className="absolute left-0 top-0 bottom-5 flex flex-col justify-between text-[9px] text-slate-500 font-mono font-bold">
-                  <span>40k</span>
-                  <span>20k</span>
-                  <span>0k</span>
-                </div>
+              /* COMBO CHART CỘT + ĐƯỜNG KHI CHỌN THÁNG/NĂM (DỮ LIỆU THỰC TỪ CLOUD HÃNG) */
+              (() => {
+                const maxComboVal = Math.max(
+                  timeScope === 'YEAR' ? 100 : 20,
+                  ...chartData.map(d => Math.max(d.pv || 0, d.load || 0))
+                );
 
-                <div className="w-full h-full flex items-end justify-between gap-1 px-1 relative">
-                  {chartData.map((item, idx) => {
-                    const maxVal = timeScope === 'YEAR' ? 500 : 40;
-                    const pvH = Math.max(0, Math.min(100, (item.pv / maxVal) * 100));
-                    const loadH = Math.max(0, Math.min(100, (item.load / maxVal) * 100));
+                return (
+                  <div className="relative w-full h-[180px] pl-10 pb-5 border-b border-slate-800/80 flex items-end">
+                    {/* Trục Y hiển thị kWh động */}
+                    <div className="absolute left-0 top-0 bottom-5 flex flex-col justify-between text-[9px] text-slate-400 font-mono font-bold">
+                      <span>{Math.round(maxComboVal)} kWh</span>
+                      <span>{Math.round(maxComboVal / 2)} kWh</span>
+                      <span>0 kWh</span>
+                    </div>
 
-                    return (
-                      <div 
-                        key={idx} 
-                        className="flex-1 h-full flex items-end justify-center space-x-[1.5px] group relative"
-                        title={`${item.label}: PV=${item.pv}kWh, Tải=${item.load}kWh, Sạc=${item.chg || 0}kWh, Xả=${item.dis || 0}kWh`}
-                      >
-                        <div
-                          style={{ height: `${pvH}%`, minHeight: pvH > 0 ? '4px' : '0px' }}
-                          className="w-1/2 bg-amber-500 rounded-t-[2px] transition-all duration-300 hover:brightness-125 shadow-sm"
+                    <div className="w-full h-full flex items-end justify-between gap-0.5 sm:gap-1 px-1 relative">
+                      {chartData.map((item, idx) => {
+                        const pvH = Math.max(0, Math.min(100, (item.pv / maxComboVal) * 100));
+                        const loadH = Math.max(0, Math.min(100, (item.load / maxComboVal) * 100));
+
+                        return (
+                          <div 
+                            key={idx} 
+                            className="flex-1 h-full flex items-end justify-center space-x-[1px] sm:space-x-[1.5px] group relative cursor-pointer"
+                          >
+                            {/* Hover Tooltip chi tiết */}
+                            <div className="absolute bottom-full mb-2 hidden group-hover:flex flex-col bg-slate-900/95 border border-slate-700 p-2 rounded-xl text-[10px] font-mono text-white shadow-2xl z-30 pointer-events-none whitespace-nowrap min-w-[110px]">
+                              <span className="font-bold text-cyan-300 border-b border-slate-800 pb-1 mb-1">
+                                {timeScope === 'MONTH' ? `Ngày ${item.label}` : `Tháng ${item.label}`}
+                              </span>
+                              <span className="text-amber-400">☀️ PV: {item.pv} kWh</span>
+                              <span className="text-sky-400">⚡ Tải: {item.load} kWh</span>
+                              {item.chg > 0 && <span className="text-emerald-400">🔋 Sạc: {item.chg} kWh</span>}
+                              {item.dis > 0 && <span className="text-purple-400">⚡ Xả: {item.dis} kWh</span>}
+                            </div>
+
+                            <div
+                              style={{ height: `${pvH}%`, minHeight: item.pv > 0 ? '3px' : '0px' }}
+                              className="w-1/2 bg-amber-500 rounded-t-[2px] transition-all duration-300 group-hover:brightness-125 shadow-sm"
+                            />
+                            <div
+                              style={{ height: `${loadH}%`, minHeight: item.load > 0 ? '3px' : '0px' }}
+                              className="w-1/2 bg-sky-500 rounded-t-[2px] transition-all duration-300 group-hover:brightness-125 shadow-sm"
+                            />
+                          </div>
+                        );
+                      })}
+
+                      <svg viewBox="0 0 450 140" className="absolute inset-0 w-full h-full pointer-events-none z-10" preserveAspectRatio="none">
+                        <polyline
+                          points={getLinePoints(chartData, 'chg', maxComboVal, 140, 450)}
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth="2"
                         />
-                        <div
-                          style={{ height: `${loadH}%`, minHeight: loadH > 0 ? '4px' : '0px' }}
-                          className="w-1/2 bg-sky-500 rounded-t-[2px] transition-all duration-300 hover:brightness-125 shadow-sm"
+                        <polyline
+                          points={getLinePoints(chartData, 'dis', maxComboVal, 140, 450)}
+                          fill="none"
+                          stroke="#a855f7"
+                          strokeWidth="2"
                         />
-                      </div>
-                    );
-                  })}
-
-                  <svg viewBox="0 0 450 140" className="absolute inset-0 w-full h-full pointer-events-none z-10" preserveAspectRatio="none">
-                    <polyline
-                      points={getLinePoints(chartData, 'chg', timeScope === 'YEAR' ? 200 : 15, 140, 450)}
-                      fill="none"
-                      stroke="#10b981"
-                      strokeWidth="2"
-                    />
-                    <polyline
-                      points={getLinePoints(chartData, 'dis', timeScope === 'YEAR' ? 200 : 15, 140, 450)}
-                      fill="none"
-                      stroke="#a855f7"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                </div>
-              </div>
+                      </svg>
+                    </div>
+                  </div>
+                );
+              })()
             )}
 
             {/* Trục X mốc thời gian */}

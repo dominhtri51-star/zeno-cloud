@@ -215,57 +215,56 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
   return (
     <div className="max-w-7xl mx-auto space-y-5 font-['Plus_Jakarta_Sans',sans-serif] animate-fade-in pb-16 px-2 sm:px-4">
       
-      {/* 0. THANH ĐIỀU HƯỚNG & TIÊU ĐỀ TRẠM TRÊN DESKTOP */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#0b101e] border border-slate-800/90 p-4 rounded-2xl shadow-xl">
-        <div className="flex items-center gap-3">
+      {/* 0. THANH ĐIỀU HƯỚNG & TIÊU ĐỀ TRẠM */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 bg-[#0b101e] border border-slate-800/90 p-3 sm:p-4 rounded-2xl shadow-xl">
+        <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
           {onNavigate && (
             <button
               onClick={() => onNavigate('stations')}
-              className="flex items-center space-x-1.5 text-xs font-bold text-slate-300 hover:text-cyan-300 transition py-1.5 px-3 rounded-xl bg-slate-800 border border-slate-700 shadow-sm cursor-pointer"
+              className="flex items-center space-x-1 sm:space-x-1.5 text-[11px] sm:text-xs font-bold text-slate-300 hover:text-cyan-300 transition py-1 sm:py-1.5 px-2 sm:px-3 rounded-xl bg-slate-800 border border-slate-700 shadow-sm cursor-pointer shrink-0"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>← Giám Sát Trạm & Pin</span>
+              <span>← Trạm & Pin</span>
             </button>
           )}
 
-          <div className="flex items-center space-x-2">
-            <span className="font-extrabold text-white text-base tracking-wide font-mono">
+          <div className="flex items-center space-x-1.5">
+            <span className="font-extrabold text-white text-sm sm:text-base tracking-wide font-mono truncate max-w-[140px] sm:max-w-none">
               {deviceInfo.stationId || 'STATION-01'}
             </span>
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-1.5 sm:gap-3 text-xs">
           {/* Nút Cài Đặt Dự Án Này */}
           <button
             onClick={() => setIsProjectSettingsOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 hover:border-cyan-500/40 transition flex items-center gap-1.5 font-bold cursor-pointer"
+            className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 hover:border-cyan-500/40 transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer"
             title="Cài đặt đơn giá tiền điện, công suất PV và pin lưu trữ riêng của dự án này"
           >
             <Settings className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Cài Đặt Dự Án Này</span>
+            <span>Cài Đặt Dự Án</span>
           </button>
 
-          <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-cyan-400 font-mono font-semibold flex items-center gap-1.5">
-            <Cpu className="w-3.5 h-3.5" />
-            <span>{deviceInfo.deviceName} ({deviceInfo.serialNumber})</span>
+          <span className="px-2 py-0.5 sm:py-1 rounded-lg bg-slate-900 border border-slate-800 text-cyan-400 font-mono font-semibold flex items-center gap-1 text-[10px] sm:text-xs max-w-[180px] sm:max-w-none truncate">
+            <Cpu className="w-3 h-3 shrink-0" />
+            <span className="truncate">{deviceInfo.deviceName} ({deviceInfo.serialNumber})</span>
           </span>
 
-          <span className="text-slate-400 font-medium flex items-center gap-1.5">
+          <span className="text-slate-400 font-medium flex items-center gap-1 text-[10px] sm:text-xs">
             <span className="text-emerald-400 font-mono font-bold">🔴 {liveClock}</span>
-            <span className="hidden md:inline">• {deviceInfo.stationName}</span>
           </span>
         </div>
       </div>
 
       {/* 1. KHUNG BỐ CỤC 2 CỘT HIỆN ĐẠI DÀNH CHO MÁY TÍNH & TABLET */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
         
         {/* ================= CỘT TRÁI (COL-7): SƠ ĐỒ TOPOLOGY & CẢM BIẾN REALTIME ================= */}
-        <div className="lg:col-span-7 space-y-5">
+        <div className="lg:col-span-7 space-y-4 sm:space-y-5">
           
-          {/* SƠ ĐỒ NĂNG LƯỢNG VỚI INVERTER VÀ 5 THẺ TRẮNG KHÔNG BỊ CHE KHUẤT */}
+          {/* SƠ ĐỒ NĂNG LƯỢNG VỚI INVERTER VÀ 5 THẺ TRẮNG */}
           <InteractiveTopology
             pvPower={flowData.pvPower}
             pv1Power={flowData.pv1Power}
@@ -282,29 +281,29 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
           />
 
           {/* 3 THẺ ĐO ĐẠC SENSOR THỜI GIAN THỰC */}
-          <div className="grid grid-cols-3 gap-3.5">
-            <div className="bg-[#0b101e] border border-slate-800/90 py-4 px-3 rounded-2xl text-center shadow-lg transition-all hover:border-emerald-500/40">
-              <span className="text-[11px] text-slate-400 block font-bold uppercase tracking-wider">ĐIỆN ÁP PIN</span>
-              <span className="text-xl sm:text-2xl font-black text-emerald-400 font-mono mt-1 block">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3.5">
+            <div className="bg-[#0b101e] border border-slate-800/90 py-2.5 sm:py-4 px-1.5 sm:px-3 rounded-xl sm:rounded-2xl text-center shadow-lg transition-all hover:border-emerald-500/40">
+              <span className="text-[9px] sm:text-[11px] text-slate-400 block font-bold uppercase tracking-wider truncate">ĐIỆN ÁP PIN</span>
+              <span className="text-sm sm:text-2xl font-black text-emerald-400 font-mono mt-0.5 sm:mt-1 block">
                 {flowData.batteryVoltage} V
               </span>
-              <span className="text-[10px] text-slate-500 font-mono">Dung lượng: {flowData.batterySoc}%</span>
+              <span className="text-[8px] sm:text-[10px] text-slate-500 font-mono block truncate">Pin: {flowData.batterySoc}%</span>
             </div>
             
-            <div className="bg-[#0b101e] border border-slate-800/90 py-4 px-3 rounded-2xl text-center shadow-lg transition-all hover:border-cyan-500/40">
-              <span className="text-[11px] text-slate-400 block font-bold uppercase tracking-wider">ĐIỆN ÁP LƯỚI</span>
-              <span className="text-xl sm:text-2xl font-black text-cyan-400 font-mono mt-1 block">
+            <div className="bg-[#0b101e] border border-slate-800/90 py-2.5 sm:py-4 px-1.5 sm:px-3 rounded-xl sm:rounded-2xl text-center shadow-lg transition-all hover:border-cyan-500/40">
+              <span className="text-[9px] sm:text-[11px] text-slate-400 block font-bold uppercase tracking-wider truncate">ĐIỆN ÁP LƯỚI</span>
+              <span className="text-sm sm:text-2xl font-black text-cyan-400 font-mono mt-0.5 sm:mt-1 block">
                 {flowData.gridVoltage} V
               </span>
-              <span className="text-[10px] text-slate-500 font-mono">Tần số: 50.0 Hz</span>
+              <span className="text-[8px] sm:text-[10px] text-slate-500 font-mono block truncate">Tần số: 50Hz</span>
             </div>
 
-            <div className="bg-[#0b101e] border border-slate-800/90 py-4 px-3 rounded-2xl text-center shadow-lg transition-all hover:border-amber-500/40">
-              <span className="text-[11px] text-slate-400 block font-bold uppercase tracking-wider">NHIỆT ĐỘ MÁY</span>
-              <span className="text-xl sm:text-2xl font-black text-amber-400 font-mono mt-1 block">
+            <div className="bg-[#0b101e] border border-slate-800/90 py-2.5 sm:py-4 px-1.5 sm:px-3 rounded-xl sm:rounded-2xl text-center shadow-lg transition-all hover:border-amber-500/40">
+              <span className="text-[9px] sm:text-[11px] text-slate-400 block font-bold uppercase tracking-wider truncate">NHIỆT ĐỘ</span>
+              <span className="text-sm sm:text-2xl font-black text-amber-400 font-mono mt-0.5 sm:mt-1 block">
                 {flowData.temperature}°C
               </span>
-              <span className="text-[10px] text-slate-500 font-mono">Tản nhiệt tối ưu</span>
+              <span className="text-[8px] sm:text-[10px] text-slate-500 font-mono block truncate">Tản nhiệt tốt</span>
             </div>
           </div>
         </div>

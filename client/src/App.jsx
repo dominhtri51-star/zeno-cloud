@@ -14,7 +14,7 @@ import Login from './pages/Login';
 
 function MainApp() {
   const { isAuthenticated, user } = useAuth();
-  const [currentPage, setCurrentPage] = useState('stations');
+  const [currentPage, setCurrentPage] = useState('dashboard');
   const [selectedDeviceContext, setSelectedDeviceContext] = useState({
     stationId: null,
     deviceId: null

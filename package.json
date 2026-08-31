@@ -1,13 +1,14 @@
 {
   "name": "zeno-solar-platform",
   "version": "1.0.0",
-  "description": "Zeno - Nền tảng Quản lý Đại lý & Khách hàng Năng lượng Mặt Trời (Tích hợp SUN WISE / Siseli API)",
+  "description": "Zeno Cloud - Nền tảng Quản lý Đại lý & Khách hàng Năng lượng Mặt Trời",
   "scripts": {
+    "build": "cd client && npm install && npm run build && cd ../server && npm install",
+    "start": "cd server && node src/server.js",
     "install:all": "cd server && npm install && cd ../client && npm install",
     "build:client": "cd client && npm run build",
     "server": "cd server && npm start",
-    "dev:client": "cd client && npm run dev",
-    "start": "cd server && npm start"
+    "dev:client": "cd client && npm run dev"
   },
   "keywords": ["solar", "sunwise", "siseli", "dealer", "portal", "bms"],
   "author": "Zeno Tech Team",

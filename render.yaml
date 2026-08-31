@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: zeno-cloud
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 18.18.0
+      - key: SISELI_BASE_URL
+        value: https://bha-solar.pages.dev/api
+      - key: PORT
+        value: 10000

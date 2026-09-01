@@ -5,6 +5,7 @@ const { pool } = require('../db');
 const siseliClient = require('../siseliClient');
 const deviceOwnership = require('../services/deviceOwnership');
 const liveCloud = require('../services/liveCloud');
+const config = require('../config');
 
 // 1. Đăng ký tài khoản người dùng mới (Lưu vào PostgreSQL + DeviceOwnership + Auto-Link Inverter)
 router.post('/register', async (req, res) => {
@@ -557,8 +558,8 @@ router.post('/send-recovery-otp', async (req, res) => {
 
     const isEmail = targetEmailOrPhone.includes('@');
     const endpoint = isEmail 
-      ? 'https://bha-solar.pages.dev/api/user/send/email/captcha' 
-      : 'https://bha-solar.pages.dev/api/user/send/sms/captcha';
+      ? `${config.siseli.baseUrl}/user/send/email/captcha` 
+      : `${config.siseli.baseUrl}/user/send/sms/captcha`;
 
     console.log(`[Cloud Recovery OTP] Đang gửi yêu cầu OTP quên mật khẩu tới Server Hãng cho [${targetEmailOrPhone}] (intent: 1)`);
 
@@ -648,7 +649,7 @@ router.post('/verify-recovery-otp', async (req, res) => {
 
     let cloudResetOk = false;
     try {
-      const resetRes = await axios.post('https://bha-solar.pages.dev/api/user/reset/password', {
+      const resetRes = await axios.post(`${config.siseli.baseUrl}/user/reset/password`, {
         account: targetAccount,
         newPassword: cleanPass,
         captchaId: finalCaptchaId,
@@ -884,7 +885,7 @@ router.post('/send-cloud-otp', async (req, res) => {
 
     console.log(`[Sunwise Cloud OTP] Đang yêu cầu Server Hãng gửi OTP về: ${targetEmail}`);
 
-    const cloudRes = await axios.post('https://bha-solar.pages.dev/api/user/send/email/captcha', {
+    const cloudRes = await axios.post(`${config.siseli.baseUrl}/user/send/email/captcha`, {
       address: targetEmail,
       intent: 0
     }, { headers, timeout: 10000 });
@@ -975,7 +976,7 @@ router.post('/register-sunwise', async (req, res) => {
 
     let cloudToken = null;
     try {
-      const cloudRes = await axios.post('https://bha-solar.pages.dev/api/user/register/email', regPayload, { headers, timeout: 12000 });
+      const cloudRes = await axios.post(`${config.siseli.baseUrl}/user/register/email`, regPayload, { headers, timeout: 12000 });
 
       if (cloudRes.data && cloudRes.data.code !== 0 && cloudRes.data.code !== 20002) {
         return res.status(400).json({
@@ -995,7 +996,7 @@ router.post('/register-sunwise', async (req, res) => {
 
     // Tự động đăng nhập vào Server Hãng với tài khoản vừa tạo để lấy Token Hãng thật
     try {
-      const loginRes = await axios.post('https://bha-solar.pages.dev/api/login/account', {
+      const loginRes = await axios.post(`${config.siseli.baseUrl}/login/account`, {
         account: acc,
         password: cleanPass
       }, { headers, timeout: 8000 });

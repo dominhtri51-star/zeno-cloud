@@ -10,6 +10,6 @@ services:
       - key: NODE_VERSION
         value: 18.18.0
       - key: SISELI_BASE_URL
-        value: https://bha-solar.pages.dev/api
+        value: https://solar.siseli.com/apis
       - key: PORT
         value: 10000

@@ -1,7 +1,7 @@
 module.exports = {
   port: process.env.PORT || 4000,
   siseli: {
-    baseUrl: process.env.SISELI_BASE_URL || 'https://bha-solar.pages.dev/api',
+    baseUrl: process.env.SISELI_BASE_URL || 'https://solar.siseli.com/apis',
     directCloudUrl: 'https://solar.siseli.com/apis',
     timeout: 15000,
     headers: {

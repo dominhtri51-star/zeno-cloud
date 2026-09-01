@@ -68,9 +68,8 @@ function normalizeRecordToKw(p) {
 
 class LiveCloudService {
   constructor() {
-    // Cổng Gateway ký sẵn IOT-Open-AppID & X-Helios-Provider
+    // Kết nối trực tiếp máy chủ Cloud Hãng Siseli / SUN WISE
     this.endpoints = [
-      'https://bha-solar.pages.dev/api',
       'https://solar.siseli.com/apis'
     ];
     this.activeEndpointIndex = 0;

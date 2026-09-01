@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sun, Zap, Battery, Shield, Gauge, Calendar,
   ChevronDown, ArrowLeft, RefreshCw, Activity, DollarSign, TrendingUp, Cpu, Settings,
-  Boxes, Layers, CheckCircle2, ArrowRight, Menu, CloudSun, Home, SlidersHorizontal, Sparkles
+  Home, CloudSun
 } from 'lucide-react';
 import InteractiveTopology from '../components/InteractiveTopology';
 import api, { monitoringService, authService } from '../services/api';
@@ -14,8 +14,6 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
   const { user } = useAuth();
   const { isDark } = useTheme();
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
-  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
-  const settingsMenuRef = useRef(null);
   
   // Bộ lọc thời gian: DAY (Ngày) | MONTH (Tháng) | YEAR (Năm)
   const [timeScope, setTimeScope] = useState('DAY'); 
@@ -24,15 +22,16 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
   const [selectedYear, setSelectedYear] = useState('2026');
   const [liveClock, setLiveClock] = useState(new Date().toLocaleTimeString('vi-VN'));
 
-  // ================= CHẾ ĐỘ XEM BIẾN TẦN (MẶC ĐỊNH LÀ 1 BIẾN TẦN CHẠY ĐỘC LẬP) =================
-  // fleetMode: 'SINGLE' (Mặc định: 1 Biến tần độc lập) | 'AGGREGATED' (Xem gộp trạm) | 'INV_1' | 'INV_2' | 'INV_3'
-  const [fleetMode, setFleetMode] = useState('SINGLE');
-  // clusterType: '3PHASE' (Điện 3 Pha L1-L2-L3) | '1PHASE_PARALLEL' (1 Pha Song Song Mở Rộng Công Suất)
-  const [clusterType, setClusterType] = useState('3PHASE');
-
-  // Danh sách các trạm để chọn nhanh
-  const [stationList, setStationList] = useState([]);
-  const [selectedStationId, setSelectedStationId] = useState(initialStationId || '');
+  // Line Chart Toggles cho chế độ Ngày (DAY)
+  const [lineToggles, setLineToggles] = useState({
+    pv: true,
+    load: true,
+    backup: true,
+    chg: true,
+    dis: true,
+    grid: true,
+    soc: true
+  });
 
   // Thông tin trạm & thiết bị động từ Cloud
   const [deviceInfo, setDeviceInfo] = useState({
@@ -42,6 +41,9 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
     serialNumber: '3528214760-1',
     dtuCode: '35282147608648059097'
   });
+
+  const [userStations, setUserStations] = useState([]);
+  const [selectedStationId, setSelectedStationId] = useState(initialStationId || '');
 
   // Live Energy Flow & Sensor State
   const [flowData, setFlowData] = useState({
@@ -83,34 +85,6 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
   const [chartData, setChartData] = useState([]);
   const [loadingStats, setLoadingStats] = useState(false);
 
-  // Đóng dropdown khi click ra ngoài
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target)) {
-        setIsSettingsMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Tải danh sách trạm phục vụ chọn nhanh trạm
-  useEffect(() => {
-    fetchStationList();
-  }, [user]);
-
-  const fetchStationList = async () => {
-    try {
-      const res = await monitoringService.getMergedStations();
-      const list = res?.stations || res?.data || (Array.isArray(res) ? res : []);
-      if (Array.isArray(list) && list.length > 0) {
-        setStationList(list);
-      }
-    } catch (e) {
-      console.warn('Lỗi tải danh sách trạm:', e.message);
-    }
-  };
-
   // Đồng bộ lại selectedStationId khi người dùng bấm chọn trạm/thiết bị khác từ ngoài vào
   useEffect(() => {
     if (initialStationId) {
@@ -122,6 +96,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
   useEffect(() => {
     const targetId = selectedStationId || initialStationId;
     
+    // Tự động làm mới Token Cloud khi vào xem trạm / máy
     authService.refreshToken(user?.account).then(res => {
       if (res?.token) localStorage.setItem('zeno_token', res.token);
     }).catch(() => null);
@@ -189,6 +164,9 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
           serialNumber: sn,
           dtuCode: dtu
         });
+        if (d.allUserStations && Array.isArray(d.allUserStations)) {
+          setUserStations(d.allUserStations);
+        }
       }
     } catch (e) {
       console.warn('Lỗi đọc luồng viễn trắc:', e.message);
@@ -223,6 +201,24 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
     }
   };
 
+  // Tính toán đỉnh công suất max cho trục Y
+  const maxKw = Math.max(
+    3.0,
+    ...chartData.map(d => Math.max(d.pv || 0, d.load || 0, d.chg || 0, d.dis || 0, d.backup || 0, d.grid || 0))
+  );
+
+  // Helper tính chuỗi tọa độ SVG cho chế độ Line Chart 24h
+  const getLinePoints = (dataArr, key, maxVal, height = 140, width = 450) => {
+    if (!dataArr || dataArr.length === 0) return '';
+    const step = width / Math.max(1, dataArr.length - 1);
+    return dataArr.map((item, idx) => {
+      const x = idx * step;
+      const val = parseFloat(item[key]) || 0;
+      const y = height - (Math.min(maxVal, Math.max(0, val)) / maxVal) * height;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+  };
+
   const currentStationId = selectedStationId || initialStationId || deviceInfo.stationId || 'ST-001';
 
   // Đơn giá tiền điện riêng của từng trạm/dự án
@@ -247,553 +243,85 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
   // Ước tính tiền điện tiết kiệm dựa theo đơn giá riêng của trạm này
   const estimatedSavings = Math.round((energyStats.pvEnergy || 0) * electricityPrice);
 
-  // ================= TÌM TRẠM HIỆN TẠI & THIẾT BỊ THUỘC TRẠM ĐÓ =================
-  const currentStation = useMemo(() => {
-    const targetId = selectedStationId || initialStationId || deviceInfo.stationId;
-    return stationList.find(st => String(st.stationId) === String(targetId)) || {
-      stationId: deviceInfo.stationId,
-      stationName: deviceInfo.stationName,
-      devices: [
-        {
-          deviceId: deviceInfo.serialNumber,
-          deviceName: deviceInfo.deviceName,
-          serialNumber: deviceInfo.serialNumber,
-          dtuCode: deviceInfo.dtuCode,
-          isOnline: true
-        }
-      ]
-    };
-  }, [stationList, selectedStationId, initialStationId, deviceInfo]);
-
-  // ================= TÍNH TOÁN DANH SÁCH BIẾN TẦN TRONG TRẠM (CHỈ GỘP TRONG TRẠM ĐÓ) =================
-  const invertersFleet = useMemo(() => {
-    const basePv = flowData.pvPower || 0;
-    const baseLoad = flowData.loadPower || 0;
-    const baseBat = flowData.batteryPower || 0;
-    const baseGrid = flowData.gridPower || 0;
-
-    // Lấy danh sách thiết bị thật thuộc trạm này
-    const realDevices = Array.isArray(currentStation?.devices) && currentStation.devices.length > 0
-      ? currentStation.devices
-      : [
-          {
-            deviceId: deviceInfo.serialNumber || '3528214760-1',
-            deviceName: deviceInfo.deviceName || 'Inverter #1',
-            serialNumber: deviceInfo.serialNumber || '3528214760-1',
-            dtuCode: deviceInfo.dtuCode || '35282147608648059097',
-            isOnline: true
-          }
-        ];
-
-    // Nếu trạm có nhiều thiết bị thật (ví dụ trạm có 2 hoặc 3 máy lắp song song / 3 pha)
-    if (realDevices.length > 1) {
-      const phases = ['Pha A (L1)', 'Pha B (L2)', 'Pha C (L3)'];
-      return realDevices.map((dev, idx) => ({
-        id: `INV_${idx + 1}`,
-        deviceId: dev.deviceId || dev.serialNumber,
-        name: dev.deviceName || `Biến Tần #${idx + 1}`,
-        roleLabel: idx === 0 ? `Master (${phases[idx % 3]})` : `Slave ${idx} (${phases[idx % 3]})`,
-        serialNumber: dev.serialNumber || `${deviceInfo.serialNumber}-${idx + 1}`,
-        dtuCode: dev.dtuCode || deviceInfo.dtuCode,
-        pvPower: Math.round(basePv * (idx === 0 ? 0.38 : idx === 1 ? 0.33 : 0.29)),
-        loadPower: Math.round(baseLoad * (idx === 0 ? 0.36 : idx === 1 ? 0.33 : 0.31)),
-        batteryPower: Math.round(baseBat * (idx === 0 ? 0.35 : idx === 1 ? 0.33 : 0.32)),
-        batterySoc: Math.max(90, (flowData.batterySoc || 100) - idx),
-        batteryVoltage: Number(((flowData.batteryVoltage || 51.8) - idx * 0.1).toFixed(1)),
-        batteryCapacity: '10.0 kWh',
-        gridVoltage: Number(((flowData.gridVoltage || 229.0) + (idx === 1 ? 0.9 : idx === 2 ? -0.4 : 0.2)).toFixed(1)),
-        gridPower: Math.round(baseGrid * (idx === 0 ? 0.36 : idx === 1 ? 0.33 : 0.31)),
-        temperature: flowData.temperature ? Number((flowData.temperature - idx * 0.4).toFixed(1)) : 38.5,
-        isOnline: dev.isOnline !== undefined ? dev.isOnline : true,
-        phase: phases[idx % 3]
-      }));
-    }
-
-    // Nếu trạm có 1 thiết bị thật (Mặc định phổ biến)
-    const primaryDev = realDevices[0];
-    const baseSn = primaryDev.serialNumber || deviceInfo.serialNumber || '3528214760-1';
-    const prefix = baseSn.split('-')[0] || baseSn;
-
-    return [
-      {
-        id: 'SINGLE',
-        deviceId: primaryDev.deviceId || baseSn,
-        name: primaryDev.deviceName || 'Biến Tần Độc Lập',
-        roleLabel: 'Đơn Lẻ (Chạy Độc Lập)',
-        serialNumber: baseSn,
-        dtuCode: primaryDev.dtuCode || deviceInfo.dtuCode || '35282147608648059097',
-        pvPower: basePv,
-        loadPower: baseLoad,
-        batteryPower: baseBat,
-        batterySoc: flowData.batterySoc || 100,
-        batteryVoltage: flowData.batteryVoltage || 51.8,
-        batteryCapacity: '10.0 kWh',
-        gridVoltage: flowData.gridVoltage || 229.0,
-        gridPower: baseGrid,
-        temperature: flowData.temperature || 38.9,
-        isOnline: true,
-        phase: '1 Pha (220V)'
-      },
-      {
-        id: 'INV_2',
-        deviceId: `${prefix}-2`,
-        name: 'Biến Tần #2',
-        roleLabel: 'Slave 1 (Pha B / L2)',
-        serialNumber: `${prefix}-2`,
-        dtuCode: `${prefix}8800000002`,
-        pvPower: Math.round(basePv * 0.33),
-        loadPower: Math.round(baseLoad * 0.33),
-        batteryPower: Math.round(baseBat * 0.33),
-        batterySoc: 98,
-        batteryVoltage: 51.6,
-        batteryCapacity: '10.0 kWh',
-        gridVoltage: 230.1,
-        gridPower: Math.round(baseGrid * 0.33),
-        temperature: flowData.temperature ? Number((flowData.temperature - 0.5).toFixed(1)) : 38.4,
-        isOnline: true,
-        phase: 'Pha B (L2)'
-      },
-      {
-        id: 'INV_3',
-        deviceId: `${prefix}-3`,
-        name: 'Biến Tần #3',
-        roleLabel: 'Slave 2 (Pha C / L3)',
-        serialNumber: `${prefix}-3`,
-        dtuCode: `${prefix}8800000003`,
-        pvPower: Math.round(basePv * 0.29),
-        loadPower: Math.round(baseLoad * 0.31),
-        batteryPower: Math.round(baseBat * 0.32),
-        batterySoc: 99,
-        batteryVoltage: 51.7,
-        batteryCapacity: '10.0 kWh',
-        gridVoltage: 228.8,
-        gridPower: Math.round(baseGrid * 0.31),
-        temperature: flowData.temperature ? Number((flowData.temperature - 0.8).toFixed(1)) : 38.1,
-        isOnline: true,
-        phase: 'Pha C (L3)'
-      }
-    ];
-  }, [flowData, deviceInfo, currentStation]);
-
-  // Viễn trắc thực tế hiển thị trên Topology theo Chế độ Xem Độc Lập hoặc Xem Gộp
-  const activeFlowData = useMemo(() => {
-    // 1. MẶC ĐỊNH: Chế độ 1 Biến Tần Chạy Độc Lập
-    if (fleetMode === 'SINGLE' || fleetMode === 'STANDALONE') {
-      return {
-        ...flowData,
-        backupPower: flowData.backupPower,
-        totalStorage: '10.0 kWh'
-      };
-    }
-
-    // 2. Khi người dùng tích chọn XEM GỘP TOÀN TRẠM
-    if (fleetMode === 'AGGREGATED') {
-      const isMultiReal = currentStation?.devices && currentStation.devices.length > 1;
-      return {
-        ...flowData,
-        pvPower: isMultiReal ? invertersFleet.reduce((acc, i) => acc + i.pvPower, 0) : flowData.pvPower,
-        loadPower: isMultiReal ? invertersFleet.reduce((acc, i) => acc + i.loadPower, 0) : flowData.loadPower,
-        batteryPower: isMultiReal ? invertersFleet.reduce((acc, i) => acc + i.batteryPower, 0) : flowData.batteryPower,
-        gridPower: isMultiReal ? invertersFleet.reduce((acc, i) => acc + i.gridPower, 0) : flowData.gridPower,
-        batterySoc: Math.round(invertersFleet.reduce((acc, i) => acc + i.batterySoc, 0) / invertersFleet.length),
-        backupPower: flowData.backupPower,
-        totalStorage: `${(invertersFleet.length * 10).toFixed(1)} kWh`
-      };
-    }
-
-    // 3. Khi người dùng chọn xem 1 máy cụ thể (INV_1, INV_2, INV_3)
-    const inv = invertersFleet.find(i => i.id === fleetMode) || invertersFleet[0];
-    return {
-      pvPower: inv.pvPower,
-      pv1Power: Math.round(inv.pvPower * 0.5),
-      pv2Power: Math.round(inv.pvPower * 0.5),
-      pv1Voltage: flowData.pv1Voltage || 360.5,
-      pv1Current: Number((inv.pvPower / 2 / (flowData.pv1Voltage || 360.5)).toFixed(2)),
-      pv2Voltage: flowData.pv2Voltage || 362.0,
-      pv2Current: Number((inv.pvPower / 2 / (flowData.pv2Voltage || 362.0)).toFixed(2)),
-      gridPower: inv.gridPower,
-      gridVoltage: inv.gridVoltage,
-      gridFreq: 50.0,
-      gridCurrent: Number((Math.abs(inv.gridPower) / inv.gridVoltage).toFixed(2)),
-      batteryPower: inv.batteryPower,
-      batterySoc: inv.batterySoc,
-      batteryVoltage: inv.batteryVoltage,
-      batteryCurrent: Number((Math.abs(inv.batteryPower) / inv.batteryVoltage).toFixed(1)),
-      batteryTemp: 34,
-      backupPower: Math.round((flowData.backupPower || 0) / (invertersFleet.length || 3)),
-      backupVoltage: 228.5,
-      backupCurrent: 0,
-      loadPower: inv.loadPower,
-      loadCurrent: Number((inv.loadPower / inv.gridVoltage).toFixed(2)),
-      temperature: inv.temperature,
-      tempF: Math.round(inv.temperature * 1.8 + 32)
-    };
-  }, [fleetMode, flowData, invertersFleet, currentStation]);
-
   return (
     <div className="max-w-7xl mx-auto space-y-4 sm:space-y-5 font-['Plus_Jakarta_Sans',sans-serif] animate-fade-in pb-16 px-2 sm:px-4">
       
-      {/* 0. THANH ĐIỀU KHIỂN NHANH TRẠM & CHẾ ĐỘ XEM GỘP CỤM BIẾN TẦN / 3 PHA */}
-      <div className={`flex flex-col gap-3 ${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-xl transition-colors duration-300`}>
-        
-        {/* Hàng 1: Chọn Nhanh Trạm & Điều Hướng */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            {onNavigate && (
-              <button
-                onClick={() => onNavigate('stations')}
-                className={`flex items-center space-x-1 sm:space-x-1.5 text-[11px] sm:text-xs font-bold transition py-1.5 px-3 rounded-xl border shadow-sm cursor-pointer shrink-0 ${isDark ? 'text-slate-300 hover:text-cyan-300 bg-slate-800 border-slate-700' : 'text-slate-700 hover:text-cyan-600 bg-slate-100 border-slate-200'}`}
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>← Trạm & Pin</span>
-              </button>
-            )}
-
-            {/* BỘ CHỌN NHANH TRẠM (QUICK STATION SELECTOR DROPDOWN) */}
-            <div className="relative flex items-center gap-1.5">
-              <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} hidden xs:inline`}>Trạm:</span>
-              <div className="relative">
-                <select
-                  value={selectedStationId || deviceInfo.stationId}
-                  onChange={(e) => {
-                    setSelectedStationId(e.target.value);
-                    setFleetMode('SINGLE'); // Mặc định chuyển trạm là chạy độc lập 1 biến tần
-                  }}
-                  className={`py-1.5 pl-3 pr-8 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer appearance-none border focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-                    isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'
-                  }`}
-                >
-                  {stationList.length > 0 ? (
-                    stationList.map(st => (
-                      <option key={st.stationId} value={st.stationId}>
-                        {st.stationName} ({st.installedCapacity || `${st.capacityKw || 12} kWp`})
-                      </option>
-                    ))
-                  ) : (
-                    <option value={deviceInfo.stationId}>{deviceInfo.stationName} (12.0 kWp)</option>
-                  )}
-                </select>
-                <ChevronDown className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
-              </div>
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" title="Trực tuyến"></span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs">
-            <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium flex items-center gap-1 text-[10px] sm:text-xs mr-1`}>
-              <span className="text-emerald-500 font-mono font-bold">🔴 {liveClock}</span>
-            </span>
-
-            {/* NÚT 3 GẠCH NGANG (HAMBURGER / OPTIONS MENU) */}
-            <div className="relative" ref={settingsMenuRef}>
-              <button
-                type="button"
-                onClick={() => setIsSettingsMenuOpen(prev => !prev)}
-                className={`p-2 rounded-xl border transition flex items-center justify-center cursor-pointer shadow-sm ${
-                  isSettingsMenuOpen
-                    ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold'
-                    : isDark 
-                      ? 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700 hover:border-cyan-500/50' 
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200 hover:border-cyan-400'
-                }`}
-                title="Tùy chọn & Cài đặt dự án"
-              >
-                <Menu className="w-4 h-4" />
-              </button>
-
-              {/* POPUP DROPDOWN MENU */}
-              {isSettingsMenuOpen && (
-                <div className={`absolute right-0 mt-2 w-56 rounded-2xl border shadow-2xl p-2 z-50 animate-[fadeIn_0.15s_ease-out] font-['Plus_Jakarta_Sans',sans-serif] ${
-                  isDark ? 'bg-slate-900/95 border-slate-700 text-white backdrop-blur-xl' : 'bg-white border-slate-200 text-slate-900 shadow-xl'
-                }`}>
-                  <div className={`px-3 py-2 border-b text-[10px] font-black uppercase tracking-wider ${isDark ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-slate-500'}`}>
-                    Tùy Chọn Bảng Điều Khiển
-                  </div>
-
-                  <div className="py-1 space-y-0.5 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsSettingsMenuOpen(false);
-                        setIsProjectSettingsOpen(true);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition cursor-pointer text-left ${
-                        isDark ? 'hover:bg-slate-800 text-cyan-400' : 'hover:bg-slate-100 text-cyan-700'
-                      }`}
-                    >
-                      <Settings className="w-4 h-4 text-cyan-500" />
-                      <span>Cài Đặt Dự Án & Đơn Giá</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsSettingsMenuOpen(false);
-                        fetchEnergyStats();
-                        fetchTelemetryData();
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition cursor-pointer text-left ${
-                        isDark ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-slate-100 text-slate-700'
-                      }`}
-                    >
-                      <RefreshCw className="w-4 h-4 text-emerald-400" />
-                      <span>Làm Mới Dữ Liệu Viễn Trắc</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Hàng 2: Chọn Chế Độ Xem Độc Lập (Mặc Định) hoặc Xem Gộp Trạm (Song Song / 3 Pha) */}
-        <div className={`pt-2.5 border-t flex flex-col md:flex-row md:items-center justify-between gap-2.5 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-          
-          {/* Nút Chọn: Độc Lập vs Xem Gộp */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-            <span className={`text-[11px] font-bold shrink-0 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Chế độ:</span>
-            
-            {/* NÚT MẶC ĐỊNH: BIẾN TẦN ĐỘC LẬP */}
+      {/* 0. THANH ĐIỀU HƯỚNG & TIÊU ĐỀ TRẠM (ẨN TRÊN MOBILE, BẮT ĐẦU TRỰC TIẾP TỪ SƠ ĐỒ) */}
+      <div className={`hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 ${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border p-3 sm:p-4 rounded-2xl shadow-xl transition-colors duration-300`}>
+        <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
+          {onNavigate && (
             <button
-              type="button"
-              onClick={() => setFleetMode('SINGLE')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
-                fleetMode === 'SINGLE'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-md shadow-emerald-500/20'
-                  : isDark ? 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300'
-              }`}
+              onClick={() => onNavigate('stations')}
+              className={`flex items-center space-x-1 sm:space-x-1.5 text-[11px] sm:text-xs font-bold transition py-1 sm:py-1.5 px-2 sm:px-3 rounded-xl border shadow-sm cursor-pointer shrink-0 ${isDark ? 'text-slate-300 hover:text-cyan-300 bg-slate-800 border-slate-700' : 'text-slate-700 hover:text-cyan-600 bg-slate-100 border-slate-200'}`}
             >
-              <Cpu className="w-3.5 h-3.5" />
-              <span>⚡ Biến Tần Độc Lập (Mặc định)</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>← Trạm & Pin</span>
             </button>
-
-            {/* NÚT XEM GỘP CỤM TRẠM (CHỈ GỘP CÁC THIẾT BỊ TRONG TRẠM NÀY) */}
-            <button
-              type="button"
-              onClick={() => setFleetMode('AGGREGATED')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
-                fleetMode === 'AGGREGATED'
-                  ? 'bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-400 text-slate-950 shadow-md shadow-cyan-500/20'
-                  : isDark ? 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300'
-              }`}
-            >
-              <Boxes className="w-3.5 h-3.5" />
-              <span>➕ Xem Gộp Trạm ({currentStation?.devices?.length || 1} Thiết Bị)</span>
-            </button>
-
-            {/* Nếu trạm có nhiều máy và đang ở chế độ xem máy cụ thể */}
-            {invertersFleet.length > 1 && fleetMode !== 'AGGREGATED' && fleetMode !== 'SINGLE' && invertersFleet.map(inv => (
-              <button
-                key={inv.id}
-                type="button"
-                onClick={() => setFleetMode(inv.id)}
-                className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition cursor-pointer shrink-0 ${
-                  fleetMode === inv.id
-                    ? 'bg-cyan-600 text-white shadow-md'
-                    : isDark ? 'bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800' : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200'
-                }`}
-              >
-                <Cpu className="w-3 h-3" />
-                <span>{inv.name}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Toggle Kiểu Đấu Nối: 1 Pha Song Song vs 3 Pha (CHỈ HIỂN THỊ KHI TÍCH CHỌN XEM GỘP) */}
-          {fleetMode === 'AGGREGATED' && (
-            <div className={`flex items-center gap-1 p-1 rounded-xl border shrink-0 animate-[fadeIn_0.2s_ease-out] ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
-              <span className={`text-[10px] font-bold px-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Kiểu gộp trạm:</span>
-              <button
-                type="button"
-                onClick={() => setClusterType('3PHASE')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition cursor-pointer ${
-                  clusterType === '3PHASE'
-                    ? 'bg-cyan-500 text-slate-950 shadow-sm'
-                    : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                🌐 Điện 3 Pha (L1-L2-L3)
-              </button>
-              <button
-                type="button"
-                onClick={() => setClusterType('1PHASE_PARALLEL')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition cursor-pointer ${
-                  clusterType === '1PHASE_PARALLEL'
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                ⚡ 1 Pha Song Song
-              </button>
-            </div>
           )}
 
+          <div className="flex items-center space-x-1.5">
+            <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} text-sm sm:text-base tracking-wide font-mono truncate max-w-[140px] sm:max-w-none`}>
+              {deviceInfo.stationName || deviceInfo.stationId || 'sungoPlant'}
+            </span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          </div>
         </div>
 
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-1.5 sm:gap-3 text-xs">
+          {/* Nút Cài Đặt Dự Án Này */}
+          <button
+            onClick={() => setIsProjectSettingsOpen(true)}
+            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-cyan-300 border-slate-700 hover:border-cyan-500/40' : 'bg-slate-100 hover:bg-slate-200 text-cyan-700 border-slate-200 hover:border-cyan-400'}`}
+            title="Cài đặt đơn giá tiền điện, công suất PV và pin lưu trữ riêng của dự án này"
+          >
+            <Settings className="w-3.5 h-3.5 text-cyan-500" />
+            <span>Cài Đặt Dự Án</span>
+          </button>
+
+          <span className={`px-2 py-0.5 sm:py-1 rounded-lg border font-mono font-semibold flex items-center gap-1 text-[10px] sm:text-xs max-w-[180px] sm:max-w-none truncate ${isDark ? 'bg-slate-900 border-slate-800 text-cyan-400' : 'bg-slate-100 border-slate-200 text-cyan-700'}`}>
+            <Cpu className="w-3 h-3 shrink-0" />
+            <span className="truncate">{deviceInfo.deviceName} ({deviceInfo.serialNumber})</span>
+          </span>
+
+          <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium flex items-center gap-1 text-[10px] sm:text-xs`}>
+            <span className="text-emerald-500 font-mono font-bold">🔴 {liveClock}</span>
+          </span>
+        </div>
       </div>
 
       {/* 1. KHUNG BỐ CỤC 2 CỘT HIỆN ĐẠI DÀNH CHO MÁY TÍNH & TABLET */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
         
-        {/* ================= CỘT TRÁI (COL-7): SƠ ĐỒ TOPOLOGY & MA TRẬN CỤM BIẾN TẦN ================= */}
-        <div className="lg:col-span-7 space-y-4 sm:space-y-5">
+        {/* ================= CỘT TRÁI (COL-7): SƠ ĐỒ TOPOLOGY & CẢM BIẾN REALTIME ================= */}
+        <div className="lg:col-span-7 space-y-3.5 sm:space-y-4">
           
           {/* SƠ ĐỒ NĂNG LƯỢNG VỚI INVERTER VÀ 5 THẺ KÍNH MỜ TƯƠNG TÁC POPUP */}
           <InteractiveTopology
-            pvPower={activeFlowData.pvPower}
-            pv1Power={activeFlowData.pv1Power}
-            pv2Power={activeFlowData.pv2Power}
-            pv1Voltage={activeFlowData.pv1Voltage}
-            pv1Current={activeFlowData.pv1Current}
-            pv2Voltage={activeFlowData.pv2Voltage}
-            pv2Current={activeFlowData.pv2Current}
-            gridPower={activeFlowData.gridPower}
-            gridVoltage={activeFlowData.gridVoltage}
-            gridFreq={activeFlowData.gridFreq}
-            gridCurrent={activeFlowData.gridCurrent}
-            batteryPower={activeFlowData.batteryPower}
-            batteryVoltage={activeFlowData.batteryVoltage}
-            batteryCurrent={activeFlowData.batteryCurrent}
-            batterySoc={activeFlowData.batterySoc}
-            batteryTemp={activeFlowData.batteryTemp}
-            backupPower={activeFlowData.backupPower}
-            backupVoltage={activeFlowData.backupVoltage}
-            backupCurrent={activeFlowData.backupCurrent}
-            loadPower={activeFlowData.loadPower}
-            loadCurrent={activeFlowData.loadCurrent}
-            temperature={activeFlowData.temperature}
-            tempF={activeFlowData.tempF}
+            pvPower={flowData.pvPower}
+            pv1Power={flowData.pv1Power}
+            pv2Power={flowData.pv2Power}
+            pv1Voltage={flowData.pv1Voltage}
+            pv1Current={flowData.pv1Current}
+            pv2Voltage={flowData.pv2Voltage}
+            pv2Current={flowData.pv2Current}
+            gridPower={flowData.gridPower}
+            gridVoltage={flowData.gridVoltage}
+            gridFreq={flowData.gridFreq}
+            gridCurrent={flowData.gridCurrent}
+            batteryPower={flowData.batteryPower}
+            batteryVoltage={flowData.batteryVoltage}
+            batteryCurrent={flowData.batteryCurrent}
+            batterySoc={flowData.batterySoc}
+            batteryTemp={flowData.batteryTemp}
+            backupPower={flowData.backupPower}
+            backupVoltage={flowData.backupVoltage}
+            backupCurrent={flowData.backupCurrent}
+            loadPower={flowData.loadPower}
+            loadCurrent={flowData.loadCurrent}
+            temperature={flowData.temperature}
+            tempF={flowData.tempF}
             todayPvEnergy={energyStats.pvEnergy.toFixed(2)}
-            fleetMode={fleetMode}
-            clusterType={clusterType}
-            inverters={invertersFleet}
-            totalStorageCapacity={activeFlowData.totalStorage || '10.0 kWh'}
           />
-
-          {/* MA TRẬN PHÂN BỔ BIẾN TẦN & PIN (HIỂN THỊ CHI TIẾT THEO CHẾ ĐỘ ĐỘC LẬP HOẶC XEM GỘP) */}
-          {fleetMode === 'SINGLE' ? (
-            <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border p-4 sm:p-5 rounded-3xl shadow-xl space-y-3.5 transition-colors duration-300`}>
-              <div className="flex items-center justify-between border-b pb-2.5 border-slate-800/80">
-                <div className="flex items-center gap-2">
-                  <Cpu className="w-4 h-4 text-emerald-400" />
-                  <h3 className={`text-xs sm:text-sm font-extrabold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    Thiết Bị Inverter & Pin BMS Trực Tuyến (Chế Độ Độc Lập)
-                  </h3>
-                </div>
-                <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                  ● Trực Tuyến 100%
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
-                <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase font-sans`}>SỐ SERIAL (SN)</span>
-                  <strong className="text-xs sm:text-sm font-black text-cyan-400 mt-1 block truncate">
-                    {currentStation?.devices?.[0]?.serialNumber || deviceInfo.serialNumber}
-                  </strong>
-                  <span className="text-[9px] text-slate-500 block truncate">DTU: {currentStation?.devices?.[0]?.dtuCode || deviceInfo.dtuCode}</span>
-                </div>
-
-                <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase font-sans`}>CÔNG SUẤT PV</span>
-                  <strong className="text-base font-black text-amber-400 mt-1 block">{activeFlowData.pvPower} W</strong>
-                  <span className="text-[9px] text-slate-500 block">PV1: {activeFlowData.pv1Power}W • PV2: {activeFlowData.pv2Power}W</span>
-                </div>
-
-                <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase font-sans`}>PIN BMS (LITHIUM)</span>
-                  <strong className="text-base font-black text-emerald-400 mt-1 block">{activeFlowData.batterySoc}%</strong>
-                  <span className="text-[9px] text-slate-500 block">{activeFlowData.batteryVoltage}V • {activeFlowData.batteryPower}W</span>
-                </div>
-
-                <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase font-sans`}>LƯỚI & TẢI NHÀ</span>
-                  <strong className="text-base font-black text-cyan-400 mt-1 block">{activeFlowData.loadPower} W</strong>
-                  <span className="text-[9px] text-slate-500 block">Lưới: {activeFlowData.gridVoltage}V • 50Hz</span>
-                </div>
-              </div>
-
-              <div className={`flex flex-col sm:flex-row items-center justify-between gap-2 p-2.5 rounded-2xl ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-100/80 border-slate-200'} border`}>
-                <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'} flex items-center gap-1.5`}>
-                  <Boxes className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                  <span>Trạm có 3 biến tần đấu song song hoặc tạo điện 3 pha?</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setFleetMode('AGGREGATED')}
-                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 text-slate-950 font-black text-[11px] shadow transition cursor-pointer shrink-0"
-                >
-                  ➕ Bật Chế Độ Xem Gộp Toàn Trạm →
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border p-4 sm:p-5 rounded-3xl shadow-xl space-y-3.5 transition-colors duration-300`}>
-              <div className="flex items-center justify-between border-b pb-2.5 border-slate-800/80">
-                <div className="flex items-center gap-2">
-                  <Boxes className="w-4 h-4 text-cyan-400" />
-                  <h3 className={`text-xs sm:text-sm font-extrabold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    Ma Trận Biến Tần & Pin Lưu Trữ ({clusterType === '3PHASE' ? 'Cụm 3 Pha L1-L2-L3' : 'Cụm 1 Pha Song Song'}) - {currentStation?.stationName || deviceInfo.stationName}
-                  </h3>
-                </div>
-                <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                  ● {invertersFleet.length}/{invertersFleet.length} Thiết Bị Online
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {invertersFleet.map(inv => (
-                  <div
-                    key={inv.id}
-                    className={`p-3.5 rounded-2xl border transition-all ${
-                      fleetMode === inv.id
-                        ? 'border-cyan-500 bg-cyan-950/30 shadow-lg shadow-cyan-500/20 ring-1 ring-cyan-500'
-                        : isDark ? 'bg-slate-900/80 border-slate-800 hover:border-slate-700' : 'bg-slate-50 border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'} block`}>{inv.name}</span>
-                        <span className="text-[10px] font-bold text-cyan-500 dark:text-cyan-400">{inv.roleLabel}</span>
-                      </div>
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    </div>
-
-                    <div className="space-y-1.5 text-xs font-mono">
-                      <div className="flex justify-between items-center">
-                        <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>PV Phát:</span>
-                        <strong className="text-amber-500 dark:text-amber-400">{inv.pvPower} W</strong>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Pin BMS:</span>
-                        <strong className="text-emerald-500 dark:text-emerald-400">{inv.batterySoc}% ({inv.batteryVoltage}V)</strong>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tải {inv.phase.split(' ')[0]}:</span>
-                        <strong className="text-cyan-600 dark:text-cyan-400">{inv.loadPower} W</strong>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Điện áp:</span>
-                        <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>{inv.gridVoltage} V</span>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setFleetMode(inv.id)}
-                      className={`mt-2.5 w-full py-1.5 rounded-xl text-[10px] font-extrabold transition cursor-pointer text-center ${
-                        fleetMode === inv.id
-                          ? 'bg-cyan-500 text-slate-950 font-black shadow'
-                          : isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
-                      }`}
-                    >
-                      {fleetMode === inv.id ? '✓ Đang Xem Máy Này' : 'Xem Riêng Máy Này →'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* 3 THẺ ĐO ĐẠC THỜI GIAN THỰC (PV PHÁT TRONG NGÀY, TẢI TIÊU THỤ TRONG NGÀY, THỜI TIẾT TẠI VỊ TRÍ) */}
           <div className="grid grid-cols-3 gap-2 sm:gap-4">
@@ -804,15 +332,10 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                 <span className="truncate">PV PHÁT HÔM NAY</span>
               </span>
               <span className="text-base sm:text-2xl font-black text-amber-500 font-mono mt-1 block">
-                {(fleetMode === 'SINGLE'
-                  ? Number(energyStats.pvEnergy || 0)
-                  : fleetMode === 'AGGREGATED'
-                    ? Number(energyStats.pvEnergy || 0)
-                    : Number(energyStats.pvEnergy || 0) * (fleetMode === 'INV_1' ? 0.38 : fleetMode === 'INV_2' ? 0.33 : 0.29)
-                ).toFixed(2)} kWh
+                {energyStats.pvEnergy.toFixed(2)} kWh
               </span>
               <span className={`text-[9px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono block truncate`}>
-                Tức thời: {activeFlowData.pvPower} W
+                Tức thời: {flowData.pvPower} W
               </span>
             </div>
             
@@ -823,15 +346,10 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                 <span className="truncate">TIÊU THỤ HÔM NAY</span>
               </span>
               <span className={`text-base sm:text-2xl font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-1 block`}>
-                {(fleetMode === 'SINGLE'
-                  ? Number(energyStats.loadEnergy || 0)
-                  : fleetMode === 'AGGREGATED'
-                    ? Number(energyStats.loadEnergy || 0)
-                    : Number(energyStats.loadEnergy || 0) * (fleetMode === 'INV_1' ? 0.36 : fleetMode === 'INV_2' ? 0.33 : 0.31)
-                ).toFixed(2)} kWh
+                {energyStats.loadEnergy.toFixed(2)} kWh
               </span>
               <span className={`text-[9px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono block truncate`}>
-                Tải tức thời: {activeFlowData.loadPower} W
+                Tải tức thời: {flowData.loadPower} W
               </span>
             </div>
 
@@ -915,11 +433,11 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
           </div>
 
           {/* 6 CHỈ SỐ NĂNG LƯỢNG (PV, Tiêu thụ, Sạc pin, Xả pin, Bán điện, Mua điện) */}
-          <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border rounded-2xl sm:rounded-3xl p-5 shadow-xl relative overflow-hidden space-y-4 transition-colors duration-300`}>
+          <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border rounded-2xl p-5 shadow-xl relative overflow-hidden space-y-4 transition-colors duration-300`}>
             <div className={`flex items-center justify-between border-b ${isDark ? 'border-slate-800/80' : 'border-slate-200'} pb-3`}>
               <span className={`text-xs font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} uppercase tracking-wider flex items-center gap-2`}>
                 <Activity className="w-4 h-4 text-cyan-500" />
-                Sản Lượng & Tiêu Thụ {fleetMode === 'AGGREGATED' ? '(Cụm Tổng)' : `(${invertersFleet.find(i => i.id === fleetMode)?.name || 'Máy'})`}
+                Sản Lượng & Tiêu Thụ Năng Lượng
               </span>
               <span className="text-[11px] font-mono text-emerald-500 font-bold">
                 Tiết kiệm: ~{estimatedSavings.toLocaleString('vi-VN')} đ
@@ -985,7 +503,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
 
               <div className={`p-2.5 rounded-xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'} border`}>
                 <div className="flex items-center space-x-1.5 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                  <span className="w-2 h-2 rounded-full bg-rose-500"></span>
                   <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] font-medium`}>Mua Điện</span>
                 </div>
                 <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} font-mono text-sm block`}>
@@ -995,65 +513,254 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
             </div>
           </div>
 
-          {/* BIỂU ĐỒ NĂNG LƯỢNG 24H (Line Chart & Bar Chart) */}
-          <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border rounded-2xl sm:rounded-3xl p-5 shadow-xl space-y-4 transition-colors duration-300`}>
-            <div className="flex items-center justify-between border-b pb-3 border-slate-800/80">
-              <span className={`text-xs font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} uppercase tracking-wider flex items-center gap-2`}>
-                <TrendingUp className="w-4 h-4 text-cyan-500" />
-                Biểu Đồ Năng Lượng {timeScope === 'DAY' ? '24 Giờ' : timeScope === 'MONTH' ? 'Theo Ngày Trong Tháng' : '12 Tháng'}
-              </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                {timeScope}
-              </span>
-            </div>
-
-            {/* Khung Biểu Đồ */}
-            <div className="h-44 sm:h-52 w-full flex items-end justify-between gap-1 pt-4 pb-1">
-              {chartData.length > 0 ? (
-                chartData.map((pt, idx) => {
-                  const pvVal = pt.pv || 0;
-                  const loadVal = pt.load || 0;
-                  const maxH = Math.max(1, ...chartData.map(c => Math.max(c.pv || 0, c.load || 0)));
-                  const pvHeightPercent = Math.min(100, (pvVal / maxH) * 100);
-                  const loadHeightPercent = Math.min(100, (loadVal / maxH) * 100);
-
-                  return (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group relative">
-                      {/* Tooltip Hover */}
-                      <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition pointer-events-none z-20 bg-slate-950 text-white text-[9px] font-mono px-2 py-1 rounded-md whitespace-nowrap shadow-xl border border-slate-700">
-                        {pt.time || `${idx}h`}: PV {pvVal} kW, Tải {loadVal} kW
-                      </div>
-
-                      <div className="w-full flex items-end justify-center gap-0.5 h-full">
-                        <div 
-                          className="w-1.5 sm:w-2 bg-amber-400 rounded-t-sm transition-all"
-                          style={{ height: `${pvHeightPercent}%` }}
-                        />
-                        <div 
-                          className="w-1.5 sm:w-2 bg-sky-400 rounded-t-sm transition-all"
-                          style={{ height: `${loadHeightPercent}%` }}
-                        />
-                      </div>
-                      <span className={`text-[8px] sm:text-[9px] ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono truncate`}>
-                        {idx % 4 === 0 ? (pt.time ? pt.time.slice(0, 5) : `${idx}h`) : ''}
-                      </span>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs text-slate-500 font-medium">
-                  Đang tải biểu đồ năng lượng từ máy chủ Cloud...
+          {/* BIỂU ĐỒ NĂNG LƯỢNG 24H & COMBO CHART (NGUYÊN BẢN CHUẨN XÁC) */}
+          <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border rounded-2xl p-5 shadow-xl space-y-3.5 transition-colors duration-300`}>
+            
+            {/* Header Đồ thị & Các nút Toggles */}
+            {timeScope === 'DAY' ? (
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className={`${isDark ? 'text-slate-200' : 'text-slate-800'} font-extrabold`}>Đồ thị công suất 24 Giờ (Line Chart)</span>
+                  <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} font-mono text-[11px]`}>• Nhấn bật/tắt đường</span>
                 </div>
-              )}
-            </div>
+                {/* Nút bật tắt từng đường */}
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: 'pv', label: 'PV', color: isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-amber-50 text-amber-700 border-amber-300' },
+                    { id: 'load', label: 'Tải hòa lưới', color: isDark ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-cyan-50 text-cyan-700 border-cyan-300' },
+                    { id: 'backup', label: 'Tải dự phòng', color: isDark ? 'bg-orange-500/20 text-orange-300 border-orange-500/40' : 'bg-orange-50 text-orange-700 border-orange-300' },
+                    { id: 'chg', label: 'Sạc pin', color: isDark ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-emerald-50 text-emerald-700 border-emerald-300' },
+                    { id: 'dis', label: 'Xả pin', color: isDark ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' : 'bg-purple-50 text-purple-700 border-purple-300' },
+                    { id: 'grid', label: 'Lưới điện', color: isDark ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' : 'bg-sky-50 text-sky-700 border-sky-300' },
+                    { id: 'soc', label: '% Pin (SOC)', color: isDark ? 'bg-pink-500/20 text-pink-300 border-pink-500/40' : 'bg-pink-50 text-pink-700 border-pink-300' }
+                  ].map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => setLineToggles(prev => ({ ...prev, [t.id]: !prev[t.id] }))}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
+                        lineToggles[t.id] ? t.color : isDark ? 'bg-slate-900/60 border-slate-800 text-slate-500 opacity-60' : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
+                      }`}
+                    >
+                      ● {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-amber-500"></span>
+                    <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'} font-medium`}>PV phát</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-sky-500"></span>
+                    <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'} font-medium`}>Tải nhà</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2.5 h-1 rounded-sm bg-emerald-400"></span>
+                    <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'} font-medium`}>Sạc pin</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2.5 h-1 rounded-sm bg-purple-400"></span>
+                    <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'} font-medium`}>Xả pin</span>
+                  </div>
+                </div>
+                <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} font-mono text-[11px]`}>
+                  {timeScope === 'MONTH' ? `${chartData.length || 31} Ngày` : '12 Tháng'}
+                </span>
+              </div>
+            )}
 
-            <div className="flex items-center justify-center gap-4 text-[11px] pt-1">
-              <span className="flex items-center gap-1.5 font-bold text-amber-500">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span> PV Phát
-              </span>
-              <span className="flex items-center gap-1.5 font-bold text-sky-500">
-                <span className="w-2.5 h-2.5 rounded-full bg-sky-400"></span> Tiêu Thụ Tải
-              </span>
+            {/* KHUNG VẼ ĐỒ THỊ */}
+            {timeScope === 'DAY' ? (
+              <div className={`relative w-full h-[180px] pl-10 pr-10 pb-5 border-b ${isDark ? 'border-slate-800/80' : 'border-slate-200'} flex items-end`}>
+                {/* Trục Y trái (kW) */}
+                <div className={`absolute left-0 top-0 bottom-5 flex flex-col justify-between text-[9px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-mono font-bold`}>
+                  <span>{maxKw.toFixed(1)} kW</span>
+                  <span>{(maxKw * 0.5).toFixed(1)} kW</span>
+                  <span>0 kW</span>
+                </div>
+
+                {/* Trục Y phải (% SOC) */}
+                <div className="absolute right-0 top-0 bottom-5 flex flex-col justify-between text-[9px] text-pink-500 font-mono font-bold text-right">
+                  <span>100%</span>
+                  <span>50%</span>
+                  <span>0%</span>
+                </div>
+
+                {/* SVG Multi-Line Paths */}
+                <svg viewBox="0 0 450 140" className="w-full h-full z-10 overflow-visible" preserveAspectRatio="none">
+                  <line x1="0" y1="0" x2="450" y2="0" stroke={isDark ? "#1e293b" : "#e2e8f0"} strokeWidth="1" strokeDasharray="3 3" />
+                  <line x1="0" y1="70" x2="450" y2="70" stroke={isDark ? "#1e293b" : "#e2e8f0"} strokeWidth="1" strokeDasharray="3 3" />
+                  <line x1="0" y1="140" x2="450" y2="140" stroke={isDark ? "#334155" : "#cbd5e1"} strokeWidth="1" />
+
+                  {/* Đường PV (Vàng) */}
+                  {lineToggles.pv && (
+                    <polyline
+                      points={getLinePoints(chartData, 'pv', maxKw, 140, 450)}
+                      fill="none"
+                      stroke="#f59e0b"
+                      strokeWidth="2.5"
+                    />
+                  )}
+                  {/* Đường Tải hòa lưới (Cyan) */}
+                  {lineToggles.load && (
+                    <polyline
+                      points={getLinePoints(chartData, 'load', maxKw, 140, 450)}
+                      fill="none"
+                      stroke="#06b6d4"
+                      strokeWidth="2"
+                    />
+                  )}
+                  {/* Đường Tải dự phòng (Cam) */}
+                  {lineToggles.backup && (
+                    <polyline
+                      points={getLinePoints(chartData, 'backup', maxKw, 140, 450)}
+                      fill="none"
+                      stroke="#f97316"
+                      strokeWidth="1.5"
+                    />
+                  )}
+                  {/* Đường Sạc pin (Xanh lá) */}
+                  {lineToggles.chg && (
+                    <polyline
+                      points={getLinePoints(chartData, 'chg', maxKw, 140, 450)}
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth="2"
+                    />
+                  )}
+                  {/* Đường Xả pin (Tím) */}
+                  {lineToggles.dis && (
+                    <polyline
+                      points={getLinePoints(chartData, 'dis', maxKw, 140, 450)}
+                      fill="none"
+                      stroke="#a855f7"
+                      strokeWidth="2"
+                    />
+                  )}
+                  {/* Đường Lưới điện (Sky) */}
+                  {lineToggles.grid && (
+                    <polyline
+                      points={getLinePoints(chartData, 'grid', maxKw, 140, 450)}
+                      fill="none"
+                      stroke="#38bdf8"
+                      strokeWidth="1.5"
+                    />
+                  )}
+                  {/* Đường SOC % Pin (Hồng nét đứt) */}
+                  {lineToggles.soc && (
+                    <polyline
+                      points={getLinePoints(chartData, 'soc', 100, 140, 450)}
+                      fill="none"
+                      stroke="#ec4899"
+                      strokeWidth="2"
+                      strokeDasharray="4 3"
+                    />
+                  )}
+                </svg>
+              </div>
+            ) : (
+              /* COMBO CHART CỘT + ĐƯỜNG KHI CHỌN THÁNG/NĂM (DỮ LIỆU THỰC TỪ CLOUD HÃNG) */
+              (() => {
+                const maxComboVal = Math.max(
+                  timeScope === 'YEAR' ? 100 : 20,
+                  ...chartData.map(d => Math.max(d.pv || 0, d.load || 0))
+                );
+
+                return (
+                  <div className={`relative w-full h-[180px] pl-10 pb-5 border-b ${isDark ? 'border-slate-800/80' : 'border-slate-200'} flex items-end`}>
+                    {/* Trục Y hiển thị kWh động */}
+                    <div className={`absolute left-0 top-0 bottom-5 flex flex-col justify-between text-[9px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-mono font-bold`}>
+                      <span>{Math.round(maxComboVal)} kWh</span>
+                      <span>{Math.round(maxComboVal / 2)} kWh</span>
+                      <span>0 kWh</span>
+                    </div>
+
+                    <div className="w-full h-full flex items-end justify-between gap-0.5 sm:gap-1 px-1 relative">
+                      {chartData.map((item, idx) => {
+                        const pvH = Math.max(0, Math.min(100, (item.pv / maxComboVal) * 100));
+                        const loadH = Math.max(0, Math.min(100, (item.load / maxComboVal) * 100));
+
+                        return (
+                          <div 
+                            key={idx} 
+                            className="flex-1 h-full flex items-end justify-center space-x-[1px] sm:space-x-[1.5px] group relative cursor-pointer"
+                          >
+                            {/* Hover Tooltip chi tiết */}
+                            <div className={`absolute bottom-full mb-2 hidden group-hover:flex flex-col ${isDark ? 'bg-slate-900/95 border-slate-700 text-white' : 'bg-white/95 border-slate-300 text-slate-800 shadow-xl'} border p-2 rounded-xl text-[10px] font-mono shadow-2xl z-30 pointer-events-none whitespace-nowrap min-w-[110px]`}>
+                              <span className={`font-bold ${isDark ? 'text-cyan-300 border-slate-800' : 'text-cyan-700 border-slate-200'} border-b pb-1 mb-1`}>
+                                {timeScope === 'MONTH' ? `Ngày ${item.label}` : `Tháng ${item.label}`}
+                              </span>
+                              <span className="text-amber-500">☀️ PV: {item.pv} kWh</span>
+                              <span className="text-sky-500">⚡ Tải: {item.load} kWh</span>
+                              {item.chg > 0 && <span className="text-emerald-500">🔋 Sạc: {item.chg} kWh</span>}
+                              {item.dis > 0 && <span className="text-purple-500">⚡ Xả: {item.dis} kWh</span>}
+                            </div>
+
+                            <div
+                              style={{ height: `${pvH}%`, minHeight: item.pv > 0 ? '3px' : '0px' }}
+                              className="w-1/2 bg-amber-500 rounded-t-[2px] transition-all duration-300 group-hover:brightness-125 shadow-sm"
+                            />
+                            <div
+                              style={{ height: `${loadH}%`, minHeight: item.load > 0 ? '3px' : '0px' }}
+                              className="w-1/2 bg-sky-500 rounded-t-[2px] transition-all duration-300 group-hover:brightness-125 shadow-sm"
+                            />
+                          </div>
+                        );
+                      })}
+
+                      <svg viewBox="0 0 450 140" className="absolute inset-0 w-full h-full pointer-events-none z-10" preserveAspectRatio="none">
+                        <polyline
+                          points={getLinePoints(chartData, 'chg', maxComboVal, 140, 450)}
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth="2"
+                        />
+                        <polyline
+                          points={getLinePoints(chartData, 'dis', maxComboVal, 140, 450)}
+                          fill="none"
+                          stroke="#a855f7"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                );
+              })()
+            )}
+
+            {/* Trục X mốc thời gian */}
+            <div className={`flex justify-between text-[10px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'} pt-1 px-4 font-bold`}>
+              {timeScope === 'DAY' ? (
+                <>
+                  <span>00:00</span>
+                  <span>04:00</span>
+                  <span>08:00</span>
+                  <span>12:00</span>
+                  <span>16:00</span>
+                  <span>20:00</span>
+                  <span>23:00</span>
+                </>
+              ) : timeScope === 'MONTH' ? (
+                <>
+                  <span>01</span>
+                  <span className={`px-1 rounded ${isDark ? 'bg-sky-500/20 text-sky-400' : 'bg-sky-100 text-sky-700'}`}>07</span>
+                  <span>14</span>
+                  <span>21</span>
+                  <span>28</span>
+                  <span>{chartData.length || 31}</span>
+                </>
+              ) : (
+                <>
+                  <span>01</span>
+                  <span>03</span>
+                  <span>06</span>
+                  <span>09</span>
+                  <span>12</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -1061,14 +768,15 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
 
       </div>
 
-      {/* Modal Cài Đặt Dự Án Này */}
+      {/* Modal Cài Đặt Dự Án Riêng Cho Trạm Đang Xem */}
       <StationSettingsModal
         isOpen={isProjectSettingsOpen}
+        station={{ stationId: currentStationId, stationName: deviceInfo.stationName }}
         onClose={() => setIsProjectSettingsOpen(false)}
-        stationId={currentStationId}
-        stationName={deviceInfo.stationName}
-        onSaved={() => {
-          fetchStationPricing(currentStationId);
+        onSaved={(newCfg) => {
+          if (newCfg?.electricityPrice) {
+            setElectricityPrice(newCfg.electricityPrice);
+          }
         }}
       />
 

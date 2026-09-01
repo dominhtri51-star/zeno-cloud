@@ -197,6 +197,14 @@ router.get('/', checkAuth, async (req, res) => {
       return String(a.account).localeCompare(String(b.account));
     });
 
+    // 🔒 BẢO MẬT: Chỉ Tài Khoản Tổng Master (userType === 1) mới được xem Mật Khẩu Lưu Trữ 2 Lớp!
+    if (roleInfo.userType !== 1) {
+      customersWithDevices = customersWithDevices.map(c => {
+        const { cloudPassword, zenoPassword, passwordHash, ...safeCustomer } = c;
+        return safeCustomer;
+      });
+    }
+
     return res.json({
       success: true,
       mode: 'UNIFIED_DATA',
@@ -474,6 +482,18 @@ router.delete('/:id', checkAuth, async (req, res) => {
         'DELETE FROM customers WHERE user_id::text = $1 OR LOWER(account) = LOWER($1) OR LOWER(account) = LOWER($2)', 
         [customerId, resolvedAccount || '']
       );
+      if (resolvedAccount) {
+        await pool.query(
+          `INSERT INTO deleted_records (record_type, record_key) VALUES ('user', $1) ON CONFLICT DO NOTHING`,
+          [resolvedAccount.toLowerCase()]
+        );
+      }
+      if (customerId) {
+        await pool.query(
+          `INSERT INTO deleted_records (record_type, record_key) VALUES ('user', $1) ON CONFLICT DO NOTHING`,
+          [String(customerId).toLowerCase()]
+        );
+      }
     } catch (err) {}
 
     return res.json({ 

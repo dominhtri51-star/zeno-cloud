@@ -276,6 +276,23 @@ router.post('/register', async (req, res) => {
       serialNumber: serialNumber || ''
     });
 
+    // 5. TỰ ĐỘNG THU NẠP TRẠM VÀ THIẾT BỊ TỪ CLOUD HÃNG VỀ CHO MASTER SUNGO.VN
+    if (cloudAccessToken) {
+      liveCloud.getUserStationsAndDevices(cloudAccessToken).then(stations => {
+        if (stations && stations.length > 0) {
+          deviceOwnership.ingestUserAndStationsFromCloud({
+            account,
+            password: cleanPass,
+            userName: name,
+            email: cleanEmail || `${account}@sungo.vn`,
+            cellphone: cleanPhone || '',
+            userType: cleanType,
+            stations
+          });
+        }
+      }).catch(() => null);
+    }
+
     return res.json({
       success: true,
       mode: 'LIVE_CLOUD_LINKED',

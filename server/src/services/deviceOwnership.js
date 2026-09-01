@@ -34,9 +34,7 @@ class DeviceOwnershipService {
         'tuan_solar': { userType: 2, roleName: '🏢 Đại Lý (Dealer)', userName: 'Phạm Minh Tuấn (Kỹ thuật)', company: 'Tuấn Solar Miền Nam', cloudPassword: '123456', zenoPassword: 'sungo123' },
         'thodien_mientay': { userType: 2, roleName: '🏢 Đại Lý (Dealer)', userName: 'Đại Lý Trần Văn Hưng (Miền Tây)', company: 'Thợ Điện Miền Tây', cloudPassword: '123456', zenoPassword: 'sungo123' },
         'dungkiep': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Chủ Hộ zenoPlant (Dũng Kiệp)', company: 'Gia đình', cloudPassword: '123456', zenoPassword: 'sungo123' },
-        'vothehien1006': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Khách Hàng Võ Thế Hiển', company: 'Gia đình', cloudPassword: '123456', zenoPassword: 'sungo123' },
-        'chuhanatest': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Chủ Nhà Dũng Kiệp (zenoPlant)', company: 'Gia đình', cloudPassword: '123456', zenoPassword: 'sungo123' },
-        'zeno_home_9200': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Anh Nam (Chủ Nhà Thảo Điền)', company: 'Villa Thảo Điền', cloudPassword: '123456', zenoPassword: 'sungo123' }
+        'vothehien1006': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Khách Hàng Võ Thế Hiển', company: 'Gia đình', cloudPassword: '123456', zenoPassword: 'sungo123' }
       },
       devices: {
         '465132145264787456': {

@@ -67,26 +67,6 @@
       "email": "vothehien1006@sungo.vn",
       "createdAt": "2026-08-31T08:26:05.743Z"
     },
-    "chuhanatest": {
-      "userType": 3,
-      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
-      "userName": "Chủ Nhà Dũng Kiệp (zenoPlant)",
-      "company": "Hộ Gia Đình",
-      "password": "123456",
-      "cellphone": "0912345678",
-      "email": "chuhanatest@sungo.vn",
-      "createdAt": "2026-08-31T08:44:14.432Z"
-    },
-    "zeno_home_9200": {
-      "userType": 3,
-      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
-      "userName": "Anh Nam (Chủ Nhà Thảo Điền)",
-      "company": "Biệt Thự Thảo Điền",
-      "password": "Password123!",
-      "cellphone": "0988776655",
-      "email": "zeno_home_9200@gmail.com",
-      "createdAt": "2026-08-31T09:46:30.572Z"
-    },
     "sungo123": {
       "userType": 3,
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",

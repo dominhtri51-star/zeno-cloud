@@ -103,6 +103,14 @@ CREATE TABLE IF NOT EXISTS devices (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 9. Bảng Lưu Trữ Vĩnh Viễn Danh Sách Đã Xóa (Chống phục hồi tài khoản rác / test khi deploy lại)
+CREATE TABLE IF NOT EXISTS deleted_records (
+    record_type VARCHAR(50) NOT NULL, -- 'user' | 'station' | 'device'
+    record_key VARCHAR(150) NOT NULL,
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (record_type, record_key)
+);
+
 -- Tự động cập nhật sequence nếu có
 DO $$
 BEGIN

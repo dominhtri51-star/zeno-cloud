@@ -43,18 +43,49 @@ async function initDatabase() {
       console.log('📊 Khởi tạo cấu trúc bảng PostgreSQL thành công (Sẵn sàng mở trên TablePlus)');
     }
 
-    await seedInitialData(client);
+    // 0. Tạo bảng deleted_records nếu chưa có
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS deleted_records (
+        record_type VARCHAR(50) NOT NULL,
+        record_key VARCHAR(150) NOT NULL,
+        deleted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (record_type, record_key)
+      );
+    `);
 
-    // Đồng bộ 2 chiều: Nạp toàn bộ tài khoản từ PostgreSQL vào bộ nhớ hệ thống
-    const custRows = await client.query('SELECT * FROM customers');
+    // 1. Tải toàn bộ danh sách đã xóa từ PostgreSQL vào deviceOwnership
     const deviceOwnership = require('./services/deviceOwnership');
+    try {
+      const delRes = await client.query('SELECT record_type, record_key FROM deleted_records');
+      if (delRes.rows) {
+        delRes.rows.forEach(r => {
+          const k = String(r.record_key).toLowerCase().trim();
+          if (r.record_type === 'user' && !deviceOwnership.data.deletedUsers.includes(k)) {
+            deviceOwnership.data.deletedUsers.push(k);
+          }
+          if (r.record_type === 'station' && !deviceOwnership.data.deletedStations.includes(k)) {
+            deviceOwnership.data.deletedStations.push(k);
+          }
+          if (r.record_type === 'device' && !deviceOwnership.data.deletedDevices.includes(k)) {
+            deviceOwnership.data.deletedDevices.push(k);
+          }
+        });
+      }
+    } catch (delErr) {
+      console.warn('[DB Deleted Records Load]:', delErr.message);
+    }
+
+    await seedInitialData(client, deviceOwnership);
+
+    // 2. Đồng bộ 2 chiều: Nạp toàn bộ tài khoản active từ PostgreSQL vào bộ nhớ hệ thống
+    const custRows = await client.query('SELECT * FROM customers');
     if (custRows.rows && deviceOwnership.data) {
       if (!deviceOwnership.data.users) deviceOwnership.data.users = {};
       custRows.rows.forEach(r => {
         if (r.account) {
           const accKey = r.account.toLowerCase();
           if (deviceOwnership.isUserDeleted(accKey) || deviceOwnership.isUserDeleted(r.user_id)) {
-            return; // Bỏ qua tài khoản đã bị xóa
+            return; // Tuyệt đối bỏ qua tài khoản đã bị xóa
           }
           if (!deviceOwnership.data.users[accKey]) {
             deviceOwnership.data.users[accKey] = {
@@ -65,6 +96,8 @@ async function initDatabase() {
               email: r.email,
               cellphone: r.cellphone,
               password: r.password_hash || '',
+              cloudPassword: r.cloud_password || '123456',
+              zenoPassword: r.zeno_password || r.password_hash || 'sungo123',
               createdAt: r.created_at
             };
           }
@@ -79,37 +112,64 @@ async function initDatabase() {
   }
 }
 
-async function seedInitialData(client) {
+async function seedInitialData(client, deviceOwnership) {
   try {
-    // 1. Seed Users & Customers
-    const ownershipPath = path.join(__dirname, '../data/device_ownership.json');
-    if (fs.existsSync(ownershipPath)) {
-      const raw = fs.readFileSync(ownershipPath, 'utf8');
-      const data = JSON.parse(raw);
-      if (data.users) {
-        for (const [account, u] of Object.entries(data.users)) {
-          await client.query(
-            `INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-             ON CONFLICT (account) DO UPDATE SET
-               user_name = EXCLUDED.user_name,
-               email = EXCLUDED.email,
-               cellphone = EXCLUDED.cellphone,
-               user_type = EXCLUDED.user_type,
-               role_name = EXCLUDED.role_name`,
-            [
-              account,
-              u.userName || account,
-              u.email || `${account}@sungo.vn`,
-              u.cellphone || '',
-              u.userType || 3,
-              u.roleName || '🏠 Người Tiêu Dùng Cuối',
-              u.password || '',
-              u.createdAt ? new Date(u.createdAt) : new Date()
-            ]
-          );
+    // 1. Luôn đảm bảo tài khoản Master sungo.vn tồn tại trên PostgreSQL
+    await client.query(`
+      INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, cloud_password, zeno_password, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      ON CONFLICT (account) DO UPDATE SET
+        user_type = 1,
+        role_name = '👑 Tổng Phân Phối',
+        user_name = 'SUNGO SOLAR VIỆT NAM (Master)';
+    `, [
+      'sungo.vn',
+      'SUNGO SOLAR VIỆT NAM (Master)',
+      'admin@sungo.vn',
+      '0901234567',
+      1,
+      '👑 Tổng Phân Phối (Distributor)',
+      'sungo123',
+      'sungo@100%',
+      'sungo123'
+    ]);
+
+    // 2. Chỉ seed tài khoản ban đầu nếu bảng customers hoàn toàn mới (<= 1 row) VÀ tài khoản đó CHƯA TỪNG BỊ XÓA
+    const custCountRes = await client.query('SELECT count(*) as cnt FROM customers');
+    const custCount = parseInt(custCountRes.rows[0]?.cnt || '0');
+
+    if (custCount <= 1) {
+      const ownershipPath = path.join(__dirname, '../data/device_ownership.json');
+      if (fs.existsSync(ownershipPath)) {
+        const raw = fs.readFileSync(ownershipPath, 'utf8');
+        const data = JSON.parse(raw);
+        if (data.users) {
+          for (const [account, u] of Object.entries(data.users)) {
+            const accKey = String(account).toLowerCase().trim();
+            if (accKey === 'sungo.vn' || deviceOwnership?.isUserDeleted(accKey)) {
+              continue; // Bỏ qua nếu đã xóa hoặc là sungo.vn
+            }
+            await client.query(
+              `INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, cloud_password, zeno_password, created_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+               ON CONFLICT (account) DO NOTHING`,
+              [
+                account,
+                u.userName || account,
+                u.email || `${account}@sungo.vn`,
+                u.cellphone || '',
+                u.userType || 3,
+                u.roleName || '🏠 Người Tiêu Dùng Cuối',
+                u.password || 'sungo123',
+                u.cloudPassword || '123456',
+                u.zenoPassword || u.password || 'sungo123',
+                u.createdAt ? new Date(u.createdAt) : new Date()
+              ]
+            );
+          }
         }
       }
+    }
 
       if (data.technicianCodes) {
         for (const [code, info] of Object.entries(data.technicianCodes)) {

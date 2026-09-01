@@ -836,13 +836,17 @@ router.delete('/:stationId', async (req, res) => {
     // 1. Kiểm tra mật khẩu an toàn và xóa trong deviceOwnership
     deviceOwnership.deleteStationSafe({ stationId, adminPassword });
 
-    // 2. Xóa trong PostgreSQL nếu có
+    // 2. Xóa trong PostgreSQL nếu có và ghi vào deleted_records
     const targetIdInt = parseInt(stationId, 10);
     if (!isNaN(targetIdInt)) {
       await pool.query('DELETE FROM stations WHERE station_id = $1 OR station_name = $2', [targetIdInt, stationId]).catch(() => null);
     } else {
       await pool.query('DELETE FROM stations WHERE station_name = $1', [stationId]).catch(() => null);
     }
+    await pool.query(
+      `INSERT INTO deleted_records (record_type, record_key) VALUES ('station', $1) ON CONFLICT DO NOTHING`,
+      [String(stationId).toLowerCase()]
+    ).catch(() => null);
 
     return res.json({
       success: true,
@@ -930,9 +934,19 @@ router.post('/delete-device', async (req, res) => {
       confirmSn
     });
 
-    // Nếu là Master xóa vĩnh viễn, xóa khỏi DB PostgreSQL
+    // Nếu là Master xóa vĩnh viễn, xóa khỏi DB PostgreSQL và ghi vào deleted_records
     if (isMaster && deviceId) {
       await pool.query('DELETE FROM devices WHERE device_id = $1 OR serial_number = $1', [deviceId]).catch(() => null);
+      await pool.query(
+        `INSERT INTO deleted_records (record_type, record_key) VALUES ('device', $1) ON CONFLICT DO NOTHING`,
+        [String(deviceId).toLowerCase()]
+      ).catch(() => null);
+      if (confirmSn) {
+        await pool.query(
+          `INSERT INTO deleted_records (record_type, record_key) VALUES ('device', $1) ON CONFLICT DO NOTHING`,
+          [String(confirmSn).toLowerCase()]
+        ).catch(() => null);
+      }
     }
 
     return res.json(result);

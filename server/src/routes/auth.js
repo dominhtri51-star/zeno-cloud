@@ -693,13 +693,13 @@ router.post('/send-recovery-otp', async (req, res) => {
       ? `${config.siseli.baseUrl}/user/send/email/captcha` 
       : `${config.siseli.baseUrl}/user/send/sms/captcha`;
 
-    console.log(`[Cloud Recovery OTP] Đang gửi yêu cầu OTP quên mật khẩu tới Server Hãng cho [${targetEmailOrPhone}] (intent: 1)`);
+    console.log(`[Cloud Recovery OTP] Đang gửi yêu cầu OTP quên mật khẩu tới Server Hãng cho [${targetEmailOrPhone}] (intent: 0)`);
 
     let captchaId = null;
     try {
       const cloudRes = await axios.post(endpoint, {
         address: targetEmailOrPhone,
-        intent: 1 // 1: Reset Password
+        intent: 0 // 0: Chuẩn gửi Captcha/OTP từ Server Hãng
       }, { headers, timeout: 12000 });
 
       if (cloudRes.data && cloudRes.data.code === 0) {
@@ -710,41 +710,47 @@ router.post('/send-recovery-otp', async (req, res) => {
           savePersistentCaptcha(cleanId, captchaId);
           savePersistentCaptcha(targetEmailOrPhone, captchaId);
         }
+
+        const localOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        recoveryOtpCache.set(cleanId, {
+          otp: localOtp,
+          captchaId: captchaId,
+          expiresAt: Date.now() + 10 * 60 * 1000,
+          identity: cleanId,
+          account: targetAccount,
+          emailOrPhone: targetEmailOrPhone
+        });
+
+        return res.json({
+          success: true,
+          message: `Mã OTP đã được gửi tự động qua ${isEmail ? 'Email' : 'Số điện thoại'} [${targetEmailOrPhone}] từ Máy Chủ Hãng! Vui lòng kiểm tra hộp thư (hoặc mục Spam).`,
+          channel: isEmail ? 'Email' : 'Phone SMS',
+          account: targetAccount,
+          captchaId: captchaId,
+          expiresIn: 60
+        });
       } else {
         const errorMsg = cloudRes.data?.localMessage || cloudRes.data?.message;
-        if (errorMsg) {
-          console.warn('[Cloud Recovery OTP Warn]:', errorMsg);
+        console.warn('[Cloud Recovery OTP Warn]:', errorMsg);
+        if (cloudRes.data?.code === 20107) {
+          return res.status(429).json({
+            success: false,
+            message: 'Server Hãng yêu cầu đợi 60 giây giữa các lần gửi mã OTP. Vui lòng thử lại sau!'
+          });
         }
+        return res.status(400).json({
+          success: false,
+          message: `Server Hãng từ chối: ${errorMsg || 'Không thể gửi mã xác thực'}`
+        });
       }
     } catch (cloudErr) {
       console.warn('[Cloud Recovery OTP Error]:', cloudErr.response?.data || cloudErr.message);
+      const errMsg = cloudErr.response?.data?.localMessage || cloudErr.response?.data?.message || cloudErr.message;
+      return res.status(400).json({
+        success: false,
+        message: `Lỗi kết nối Máy Chủ Hãng: ${errMsg}`
+      });
     }
-
-    // Sinh mã fallback dự phòng trong trường hợp tài khoản nội bộ
-    const persistentCaptchas = loadPersistentCaptchas();
-    const finalCaptchaId = captchaId || persistentCaptchas[cleanId]?.captchaId || persistentCaptchas[targetEmailOrPhone]?.captchaId || '515855040086511617';
-
-    sessionCaptchaMap[cleanId] = finalCaptchaId;
-    sessionCaptchaMap[targetEmailOrPhone] = finalCaptchaId;
-
-    const localOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    recoveryOtpCache.set(cleanId, {
-      otp: localOtp,
-      captchaId: finalCaptchaId,
-      expiresAt: Date.now() + 10 * 60 * 1000,
-      identity: cleanId,
-      account: targetAccount,
-      emailOrPhone: targetEmailOrPhone
-    });
-
-    return res.json({
-      success: true,
-      message: `Mã OTP đã được gửi tự động qua ${isEmail ? 'Email' : 'Số điện thoại'} [${targetEmailOrPhone}] từ Máy Chủ Hãng!`,
-      channel: isEmail ? 'Email' : 'Phone SMS',
-      account: targetAccount,
-      captchaId: finalCaptchaId,
-      expiresIn: 60
-    });
   } catch (err) {
     console.error('[Send Recovery OTP Error]:', err.message);
     return res.status(500).json({ success: false, message: 'Lỗi gửi mã OTP: ' + (err.response?.data?.message || err.message) });

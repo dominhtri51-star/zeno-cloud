@@ -1,5 +1,9 @@
 -- ZENO SOLAR PLATFORM - DATABASE SCHEMA FOR POSTGRESQL (TablePlus Ready)
 
+-- Tạo không gian Schema riêng cho Zeno Solar Platform
+CREATE SCHEMA IF NOT EXISTS zeno;
+SET search_path TO zeno, public;
+
 -- 1. Bảng Nhóm Khách Hàng / Chi Nhánh
 CREATE TABLE IF NOT EXISTS customer_groups (
     group_id SERIAL PRIMARY KEY,
@@ -69,7 +73,43 @@ CREATE TABLE IF NOT EXISTS api_sync_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Đồng bộ Sequence tự tăng cho SERIAL ID
-SELECT setval('customers_user_id_seq', COALESCE((SELECT MAX(user_id) FROM customers), 1));
-SELECT setval('customer_groups_group_id_seq', COALESCE((SELECT MAX(group_id) FROM customer_groups), 1));
+-- 6. Bảng Cài Đặt Thông Số Riêng Từng Dự Án (Project / Station Settings)
+CREATE TABLE IF NOT EXISTS station_settings (
+    station_id VARCHAR(100) PRIMARY KEY,
+    settings JSONB NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 7. Bảng Mã Kỹ Thuật Viên / Đại Lý (Dealer / Installer Technician Codes)
+CREATE TABLE IF NOT EXISTS technician_codes (
+    code VARCHAR(50) PRIMARY KEY,
+    dealer_name VARCHAR(150) NOT NULL,
+    account VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 8. Bảng Thiết Bị Inverter Đã Liên Kết (Claimed Devices & Ownership)
+CREATE TABLE IF NOT EXISTS devices (
+    device_id VARCHAR(100) PRIMARY KEY,
+    serial_number VARCHAR(100),
+    dtu_code VARCHAR(100),
+    station_name VARCHAR(200),
+    customer VARCHAR(100),
+    installer VARCHAR(100),
+    distributor VARCHAR(100),
+    details JSONB,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tự động cập nhật sequence nếu có
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'customers_user_id_seq') THEN
+        PERFORM setval('customers_user_id_seq', COALESCE((SELECT MAX(user_id) FROM customers), 1));
+    END IF;
+    IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'customer_groups_group_id_seq') THEN
+        PERFORM setval('customer_groups_group_id_seq', COALESCE((SELECT MAX(group_id) FROM customer_groups), 1));
+    END IF;
+END $$;
+
 

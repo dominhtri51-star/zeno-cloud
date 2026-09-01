@@ -157,10 +157,11 @@ class LiveCloudService {
     }
   }
 
-  // Tự động làm mới và duy trì Token Cloud hợp lệ liên tục
+  // Tự động làm mới và duy trì Token Cloud hợp lệ liên tục (hạn 2 tiếng)
   async getValidToken(forceRefresh = false) {
     const now = Date.now();
-    if (!forceRefresh && this.activeToken && this.tokenExpiresAt > now + 60000) {
+    // Token Cloud có thời hạn 2 tiếng (7200s). Nếu token còn hơn 5 phút và không ép làm mới -> tái sử dụng
+    if (!forceRefresh && this.activeToken && this.tokenExpiresAt > now + 300000) {
       return this.activeToken;
     }
 
@@ -180,10 +181,10 @@ class LiveCloudService {
 
       if (res.data && res.data.code === 0 && res.data.data?.accessToken) {
         this.activeToken = res.data.data.accessToken;
-        // Hạn dùng token (thường là 2 giờ)
+        // Hạn dùng token (2 giờ = 7,200,000 ms)
         const expMs = res.data.data.accessTokenWillExpiredInMillis || 7200000;
         this.tokenExpiresAt = now + expMs;
-        console.log(`[LiveCloud] Đã tự động cấp mới Token Cloud thành công: ${this.activeToken.substring(0, 15)}...`);
+        console.log(`[LiveCloud] Đã tự động cấp mới Token Cloud thành công: ${this.activeToken.substring(0, 15)}... (Hạn 2 tiếng, hết hạn lúc ${new Date(this.tokenExpiresAt).toLocaleTimeString('vi-VN')})`);
         return this.activeToken;
       }
     } catch (e) {
@@ -217,37 +218,61 @@ class LiveCloudService {
     return headers;
   }
 
-  // Wrapper gọi Cloud API với khả năng tự động Retry, Auto-Failover & Auto-Refresh khi token hết hạn
+  // Wrapper gọi Cloud API với khả năng tự động Retry, Auto-Failover & Auto-Refresh khi token hết hạn sau 2 tiếng
   async callWithAutoRetry(apiFn, explicitToken = null) {
     const userCloudToken = this.getUserCloudToken(explicitToken);
-    const isUserToken = Boolean(userCloudToken);
-    let token = isUserToken ? userCloudToken : await this.getValidToken();
+    let token = userCloudToken || await this.getValidToken();
 
     for (let attempt = 0; attempt < this.endpoints.length; attempt++) {
       try {
         const res = await apiFn(token);
-        if (res?.data?.code === 9 || res?.data?.message === 'Token expired') {
-          if (!isUserToken) {
-            console.log('[LiveCloud] Default token hết hạn, đang tự động làm mới...');
-            token = await this.getValidToken(true);
-            return await apiFn(token);
+        // Kiểm tra xem mã lỗi trả về có phải là Token Expired / Token Invalid không (Code 9, Code 10, Code 401)
+        const isTokenExpired = res?.data?.code === 9 || 
+                               res?.data?.code === 10 || 
+                               res?.data?.code === 401 || 
+                               res?.data?.message?.toLowerCase().includes('token') ||
+                               res?.data?.message?.toLowerCase().includes('expire') ||
+                               res?.data?.localMessage?.toLowerCase().includes('token') ||
+                               res?.data?.localMessage?.toLowerCase().includes('hết hạn');
+
+        if (isTokenExpired) {
+          console.log('[LiveCloud] Token Cloud hết hạn trong vòng 2 tiếng, đang tự động cấp mới ngay lập tức...');
+          const freshToken = await this.getValidToken(true);
+          if (explicitToken) {
+            this.setUserCloudToken(explicitToken, freshToken);
           }
+          token = freshToken;
+          return await apiFn(token);
         }
         return res;
       } catch (err) {
+        const isTokenErr = err.response?.status === 401 || 
+                           err.response?.data?.code === 9 || 
+                           err.response?.data?.code === 10 || 
+                           err.response?.data?.message?.toLowerCase().includes('token') ||
+                           err.response?.data?.message?.toLowerCase().includes('expire');
+
+        if (isTokenErr) {
+          console.log('[LiveCloud] 401/Code 9 Token hết hạn, đang tự động làm mới từ Cloud Hãng...');
+          const freshToken = await this.getValidToken(true);
+          if (explicitToken) {
+            this.setUserCloudToken(explicitToken, freshToken);
+          }
+          token = freshToken;
+          return await apiFn(token);
+        }
+
         const isNetworkOrServerError = !err.response || err.response.status >= 500 || err.code === 'ECONNABORTED' || err.code === 'ENOTFOUND';
         if (isNetworkOrServerError && attempt < this.endpoints.length - 1) {
           console.warn(`[LiveCloud] Lỗi kết nối máy chủ [${this.baseUrl}]: ${err.message}. Đang tự động chuyển sang máy chủ dự phòng...`);
           this.switchToNextEndpoint();
           token = await this.getValidToken(true);
+          if (explicitToken) {
+            this.setUserCloudToken(explicitToken, token);
+          }
           continue;
         }
 
-        if ((err.response?.status === 401 || err.response?.data?.code === 9) && !isUserToken) {
-          console.log('[LiveCloud] 401 Unauthorized default token, đang làm mới...');
-          token = await this.getValidToken(true);
-          return await apiFn(token);
-        }
         throw err;
       }
     }

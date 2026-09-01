@@ -17,12 +17,26 @@ api.interceptors.request.use((config) => {
   return config;
 }, (error) => Promise.reject(error));
 
-// Interceptor xử lý lỗi & token hết hạn
+// Interceptor xử lý lỗi & tự động làm mới Token 2 tiếng (Auto-Refresh Token)
 api.interceptors.response.use(
   (response) => response.data,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Có thể xử lý refresh hoặc redirect login
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const oldToken = localStorage.getItem('zeno_token');
+        const refreshRes = await axios.post('/api/auth/refresh', { token: oldToken });
+        if (refreshRes.data && refreshRes.data.success && refreshRes.data.token) {
+          const newToken = refreshRes.data.token;
+          localStorage.setItem('zeno_token', newToken);
+          originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+          console.log('[API Auto-Refresh] Đã tự động làm mới Token 2 tiếng thành công!');
+          return api(originalRequest);
+        }
+      } catch (refreshErr) {
+        console.warn('[API Auto-Refresh Error]:', refreshErr.message);
+      }
     }
     const message = error.response?.data?.message || error.message || 'Lỗi kết nối máy chủ';
     return Promise.reject(new Error(message));
@@ -33,7 +47,10 @@ export const authService = {
   login: (data) => api.post('/auth/login', data),
   register: (data) => api.post('/auth/register', data),
   logout: () => api.post('/auth/logout'),
-  refreshToken: (refreshToken) => api.post('/auth/refresh', { refreshToken }),
+  refreshToken: (account) => api.post('/auth/refresh', { 
+    token: localStorage.getItem('zeno_token'),
+    account 
+  }),
   getHealth: () => api.get('/health'),
   changePassword: (data) => api.post('/auth/change-password', data),
   sendRecoveryOtp: (data) => api.post('/auth/send-recovery-otp', data),

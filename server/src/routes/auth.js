@@ -363,6 +363,55 @@ router.post('/login', async (req, res) => {
   });
 });
 
+// ==========================================
+// 4. LÀM MỚI TOKEN (REFRESH TOKEN MỖI 2 TIẾNG HOẶC KHI VÀO XEM MÁY)
+// ==========================================
+router.post('/refresh', async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'] || '';
+    const currentToken = req.body.token || authHeader.replace('Bearer ', '');
+    const reqAccount = req.body.account || liveCloud.getAccountFromToken(currentToken) || 'sungo.vn';
+    
+    // Tự động cấp mới token Cloud Master Gateway thật từ hãng
+    const freshCloudToken = await liveCloud.getValidToken(true);
+    const roleInfo = deviceOwnership.getUserRole(reqAccount);
+    const newToken = `zeno_token_${reqAccount.toLowerCase()}_${roleInfo.userType || 3}_${Date.now()}`;
+    
+    if (freshCloudToken) {
+      liveCloud.setUserCloudToken(reqAccount, freshCloudToken);
+      liveCloud.setUserCloudToken(newToken, freshCloudToken);
+      if (currentToken) {
+        liveCloud.setUserCloudToken(currentToken, freshCloudToken);
+      }
+    }
+
+    console.log(`[Token Refresh API] Đã làm mới thành công Token cho tài khoản [${reqAccount}] (Role: ${roleInfo.roleName})`);
+
+    return res.json({
+      success: true,
+      message: 'Đã làm mới token kết nối Cloud Hãng thành công! Hạn dùng 2 tiếng.',
+      token: newToken,
+      rawCloudToken: freshCloudToken,
+      expiresIn: 7200000,
+      user: {
+        account: reqAccount,
+        userName: roleInfo.userName || reqAccount,
+        userType: roleInfo.userType || 3,
+        roleName: roleInfo.roleName,
+        canConfig: roleInfo.canConfig,
+        canAssign: roleInfo.canAssign,
+        canViewAll: roleInfo.canViewAll
+      }
+    });
+  } catch (err) {
+    console.error('[Refresh Token Error]:', err.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Không thể làm mới token: ' + err.message
+    });
+  }
+});
+
 // Đổi mật khẩu tài khoản
 const systemSettings = require('../services/systemSettings');
 

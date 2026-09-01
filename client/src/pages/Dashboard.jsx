@@ -4,7 +4,7 @@ import {
   ChevronDown, ArrowLeft, RefreshCw, Activity, DollarSign, TrendingUp, Cpu, Settings
 } from 'lucide-react';
 import InteractiveTopology from '../components/InteractiveTopology';
-import api, { monitoringService } from '../services/api';
+import api, { monitoringService, authService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import StationSettingsModal from '../components/StationSettingsModal';
@@ -80,16 +80,22 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
     }
   }, [initialStationId]);
 
-  // 1. Polling viễn trắc tức thời 1s
+  // 1. Tự động làm mới Token 2 tiếng & Polling viễn trắc tức thời 1s
   useEffect(() => {
     const targetId = selectedStationId || initialStationId;
+    
+    // Tự động làm mới Token Cloud khi vào xem trạm / máy
+    authService.refreshToken(user?.account).then(res => {
+      if (res?.token) localStorage.setItem('zeno_token', res.token);
+    }).catch(() => null);
+
     fetchLiveFlow(targetId);
     const interval = setInterval(() => {
       fetchLiveFlow(targetId);
       setLiveClock(new Date().toLocaleTimeString('vi-VN'));
     }, 1000);
     return () => clearInterval(interval);
-  }, [selectedStationId, initialStationId]);
+  }, [selectedStationId, initialStationId, user?.account]);
 
   // 2. Tự động truy vấn Thống Kê Năng Lượng & Biểu Đồ từ Cloud khi đổi Ngày / Tháng / Năm / Trạm
   useEffect(() => {
@@ -102,7 +108,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
 
   const fetchLiveFlow = async (stId) => {
     try {
-      const url = stId ? `/stations/energy/flow?stationId=${stId}` : '/stations/energy/flow';
+      const url = stId ? `/stations/energy/flow?stationId=${stId}&_t=${Date.now()}` : `/stations/energy/flow?_t=${Date.now()}`;
       const res = await api.get(url);
       const d = res?.data?.data || res?.data || res;
       if (d) {

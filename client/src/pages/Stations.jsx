@@ -6,7 +6,7 @@ import {
   Trash2, AlertOctagon, Search, X, Filter, Hash, Tag, Check, Sparkles,
   ArrowUpDown, Layers, Share2, UserCheck
 } from 'lucide-react';
-import api, { monitoringService } from '../services/api';
+import api, { monitoringService, authService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import RemoteConfigModal from '../components/RemoteConfigModal';
@@ -109,7 +109,16 @@ export default function Stations({ onNavigate, onSelectDevice }) {
     }
   };
 
-  const handleDeviceClick = (st, dev) => {
+  const handleDeviceClick = async (st, dev) => {
+    try {
+      // Tự động làm mới Token Cloud trước khi mở Inverter để tài khoản Đại Lý & Khách hàng luôn kết nối Live 100%
+      const res = await authService.refreshToken(user?.account);
+      if (res?.token) {
+        localStorage.setItem('zeno_token', res.token);
+      }
+    } catch (e) {
+      console.warn('[Stations] Refresh token warn:', e.message);
+    }
     if (onSelectDevice) {
       onSelectDevice(st.stationId, dev.deviceId);
     } else if (onNavigate) {

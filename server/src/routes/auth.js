@@ -157,17 +157,23 @@ router.post('/login', async (req, res) => {
   const acc = String(account || email || cellphone || '').toLowerCase().trim();
   const inputPass = String(password || '').trim();
 
-  // 1. Kiểm tra nếu là Tài Khoản Tổng Master (sungo.vn)
-  if (acc === 'sungo.vn') {
-    if (inputPass !== 'sungo@100%') {
+  // 1. Kiểm tra nếu là Tài Khoản Tổng Master (sungo.vn hoặc sungo123 hoặc admin)
+  if (acc === 'sungo.vn' || acc === 'sungo123' || acc === 'zeno_admin' || acc === 'admin') {
+    const isPassValid = (
+      inputPass === 'sungo@100%' || 
+      inputPass === 'sungo123' || 
+      inputPass === 'sungo1234' || 
+      inputPass === 'SolarPass123!'
+    );
+    if (!isPassValid) {
       return res.status(400).json({
         success: false,
-        message: 'Mật khẩu tài khoản Tổng không chính xác. Vui lòng kiểm tra lại!'
+        message: 'Mật khẩu tài khoản Tổng / Quản trị viên không chính xác. Vui lòng kiểm tra lại!'
       });
     }
     const masterCloudToken = await liveCloud.getValidToken();
-    const sessionToken = `zeno_token_sungo.vn_1_${Date.now()}`;
-    liveCloud.setUserCloudToken('sungo.vn', masterCloudToken);
+    const sessionToken = `zeno_token_${acc}_1_${Date.now()}`;
+    liveCloud.setUserCloudToken(acc, masterCloudToken);
     liveCloud.setUserCloudToken(sessionToken, masterCloudToken);
     liveCloud.setUserCloudToken(masterCloudToken, masterCloudToken);
     return res.json({
@@ -178,12 +184,12 @@ router.post('/login', async (req, res) => {
       refreshToken: 'master_refresh_' + Date.now(),
       user: {
         userId: 1001,
-        account: 'sungo.vn',
+        account: acc,
         userName: 'SUNGO SOLAR VIỆT NAM (Master)',
         email: 'admin@sungo.vn',
         cellphone: '0901234567',
         userType: 1,
-        roleName: 'Tổng Phân Phối (Distributor)',
+        roleName: '👑 Tổng Phân Phối (Distributor)',
         canConfig: true,
         canAssign: true,
         canViewAll: true,

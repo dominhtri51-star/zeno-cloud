@@ -51,9 +51,9 @@ export default function Stations({ onNavigate, onSelectDevice }) {
   // Modal Thêm Thiết Bị / Cấu hình WiFi
   const [isClaimOpen, setIsClaimOpen] = useState(false);
 
-  const isHomeowner = user?.userType === 3;
-  const isDistributor = user?.userType === 1;
-  const isInstaller = user?.userType === 2;
+  const isDistributor = user?.userType === 1 || user?.account === 'sungo.vn' || user?.account === 'sungo123';
+  const isInstaller = user?.userType === 2 && !isDistributor;
+  const isHomeowner = user?.userType === 3 && !isDistributor && !isInstaller;
 
   useEffect(() => {
     loadStations();

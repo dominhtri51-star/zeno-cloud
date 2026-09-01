@@ -16,6 +16,7 @@ router.get('/', async (req, res) => {
   const roleInfo = deviceOwnership.getUserRole(currentUserAccount);
   const isMaster = roleInfo.userType === 1;
   const isCustomer = roleInfo.userType === 3;
+  const isDealer = roleInfo.userType === 2;
 
   // 1. Quét trạm trực tiếp từ Cloud Hãng qua Master Gateway
   let cloudStations = [];
@@ -27,13 +28,19 @@ router.get('/', async (req, res) => {
 
   const stationsMap = {};
 
-  // Thêm trạm từ Cloud
+  // Thêm trạm từ Cloud (chỉ thêm các trạm chưa bị xóa trong blacklist)
   if (Array.isArray(cloudStations)) {
     cloudStations.forEach(st => {
-      const sKey = String(st.stationId || st.stationName);
+      const sId = String(st.stationId);
+      const sName = st.stationName;
+      if (deviceOwnership.isStationDeleted(sId) || deviceOwnership.isStationDeleted(sName)) {
+        return; // Đã bị xóa -> bỏ qua
+      }
+
+      const sKey = sId || sName;
       stationsMap[sKey] = {
-        stationId: String(st.stationId),
-        stationName: st.stationName,
+        stationId: sId,
+        stationName: sName,
         capacityKw: st.capacityKw || 12.0,
         installedCapacity: st.installedCapacity || '12.0 kWp',
         currentPowerKw: 0.0,
@@ -54,6 +61,20 @@ router.get('/', async (req, res) => {
   claimedDevices.forEach(d => {
     const sName = d.stationName || `Trạm Inverter ${d.serialNumber}`;
     const sId = String(d.stationId || d.deviceId || sName);
+
+    // Kiểm tra blacklist xóa trạm
+    if (deviceOwnership.isStationDeleted(sId) || deviceOwnership.isStationDeleted(sName)) {
+      return;
+    }
+
+    // Kiểm tra blacklist xóa thiết bị
+    if (
+      deviceOwnership.isDeviceDeleted(d.deviceId, isDealer ? currentUserAccount : null) ||
+      deviceOwnership.isDeviceDeleted(d.serialNumber, isDealer ? currentUserAccount : null) ||
+      deviceOwnership.isDeviceDeleted(d.dtuCode, isDealer ? currentUserAccount : null)
+    ) {
+      return;
+    }
 
     // Tìm xem trạm đã có trong stationsMap chưa (so sánh theo stationId hoặc tên trạm)
     let existingStationKey = Object.keys(stationsMap).find(k => 
@@ -100,6 +121,19 @@ router.get('/', async (req, res) => {
     }
   });
 
+  // 3. Lọc bỏ các thiết bị đã bị xóa khỏi các trạm
+  Object.values(stationsMap).forEach(st => {
+    if (Array.isArray(st.devices)) {
+      st.devices = st.devices.filter(dev => {
+        const isDel = 
+          deviceOwnership.isDeviceDeleted(dev.deviceId, isDealer ? currentUserAccount : null) ||
+          deviceOwnership.isDeviceDeleted(dev.serialNumber, isDealer ? currentUserAccount : null) ||
+          deviceOwnership.isDeviceDeleted(dev.dtuCode, isDealer ? currentUserAccount : null);
+        return !isDel;
+      });
+    }
+  });
+
   let allStations = Object.values(stationsMap);
 
   // Gắn thông tin danh sách các đại lý đã được chia sẻ và cấu hình công suất cài đặt riêng cho từng trạm
@@ -113,9 +147,9 @@ router.get('/', async (req, res) => {
     }
   });
 
-  // 3. Phân quyền trả về:
+  // 4. Phân quyền trả về:
   // Nếu là Chủ Nhà (userType: 3): Chỉ trả về trạm thuộc về khách hàng đó
-  if (isCustomer) {
+  if (isCustomer && !isMaster) {
     const customerAccountLower = currentUserAccount.toLowerCase();
     allStations = allStations.filter(st => {
       const matchOwner = st.ownerName && st.ownerName.toLowerCase() === customerAccountLower;
@@ -130,7 +164,7 @@ router.get('/', async (req, res) => {
       const matchName = st.stationName && st.stationName.toLowerCase().includes(customerAccountLower);
       return matchOwner || matchDevice || matchName;
     });
-  } else if (roleInfo.userType === 2) {
+  } else if (isDealer && !isMaster) {
     // Nếu là Thợ Lắp Đặt / Đại Lý (userType: 2): Chỉ trả về các trạm phụ trách hoặc trạm được chủ nhà chia sẻ
     const installerAccountLower = currentUserAccount.toLowerCase();
     allStations = allStations.filter(st => {
@@ -149,9 +183,10 @@ router.get('/', async (req, res) => {
         return (dObj.installer && dObj.installer.toLowerCase() === installerAccountLower) ||
                (Array.isArray(dObj.sharedInstallers) && dObj.sharedInstallers.some(acc => acc.toLowerCase() === installerAccountLower));
       });
-      return isSharedWithInstaller || matchDevice;
+      return (isSharedWithInstaller || matchDevice) && st.devices.length > 0;
     });
   }
+  // Nếu là Master (isMaster === true / userType: 1): Trả về 100% toàn bộ trạm và thiết bị trên hệ thống!
 
   // 4. Tìm kiếm nâng cao qua Query Parameter (q hoặc search)
   const searchQuery = String(req.query.q || req.query.search || '').trim().toLowerCase();

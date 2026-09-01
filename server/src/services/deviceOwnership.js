@@ -11,32 +11,42 @@ class DeviceOwnershipService {
     try {
       if (fs.existsSync(this.storageFile)) {
         const raw = fs.readFileSync(this.storageFile, 'utf8');
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        if (!parsed.deletedStations) parsed.deletedStations = [];
+        if (!parsed.deletedDevices) parsed.deletedDevices = [];
+        if (!parsed.deletedUsers) parsed.deletedUsers = [];
+        if (!parsed.dealerDeletedDevices) parsed.dealerDeletedDevices = {};
+        return parsed;
       }
     } catch (e) {
       console.warn('[DeviceOwnership] Không thể đọc device_ownership.json:', e.message);
     }
     return {
+      deletedStations: [],
+      deletedDevices: [],
+      deletedUsers: [],
+      dealerDeletedDevices: {},
       users: {
-        'sungo123': { userType: 1, roleName: 'Tổng Phân Phối (Distributor)', userName: 'Zeno Master Distributor', company: 'Zeno Clean Energy Corp' },
-        'zeno_admin': { userType: 1, roleName: 'Tổng Phân Phối (Distributor)', userName: 'Zeno System Admin', company: 'Zeno Clean Energy Corp' },
-        'tuan_solar': { userType: 2, roleName: 'Thợ Lắp Đặt / Đại Lý (Installer)', userName: 'Phạm Minh Tuấn (Kỹ thuật)', company: 'Tuấn Solar Miền Nam' },
-        'kt_phamminh': { userType: 2, roleName: 'Thợ Lắp Đặt / Đại Lý (Installer)', userName: 'Phạm Minh Tuấn (Kỹ thuật)', company: 'Tuấn Solar Miền Nam' },
-        'demo_dealer': { userType: 2, roleName: 'Thợ Lắp Đặt / Đại Lý (Installer)', userName: 'Đại Lý Năng Lượng Zeno (Demo)', company: 'Zeno Clean Energy Co., Ltd.' },
-        'demo_installer': { userType: 2, roleName: 'Thợ Lắp Đặt / Đại Lý (Installer)', userName: 'Đội Kỹ Thuật Lắp Đặt', company: 'Zeno Installer Partner' },
-        'dungkiep': { userType: 3, roleName: 'Chủ Nhà / Người Dùng Cuối (View-Only)', userName: 'Chủ Hộ zenoPlant (Dũng Kiệp)', company: 'Gia đình' },
-        'anh_nam_q7': { userType: 3, roleName: 'Chủ Nhà / Người Dùng Cuối (View-Only)', userName: 'Nguyễn Văn Nam (Chủ nhà)', company: 'Villa Thảo Điền' },
-        'demo_homeowner': { userType: 3, roleName: 'Chủ Nhà / Người Dùng Cuối (View-Only)', userName: 'Khách Hàng Hộ Gia Đình', company: 'Gia đình' }
+        'sungo.vn': { userType: 1, roleName: '👑 Tổng Phân Phối (Distributor)', userName: 'SUNGO SOLAR VIỆT NAM (Master)', company: 'SUNGO Clean Energy Corp' },
+        'sungo123': { userType: 1, roleName: '👑 Tổng Phân Phối (Distributor)', userName: 'SUNGO SOLAR VIỆT NAM (Master)', company: 'SUNGO Clean Energy Corp' },
+        'zeno_admin': { userType: 1, roleName: '👑 Tổng Phân Phối (Distributor)', userName: 'Zeno System Admin', company: 'Zeno Clean Energy Corp' },
+        'newtech.sg': { userType: 2, roleName: '🏢 Đại Lý (Dealer)', userName: 'Đại Lý Newtech Solar (Nguyễn Hồng Sơn)', company: 'Newtech Solar Sài Gòn' },
+        'tuan_solar': { userType: 2, roleName: '🏢 Đại Lý (Dealer)', userName: 'Phạm Minh Tuấn (Kỹ thuật)', company: 'Tuấn Solar Miền Nam' },
+        'thodien_mientay': { userType: 2, roleName: '🏢 Đại Lý (Dealer)', userName: 'Đại Lý Trần Văn Hưng (Miền Tây)', company: 'Thợ Điện Miền Tây' },
+        'dungkiep': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Chủ Hộ zenoPlant (Dũng Kiệp)', company: 'Gia đình' },
+        'vothehien1006': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Khách Hàng Võ Thế Hiển', company: 'Gia đình' },
+        'chuhanatest': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Chủ Nhà Dũng Kiệp (zenoPlant)', company: 'Gia đình' },
+        'zeno_home_9200': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Anh Nam (Chủ Nhà Thảo Điền)', company: 'Villa Thảo Điền' }
       },
       devices: {
         '465132145264787456': {
           deviceId: '465132145264787456',
           serialNumber: '3528214760-1',
           dtuCode: '35282147608648059097',
-          stationName: 'sungoPlant',
-          distributor: 'sungo123',
+          stationName: 'canh',
+          distributor: 'sungo.vn',
           installer: 'tuan_solar',
-          customer: 'anh_nam_q7',
+          customer: 'sungo123',
           isConfigLocked: true,
           status: 'ONLINE'
         },
@@ -45,9 +55,31 @@ class DeviceOwnershipService {
           serialNumber: '5037108978-1',
           dtuCode: '50371089784075173825',
           stationName: 'zenoPlant',
-          distributor: 'sungo123',
-          installer: 'tuan_solar',
+          distributor: 'sungo.vn',
+          installer: 'newtech.sg',
           customer: 'dungkiep',
+          isConfigLocked: true,
+          status: 'ONLINE'
+        },
+        '495450468187602944': {
+          deviceId: '495450468187602944',
+          serialNumber: '4163930009-1',
+          dtuCode: '41639300099725757805',
+          stationName: 'Hien_newtech.sgPlant',
+          distributor: 'sungo.vn',
+          installer: 'newtech.sg',
+          customer: 'vothehien1006',
+          isConfigLocked: true,
+          status: 'ONLINE'
+        },
+        '178817432746814411': {
+          deviceId: '178817432746814411',
+          serialNumber: '6074969919-1',
+          dtuCode: '60749699196447581049',
+          stationName: 'phúc trung',
+          distributor: 'sungo.vn',
+          installer: 'tuan_solar',
+          customer: '',
           isConfigLocked: true,
           status: 'ONLINE'
         }
@@ -67,11 +99,52 @@ class DeviceOwnershipService {
     }
   }
 
+  // Kiểm tra blacklist xóa
+  isStationDeleted(stationIdOrName) {
+    if (!stationIdOrName) return false;
+    const target = String(stationIdOrName).toLowerCase().trim();
+    if (!this.data.deletedStations) return false;
+    return this.data.deletedStations.some(s => String(s).toLowerCase().trim() === target);
+  }
+
+  isDeviceDeleted(deviceIdOrSn, dealerAccount = null) {
+    if (!deviceIdOrSn) return false;
+    const target = String(deviceIdOrSn).toLowerCase().trim();
+    
+    // 1. Kiểm tra Global Deleted (Master xóa)
+    if (this.data.deletedDevices && this.data.deletedDevices.some(d => String(d).toLowerCase().trim() === target)) {
+      return true;
+    }
+
+    // 2. Kiểm tra Dealer Deleted (Đại lý xóa quyền phụ trách)
+    if (dealerAccount && this.data.dealerDeletedDevices && this.data.dealerDeletedDevices[dealerAccount.toLowerCase()]) {
+      const dealerList = this.data.dealerDeletedDevices[dealerAccount.toLowerCase()];
+      if (Array.isArray(dealerList) && dealerList.some(d => String(d).toLowerCase().trim() === target)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  isUserDeleted(accountOrId) {
+    if (!accountOrId) return false;
+    const target = String(accountOrId).toLowerCase().trim();
+    if (!this.data.deletedUsers) return false;
+    return this.data.deletedUsers.some(u => String(u).toLowerCase().trim() === target);
+  }
+
   getUserRole(account) {
     const acc = String(account || '').toLowerCase().trim();
 
-    // 1. CẤP 1: 👑 TỔNG PHÂN PHỐI (CHỈ DUY NHẤT 1 TÀI KHOẢN sungo.vn - FULL QUYỀN)
-    if (acc === 'sungo.vn' || acc === 'admin@sungo.vn') {
+    // 1. CẤP 1: 👑 TỔNG PHÂN PHỐI / MASTER ADMIN (sungo.vn, sungo123, admin, zeno_admin)
+    if (
+      acc === 'sungo.vn' || 
+      acc === 'sungo123' || 
+      acc === 'admin@sungo.vn' || 
+      acc === 'zeno_admin' || 
+      acc === 'admin'
+    ) {
       return {
         userType: 1,
         roleName: '👑 Tổng Phân Phối (Distributor)',
@@ -86,22 +159,29 @@ class DeviceOwnershipService {
     // 2. Tra cứu trong bảng users
     if (this.data.users && this.data.users[acc]) {
       const u = this.data.users[acc];
-      // Bảo vệ: Nếu ai đó sửa JSON thành 1 thì hạ xuống 2
-      const cleanType = (u.userType === 1 && acc !== 'sungo.vn') ? 2 : (u.userType === 2 ? 2 : 3);
-      const cleanRoleName = cleanType === 2 ? '🏢 Đại Lý (Dealer)' : '🏠 Người Tiêu Dùng Cuối (End-User)';
+      const cleanType = (u.userType === 1) ? 1 : (u.userType === 2 ? 2 : 3);
+      const cleanRoleName = cleanType === 1 ? '👑 Tổng Phân Phối (Distributor)' : (cleanType === 2 ? '🏢 Đại Lý (Dealer)' : '🏠 Người Tiêu Dùng Cuối (End-User)');
       return {
         userType: cleanType,
         roleName: cleanRoleName,
         userName: u.userName || acc,
         company: u.company || (cleanType === 2 ? 'Đại Lý Phân Phối' : 'Hộ Gia Đình'),
-        canConfig: cleanType === 2,
-        canAssign: cleanType === 2,
-        canViewAll: false
+        canConfig: cleanType <= 2,
+        canAssign: cleanType <= 2,
+        canViewAll: cleanType === 1
       };
     }
 
     // 3. CẤP 2: 🏢 ĐẠI LÝ (DEALER)
-    if (acc.includes('dealer') || acc.includes('daily') || acc.includes('tho') || acc.includes('kt_') || acc.includes('installer') || acc.includes('newtech')) {
+    if (
+      acc.includes('dealer') || 
+      acc.includes('daily') || 
+      acc.includes('tho') || 
+      acc.includes('kt_') || 
+      acc.includes('installer') || 
+      acc.includes('newtech') ||
+      acc.includes('solar')
+    ) {
       return {
         userType: 2,
         roleName: '🏢 Đại Lý (Dealer)',
@@ -477,7 +557,18 @@ class DeviceOwnershipService {
     if (!this.verifyAdminPassword(adminPassword)) {
       throw new Error('Mật khẩu quản trị viên [sungo123] không chính xác! Vui lòng nhập đúng mật khẩu xác nhận để xóa trạm an toàn.');
     }
-    return this.deleteStation(stationId);
+    this.data = this.loadData();
+    if (!this.data.deletedStations) this.data.deletedStations = [];
+    
+    const cleanId = String(stationId).trim();
+    if (!this.data.deletedStations.includes(cleanId)) {
+      this.data.deletedStations.push(cleanId);
+    }
+
+    // Xóa tất cả các thiết bị gắn với trạm này
+    this.deleteStation(stationId);
+    this.saveData();
+    return { success: true, message: `Đã xóa vĩnh viễn trạm [${stationId}] khỏi hệ thống thành công!` };
   }
 
   deleteCustomerSafe({ customerId, adminPassword }) {
@@ -485,24 +576,46 @@ class DeviceOwnershipService {
       throw new Error('Mật khẩu quản trị viên [sungo123] không chính xác! Vui lòng nhập đúng mật khẩu xác nhận để xóa tài khoản an toàn.');
     }
     this.data = this.loadData();
+    if (!this.data.deletedUsers) this.data.deletedUsers = [];
+
+    const cleanCustId = String(customerId).trim().toLowerCase();
+    if (!this.data.deletedUsers.includes(cleanCustId)) {
+      this.data.deletedUsers.push(cleanCustId);
+    }
+
     let deletedAcc = null;
     if (this.data.users) {
       for (const [acc, u] of Object.entries(this.data.users)) {
-        if (String(u.userId) === String(customerId) || acc.toLowerCase() === String(customerId).toLowerCase()) {
+        if (String(u.userId) === String(customerId) || acc.toLowerCase() === cleanCustId) {
           deletedAcc = acc;
           delete this.data.users[acc];
+          if (!this.data.deletedUsers.includes(acc.toLowerCase())) {
+            this.data.deletedUsers.push(acc.toLowerCase());
+          }
           break;
         }
       }
-      if (deletedAcc) {
-        this.saveData();
-      }
     }
+
+    // Gỡ liên kết customer của các thiết bị thuộc khách này
+    if (deletedAcc || cleanCustId) {
+      const targetAcc = (deletedAcc || cleanCustId).toLowerCase();
+      Object.values(this.data.devices || {}).forEach(d => {
+        if (d.customer && d.customer.toLowerCase() === targetAcc) {
+          d.customer = '';
+        }
+      });
+    }
+
+    this.saveData();
     return { success: true, deletedAccount: deletedAcc || customerId };
   }
 
   deleteDeviceSafe({ deviceId, isMaster, dealerAccount, adminPassword, confirmSn }) {
     this.data = this.loadData();
+    if (!this.data.deletedDevices) this.data.deletedDevices = [];
+    if (!this.data.dealerDeletedDevices) this.data.dealerDeletedDevices = {};
+
     const target = String(deviceId).toLowerCase().trim();
     let foundDevId = null;
     let foundDev = null;
@@ -519,44 +632,61 @@ class DeviceOwnershipService {
       }
     });
 
-    if (!foundDev || !foundDevId) {
-      throw new Error(`Không tìm thấy thiết bị [${deviceId}] trong hệ thống.`);
-    }
-
     if (isMaster) {
       // Tài khoản Master: Bắt buộc nhập mật khẩu admin sungo123
       if (!this.verifyAdminPassword(adminPassword)) {
         throw new Error('Mật khẩu quản trị viên [sungo123] không chính xác! Vui lòng nhập đúng mật khẩu xác nhận để xóa thiết bị an toàn.');
       }
-      delete this.data.devices[foundDevId];
+
+      const sn = foundDev?.serialNumber || deviceId;
+      const dtu = foundDev?.dtuCode || '';
+      if (!this.data.deletedDevices.includes(String(deviceId).trim())) this.data.deletedDevices.push(String(deviceId).trim());
+      if (sn && !this.data.deletedDevices.includes(String(sn).trim())) this.data.deletedDevices.push(String(sn).trim());
+      if (dtu && !this.data.deletedDevices.includes(String(dtu).trim())) this.data.deletedDevices.push(String(dtu).trim());
+
+      if (foundDevId) {
+        delete this.data.devices[foundDevId];
+      }
       this.saveData();
-      return { success: true, message: `Đã xóa vĩnh viễn thiết bị [${foundDev.serialNumber || foundDevId}] khỏi hệ thống thành công!` };
+      return { success: true, message: `Đã xóa vĩnh viễn thiết bị [${sn}] khỏi toàn bộ hệ thống thành công!` };
     } else {
       // Tài khoản Đại Lý (Dealer): Bắt buộc nhập đúng Mã Máy (Serial Number / SN)
       const inputSn = String(confirmSn || '').trim().toLowerCase();
-      const realSn = String(foundDev.serialNumber || '').trim().toLowerCase();
-      const realDtu = String(foundDev.dtuCode || '').trim().toLowerCase();
+      const realSn = String(foundDev?.serialNumber || deviceId || '').trim().toLowerCase();
+      const realDtu = String(foundDev?.dtuCode || '').trim().toLowerCase();
 
       if (!inputSn) {
         throw new Error('Vui lòng nhập chính xác Mã Máy (Serial Number / SN của Inverter) để xác nhận xóa an toàn!');
       }
 
       if (inputSn !== realSn && inputSn !== realDtu && !realSn.includes(inputSn)) {
-        throw new Error(`Mã máy [${confirmSn}] không khớp với Số Serial thực tế [${foundDev.serialNumber}] của thiết bị!`);
+        throw new Error(`Mã máy [${confirmSn}] không khớp với Số Serial thực tế [${foundDev?.serialNumber || deviceId}] của thiết bị!`);
+      }
+
+      const dAcc = String(dealerAccount || '').trim().toLowerCase();
+      if (!this.data.dealerDeletedDevices[dAcc]) {
+        this.data.dealerDeletedDevices[dAcc] = [];
+      }
+      if (!this.data.dealerDeletedDevices[dAcc].includes(realSn)) {
+        this.data.dealerDeletedDevices[dAcc].push(realSn);
+      }
+      if (!this.data.dealerDeletedDevices[dAcc].includes(String(deviceId).trim().toLowerCase())) {
+        this.data.dealerDeletedDevices[dAcc].push(String(deviceId).trim().toLowerCase());
       }
 
       // Gỡ quyền phụ trách của đại lý này khỏi thiết bị
-      const dAcc = String(dealerAccount || '').trim().toLowerCase();
-      if (foundDev.installer && foundDev.installer.toLowerCase() === dAcc) {
-        foundDev.installer = '';
-      }
-      if (foundDev.sharedInstallers) {
-        foundDev.sharedInstallers = foundDev.sharedInstallers.filter(a => a.toLowerCase() !== dAcc);
+      if (foundDev) {
+        if (foundDev.installer && foundDev.installer.toLowerCase() === dAcc) {
+          foundDev.installer = '';
+        }
+        if (foundDev.sharedInstallers) {
+          foundDev.sharedInstallers = foundDev.sharedInstallers.filter(a => a.toLowerCase() !== dAcc);
+        }
       }
       this.saveData();
       return {
         success: true,
-        message: `Đã xóa thiết bị [${foundDev.serialNumber}] khỏi danh sách phụ trách của đại lý thành công!`
+        message: `Đã xóa thiết bị [${foundDev?.serialNumber || deviceId}] khỏi danh sách quản lý của đại lý thành công!`
       };
     }
   }

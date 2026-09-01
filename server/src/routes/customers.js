@@ -39,9 +39,10 @@ router.get('/', checkAuth, async (req, res) => {
       let uIdx = 1000;
       Object.entries(deviceOwnership.data.users).forEach(([acc, u]) => {
         const userKey = String(acc || '').toLowerCase();
-        if (!userKey) return;
+        if (!userKey || deviceOwnership.isUserDeleted(userKey) || deviceOwnership.isUserDeleted(u.userId)) return;
         uIdx++;
-        const uType = Number(u.userType || 3);
+        const isAccMaster = (userKey === 'sungo.vn' || userKey === 'sungo123' || userKey === 'zeno_admin' || userKey === 'admin');
+        const uType = isAccMaster ? 1 : Number(u.userType || 3);
         registeredUsersMap[userKey] = {
           userId: u.userId || uIdx,
           account: acc,
@@ -82,7 +83,9 @@ router.get('/', checkAuth, async (req, res) => {
       if (result && Array.isArray(result.rows)) {
         result.rows.forEach(r => {
           const userKey = String(r.account || '').toLowerCase();
-          if (userKey) {
+          if (userKey && !deviceOwnership.isUserDeleted(userKey) && !deviceOwnership.isUserDeleted(r.userId)) {
+            const isAccMaster = (userKey === 'sungo.vn' || userKey === 'sungo123' || userKey === 'zeno_admin' || userKey === 'admin');
+            const uType = isAccMaster ? 1 : Number(r.userType || registeredUsersMap[userKey]?.userType || 3);
             registeredUsersMap[userKey] = {
               ...registeredUsersMap[userKey],
               userId: r.userId || registeredUsersMap[userKey]?.userId,
@@ -90,8 +93,8 @@ router.get('/', checkAuth, async (req, res) => {
               userName: r.userName || registeredUsersMap[userKey]?.userName || r.account,
               email: r.email || registeredUsersMap[userKey]?.email,
               cellphone: r.cellphone || registeredUsersMap[userKey]?.cellphone,
-              userType: Number(r.userType || registeredUsersMap[userKey]?.userType || 3),
-              roleName: r.roleName || registeredUsersMap[userKey]?.roleName,
+              userType: uType,
+              roleName: isAccMaster ? '👑 Tổng Phân Phối' : (r.roleName || registeredUsersMap[userKey]?.roleName),
               status: r.status || 'ACTIVE',
               groupId: r.groupId,
               groupName: r.groupName,
@@ -404,7 +407,7 @@ router.delete('/:id', checkAuth, async (req, res) => {
     const result = deviceOwnership.deleteCustomerSafe({ customerId, adminPassword });
 
     try {
-      await pool.query('DELETE FROM customers WHERE user_id::text = $1 OR account = $1', [customerId]);
+      await pool.query('DELETE FROM customers WHERE user_id::text = $1 OR LOWER(account) = LOWER($1)', [customerId]);
     } catch (err) {}
 
     return res.json({ 

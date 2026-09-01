@@ -16,8 +16,8 @@ export default function Customers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
 
-  const isMaster = user?.userType === 1;
-  const isInstaller = user?.userType === 2;
+  const isMaster = user?.userType === 1 || user?.account === 'sungo.vn' || user?.account === 'sungo123';
+  const isInstaller = user?.userType === 2 && !isMaster;
 
   // Modals
   const [isCreateOpen, setIsCreateOpen] = useState(false);

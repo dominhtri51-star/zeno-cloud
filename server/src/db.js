@@ -53,11 +53,14 @@ async function initDatabase() {
       custRows.rows.forEach(r => {
         if (r.account) {
           const accKey = r.account.toLowerCase();
+          if (deviceOwnership.isUserDeleted(accKey) || deviceOwnership.isUserDeleted(r.user_id)) {
+            return; // Bỏ qua tài khoản đã bị xóa
+          }
           if (!deviceOwnership.data.users[accKey]) {
             deviceOwnership.data.users[accKey] = {
               userId: r.user_id,
-              userType: r.user_type,
-              roleName: r.role_name,
+              userType: (accKey === 'sungo.vn' || accKey === 'sungo123') ? 1 : r.user_type,
+              roleName: (accKey === 'sungo.vn' || accKey === 'sungo123') ? '👑 Tổng Phân Phối' : r.role_name,
               userName: r.user_name,
               email: r.email,
               cellphone: r.cellphone,

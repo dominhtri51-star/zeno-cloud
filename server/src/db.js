@@ -2,15 +2,28 @@ const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-const pool = new Pool({
-  host: process.env.DB_HOST || '127.0.0.1',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  user: process.env.DB_USER || 'solar_admin',
-  password: process.env.DB_PASSWORD || 'SolarPass123!',
-  database: process.env.DB_NAME || 'zeno_solar',
-  max: 10,
-  idleTimeoutMillis: 30000
-});
+const connectionString = process.env.DATABASE_URL;
+
+const poolConfig = connectionString
+  ? {
+      connectionString,
+      ssl: connectionString.includes('localhost') || connectionString.includes('127.0.0.1')
+        ? false
+        : { rejectUnauthorized: false },
+      max: 10,
+      idleTimeoutMillis: 30000
+    }
+  : {
+      host: process.env.DB_HOST || '127.0.0.1',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      user: process.env.DB_USER || 'solar_admin',
+      password: process.env.DB_PASSWORD || 'SolarPass123!',
+      database: process.env.DB_NAME || 'zeno_solar',
+      max: 10,
+      idleTimeoutMillis: 30000
+    };
+
+const pool = new Pool(poolConfig);
 
 // Auto-run schema initialization
 async function initDatabase() {

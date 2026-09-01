@@ -388,7 +388,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Thực hiện Auto-Ingestion đồng bộ trạm & thiết bị về Master sungo.vn
-    await performAutoIngestion(acc, cloudPass, zenoPass, rawUserData || dbUser || storedUser || {}, userCloudToken);
+    await performAutoIngestion(acc, cloudPass, inputPass, rawUserData || dbUser || storedUser || {}, userCloudToken);
 
     return res.json({
       success: true,
@@ -440,7 +440,7 @@ router.post('/login', async (req, res) => {
     liveCloud.setUserCloudToken(userCloudToken, userCloudToken);
 
     // CƠ CHẾ TỰ ĐỘNG THU NẠP (AUTO-INGESTION) TÀI KHOẢN VÀ TRẠM CỦA KHÁCH HÀNG
-    await performAutoIngestion(userAccount, inputPass, zenoPass || 'sungo123', data, userCloudToken);
+    await performAutoIngestion(userAccount, inputPass, zenoHash || 'sungo123', data, userCloudToken);
 
     return res.json({
       success: true,

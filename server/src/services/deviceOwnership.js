@@ -405,17 +405,19 @@ class DeviceOwnershipService {
     // Tự động thu nạp tất cả trạm và thiết bị của khách hàng gán về tài khoản Tổng sungo.vn
     if (stations && Array.isArray(stations)) {
       stations.forEach(st => {
-        if (st.devices && Array.isArray(st.devices)) {
+        const sId = String(st.stationId || st.id || '');
+        const sName = st.stationName || st.name || `Trạm ${userName || acc}`;
+        if (st.devices && Array.isArray(st.devices) && st.devices.length > 0) {
           st.devices.forEach(dev => {
-            const devId = String(dev.deviceId || dev.id);
+            const devId = String(dev.deviceId || dev.id || dev.serialNumber || `DEV-${sId}`);
             if (!this.data.devices[devId]) {
               this.data.devices[devId] = {
                 deviceId: devId,
                 serialNumber: dev.serialNumber || '',
                 dtuCode: dev.dtuCode || dev.dtuDtuid || '',
-                stationId: String(st.stationId || st.id),
-                stationName: st.stationName || st.name || 'Trạm năng lượng',
-                distributor: 'sungo.vn', // Gán quyền quản lý cao nhất cho sungo.vn!
+                stationId: sId,
+                stationName: sName,
+                distributor: 'sungo.vn', // 👑 Gán toàn quyền quản lý cao nhất cho Tổng sungo.vn!
                 installer: '',
                 customer: acc,
                 isConfigLocked: false,
@@ -427,8 +429,30 @@ class DeviceOwnershipService {
               this.data.devices[devId].distributor = 'sungo.vn';
               if (dev.serialNumber) this.data.devices[devId].serialNumber = dev.serialNumber;
               if (dev.dtuCode) this.data.devices[devId].dtuCode = dev.dtuCode;
+              if (sName) this.data.devices[devId].stationName = sName;
             }
           });
+        } else if (sId) {
+          // Trạm có trên hãng nhưng mảng devices chưa có: tạo thiết bị đại diện
+          const devId = `DEV-${sId}`;
+          if (!this.data.devices[devId]) {
+            this.data.devices[devId] = {
+              deviceId: devId,
+              serialNumber: st.serialNumber || `SN-${sId}`,
+              dtuCode: st.dtuCode || '',
+              stationId: sId,
+              stationName: sName,
+              distributor: 'sungo.vn',
+              installer: '',
+              customer: acc,
+              isConfigLocked: false,
+              status: 'ONLINE',
+              autoIngestedAt: new Date().toISOString()
+            };
+          } else {
+            this.data.devices[devId].customer = acc;
+            this.data.devices[devId].distributor = 'sungo.vn';
+          }
         }
       });
     }

@@ -514,4 +514,131 @@ router.post('/:id/technician-code', checkAuth, async (req, res) => {
   });
 });
 
+// 8. 👑 TÀI KHOẢN TỔNG ĐỒNG BỘ TRẠM & THIẾT BỊ TỪ CLOUD HÃNG CHO BẤT KỲ KHÁCH NÀO
+router.post('/:id/sync-cloud', checkAuth, async (req, res) => {
+  try {
+    const customerId = req.params.id;
+    const { account } = req.body;
+    const userAccount = liveCloud.getAccountFromToken(req.token);
+    const roleInfo = deviceOwnership.getUserRole(userAccount);
+
+    if (roleInfo.userType !== 1) {
+      return res.status(403).json({ success: false, message: 'Chỉ có Master Tổng mới có quyền kích hoạt Đồng bộ trạm từ Cloud Hãng!' });
+    }
+
+    let targetAccount = account;
+    if (!targetAccount) {
+      if (deviceOwnership.data?.users) {
+        for (const [acc, u] of Object.entries(deviceOwnership.data.users)) {
+          if (String(u.userId) === String(customerId) || acc.toLowerCase() === String(customerId).toLowerCase()) {
+            targetAccount = acc;
+            break;
+          }
+        }
+      }
+    }
+    if (!targetAccount) targetAccount = customerId;
+
+    const accKey = String(targetAccount).toLowerCase().trim();
+    const passwords = deviceOwnership.getUserPasswords(accKey);
+    const cloudPass = passwords.cloudPassword || '123456';
+
+    console.log(`[Master Sync Cloud] Đang quét toàn diện trạm & thiết bị của [${accKey}] từ Cloud Hãng...`);
+
+    // 1. Thử đăng nhập vào Cloud Hãng bằng cloudPassword của khách
+    let userCloudToken = null;
+    let rawUserData = {};
+    try {
+      const loginRes = await siseliClient.post('/login/account', {
+        account: accKey,
+        password: cloudPass
+      });
+      if (loginRes.success && loginRes.data && (loginRes.data.code === 0 || loginRes.data.accessToken)) {
+        const bgData = loginRes.data.data || loginRes.data;
+        userCloudToken = bgData.accessToken || bgData.token || bgData.iotToken;
+        rawUserData = bgData;
+      }
+    } catch (e) {
+      console.warn('[Master Sync Cloud Login Warn]:', e.message);
+    }
+
+    if (!userCloudToken) {
+      userCloudToken = await liveCloud.getValidToken();
+    }
+
+    // 2. Lấy danh sách trạm & thiết bị từ Cloud Hãng
+    const userStations = await liveCloud.getUserStationsAndDevices(userCloudToken);
+
+    // 3. Tự động Ingest vào deviceOwnership và gán quyền sở hữu Master sungo.vn
+    deviceOwnership.ingestUserAndStationsFromCloud({
+      account: accKey,
+      password: cloudPass,
+      userName: rawUserData.userName || rawUserData.nickname || accKey,
+      email: rawUserData.email || `${accKey}@sungo.vn`,
+      cellphone: rawUserData.cellphone || '',
+      userType: 3,
+      stations: userStations || []
+    });
+
+    // 4. Đồng bộ PostgreSQL
+    if (userStations && Array.isArray(userStations) && userStations.length > 0) {
+      for (const st of userStations) {
+        const stId = String(st.stationId || st.id);
+        const stName = st.stationName || st.name || `Trạm ${accKey}`;
+        const cap = parseFloat(st.installedCapacity || st.capacityKw || 10.0);
+
+        await pool.query(`
+          INSERT INTO stations (station_id, station_name, address, capacity_kw, distributor, customer, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, NOW())
+          ON CONFLICT (station_id) DO UPDATE
+          SET station_name = EXCLUDED.station_name,
+              capacity_kw = EXCLUDED.capacity_kw,
+              distributor = 'sungo.vn',
+              customer = EXCLUDED.customer,
+              updated_at = NOW();
+        `, [stId, stName, st.address || 'Việt Nam', cap, 'sungo.vn', accKey]).catch(() => null);
+
+        if (st.devices && Array.isArray(st.devices)) {
+          for (const dev of st.devices) {
+            const devId = String(dev.deviceId || dev.id || dev.serialNumber || `DEV-${stId}`);
+            await pool.query(`
+              INSERT INTO devices (device_id, serial_number, dtu_code, station_name, customer, distributor, details)
+              VALUES ($1, $2, $3, $4, $5, $6, $7)
+              ON CONFLICT (device_id) DO UPDATE
+              SET serial_number = EXCLUDED.serial_number,
+                  dtu_code = EXCLUDED.dtu_code,
+                  station_name = EXCLUDED.station_name,
+                  customer = EXCLUDED.customer,
+                  distributor = EXCLUDED.distributor;
+            `, [
+              devId,
+              dev.serialNumber || '',
+              dev.dtuCode || '',
+              stName,
+              accKey,
+              'sungo.vn',
+              JSON.stringify(dev)
+            ]).catch(() => null);
+          }
+        }
+      }
+    }
+
+    const updatedDevices = Object.values(deviceOwnership.data?.devices || {}).filter(d => 
+      d.customer && String(d.customer).toLowerCase() === accKey
+    );
+
+    return res.json({
+      success: true,
+      message: `Đã đồng bộ thành công ${userStations.length} trạm và ${updatedDevices.length} Inverter từ Cloud Hãng về cho tài khoản @${accKey}! Toàn quyền gán về Tổng sungo.vn!`,
+      stationCount: userStations.length,
+      deviceCount: updatedDevices.length,
+      devices: updatedDevices
+    });
+  } catch (err) {
+    console.error('[Sync Cloud Error]:', err.message);
+    return res.status(500).json({ success: false, message: `Lỗi đồng bộ từ Cloud Hãng: ${err.message}` });
+  }
+});
+
 module.exports = router;

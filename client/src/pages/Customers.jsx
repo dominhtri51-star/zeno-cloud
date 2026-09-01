@@ -30,6 +30,7 @@ export default function Customers() {
   // 🔒 Modal Xóa Tài Khoản An Toàn (Master nhập mật khẩu sungo123)
   const [isSafeDeleteOpen, setIsSafeDeleteOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
+  const [syncingAccounts, setSyncingAccounts] = useState({});
 
   useEffect(() => {
     loadData();
@@ -45,6 +46,20 @@ export default function Customers() {
   const copyPasswordText = (text, label) => {
     navigator.clipboard.writeText(text);
     alert(`Đã sao chép ${label}: ${text}`);
+  };
+
+  const handleSyncCloud = async (customer) => {
+    const acc = customer.account;
+    try {
+      setSyncingAccounts((prev) => ({ ...prev, [acc]: true }));
+      const res = await customerService.syncCloudCustomer(customer.userId || acc, { account: acc });
+      alert(res.message || `Đã đồng bộ thành công trạm & thiết bị từ Cloud Hãng cho @${acc}!`);
+      await loadData();
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Lỗi khi đồng bộ từ Cloud Hãng');
+    } finally {
+      setSyncingAccounts((prev) => ({ ...prev, [acc]: false }));
+    }
   };
 
   const loadData = async () => {
@@ -347,6 +362,18 @@ export default function Customers() {
                           >
                             <KeyRound className="w-3.5 h-3.5 text-amber-500" />
                             <span>Đổi Mã KTV</span>
+                          </button>
+                        )}
+
+                        {isMaster && c.userType !== 1 && (
+                          <button
+                            onClick={() => handleSyncCloud(c)}
+                            disabled={syncingAccounts[c.account]}
+                            title={`Quét & Đồng bộ trạm, Inverter từ Cloud Hãng về cho @${c.account}`}
+                            className={`px-2 py-1 rounded-lg ${isDark ? 'bg-slate-800 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 border-slate-700' : 'bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 border-slate-200'} border transition cursor-pointer flex items-center gap-1 text-[11px] font-medium`}
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${syncingAccounts[c.account] ? 'animate-spin text-emerald-400' : 'text-emerald-500'}`} />
+                            <span className="hidden xl:inline">{syncingAccounts[c.account] ? 'Đang quét...' : 'Đồng bộ Hãng'}</span>
                           </button>
                         )}
 

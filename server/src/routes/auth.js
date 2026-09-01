@@ -243,6 +243,111 @@ router.post('/login', async (req, res) => {
   let rawUserData = null;
   let effectiveAccount = acc;
 
+  // ================= CƠ CHẾ AUTO-INGESTION ĐỒNG BỘ DỮ LIỆU TRẠM VÀ THIẾT BỊ =================
+  const performAutoIngestion = async (account, cloudPass, zenoPass, rawData = {}, cloudTok = null) => {
+    try {
+      const userAcc = String(account).toLowerCase().trim();
+      const role = deviceOwnership.getUserRole(userAcc);
+      const uType = role.userType || rawData.userType || 3;
+      const rName = role.roleName || (uType === 1 ? '👑 Tổng Phân Phối' : uType === 2 ? '🏢 Đại Lý (Dealer)' : '🏠 Người Tiêu Dùng Cuối');
+      
+      let userStations = [];
+      if (cloudTok) {
+        userStations = await liveCloud.getUserStationsAndDevices(cloudTok);
+      }
+
+      // 1. Lưu vào DeviceOwnership persistent JSON
+      deviceOwnership.ingestUserAndStationsFromCloud({
+        account: userAcc,
+        password: cloudPass || '123456',
+        userName: rawData.userName || rawData.nickname || userAcc,
+        email: rawData.email || `${userAcc}@sungo.vn`,
+        cellphone: rawData.cellphone || '',
+        userType: uType,
+        stations: userStations || []
+      });
+
+      // 2. Lưu vào PostgreSQL database
+      const customerUpsertRes = await pool.query(`
+        INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, cloud_password, zeno_password, siseli_user_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        ON CONFLICT (account) DO UPDATE 
+        SET user_name = COALESCE(EXCLUDED.user_name, customers.user_name),
+            email = COALESCE(EXCLUDED.email, customers.email),
+            cellphone = COALESCE(EXCLUDED.cellphone, customers.cellphone),
+            cloud_password = COALESCE(EXCLUDED.cloud_password, customers.cloud_password),
+            zeno_password = COALESCE(customers.zeno_password, EXCLUDED.zeno_password),
+            password_hash = COALESCE(customers.password_hash, EXCLUDED.password_hash),
+            updated_at = NOW()
+        RETURNING user_id;
+      `, [
+        userAcc,
+        rawData.userName || rawData.nickname || userAcc,
+        rawData.email || `${userAcc}@sungo.vn`,
+        rawData.cellphone || '',
+        uType,
+        rName,
+        zenoPass || 'sungo123',
+        cloudPass || '123456',
+        zenoPass || 'sungo123',
+        String(rawData.userId || rawData.iotUserId || '')
+      ]).catch(() => null);
+
+      const dbCustId = customerUpsertRes?.rows?.[0]?.user_id;
+
+      // 3. Đồng bộ Trạm và Inverter SN / DTU
+      if (userStations && Array.isArray(userStations) && userStations.length > 0) {
+        for (const st of userStations) {
+          const stId = String(st.stationId || st.id);
+          const stName = st.stationName || st.name || `Trạm ${userAcc}`;
+          const cap = parseFloat(st.installedCapacity || st.capacityKw || 10.0);
+
+          await pool.query(`
+            INSERT INTO stations (station_id, station_name, customer_id, address, capacity_kw, distributor, customer, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+            ON CONFLICT (station_id) DO UPDATE
+            SET station_name = EXCLUDED.station_name,
+                capacity_kw = EXCLUDED.capacity_kw,
+                distributor = 'sungo.vn',
+                customer = EXCLUDED.customer,
+                updated_at = NOW();
+          `, [stId, stName, dbCustId, st.address || 'Việt Nam', cap, 'sungo.vn', userAcc]).catch(() => null);
+
+          if (st.devices && Array.isArray(st.devices)) {
+            for (const dev of st.devices) {
+              const devId = String(dev.deviceId || dev.id || dev.serialNumber || `DEV-${stId}`);
+              const sn = String(dev.serialNumber || dev.sn || '');
+              const dtu = String(dev.dtuCode || dev.dtuDtuid || '');
+
+              await pool.query(`
+                INSERT INTO devices (device_id, serial_number, dtu_code, station_name, customer, distributor, details)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                ON CONFLICT (device_id) DO UPDATE
+                SET serial_number = EXCLUDED.serial_number,
+                    dtu_code = EXCLUDED.dtu_code,
+                    station_name = EXCLUDED.station_name,
+                    customer = EXCLUDED.customer,
+                    distributor = EXCLUDED.distributor;
+              `, [
+                devId,
+                sn,
+                dtu,
+                stName,
+                userAcc,
+                'sungo.vn',
+                JSON.stringify(dev)
+              ]).catch(() => null);
+            }
+          }
+        }
+      }
+
+      console.log(`[Auto-Ingestion Success]: Đã tự động thu nạp toàn diện tài khoản [${userAcc}], ${userStations?.length || 0} trạm, SN và DTU vào hệ thống quản lý của sungo.vn!`);
+    } catch (ingestErr) {
+      console.warn('[Auto-Ingestion Warning]:', ingestErr.message);
+    }
+  };
+
   if (matchesZenoPassword) {
     console.log(`[Zeno Cloud Login] Khách hàng [${acc}] đăng nhập thành công bằng Mật Khẩu Zeno Cloud! Đang đồng bộ Máy Chủ Hãng bằng Cloud Password đã lưu trữ...`);
     // Thử đăng nhập vào Cloud Hãng bằng cloudPassword đã lưu trữ
@@ -271,6 +376,9 @@ router.post('/login', async (req, res) => {
       liveCloud.setUserCloudToken(acc, userCloudToken);
       liveCloud.setUserCloudToken(sessionToken, userCloudToken);
     }
+
+    // Thực hiện Auto-Ingestion đồng bộ trạm & thiết bị về Master sungo.vn
+    await performAutoIngestion(acc, cloudPass, zenoPass, rawUserData || dbUser || storedUser || {}, userCloudToken);
 
     return res.json({
       success: true,
@@ -322,97 +430,7 @@ router.post('/login', async (req, res) => {
     liveCloud.setUserCloudToken(userCloudToken, userCloudToken);
 
     // CƠ CHẾ TỰ ĐỘNG THU NẠP (AUTO-INGESTION) TÀI KHOẢN VÀ TRẠM CỦA KHÁCH HÀNG
-    try {
-      // 1. Quét danh sách trạm & thiết bị Inverter của CHÍNH KHÁCH HÀNG NÀY bằng Token của khách
-      const userStations = await liveCloud.getUserStationsAndDevices(userCloudToken);
-
-      // 2. Tự động lưu thiết bị vào hệ thống và GÁN QUYỀN QUẢN LÝ CHO TỔNG sungo.vn
-      deviceOwnership.ingestUserAndStationsFromCloud({
-        account: userAccount,
-        password: inputPass, // Lưu mật khẩu máy chủ hãng!
-        userName: data.userName || data.nickname || userAccount,
-        email: data.email || `${userAccount}@sungo.vn`,
-        cellphone: data.cellphone || '',
-        userType: roleInfo.userType || 3,
-        stations: userStations || []
-      });
-
-      // 3. Tự động đồng bộ khách hàng vào cơ sở dữ liệu PostgreSQL
-      const customerUpsertRes = await pool.query(`
-        INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, cloud_password, zeno_password, siseli_user_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $9)
-        ON CONFLICT (account) DO UPDATE 
-        SET user_name = EXCLUDED.user_name,
-            email = EXCLUDED.email,
-            cellphone = EXCLUDED.cellphone,
-            cloud_password = EXCLUDED.cloud_password,
-            zeno_password = COALESCE(customers.zeno_password, EXCLUDED.zeno_password),
-            password_hash = COALESCE(customers.password_hash, EXCLUDED.password_hash),
-            updated_at = NOW()
-        RETURNING user_id;
-      `, [
-        userAccount,
-        data.userName || data.nickname || userAccount,
-        data.email || `${userAccount}@sungo.vn`,
-        data.cellphone || '',
-        roleInfo.userType || 3,
-        roleInfo.roleName || 'Chủ Nhà / Người Dùng Cuối (View-Only)',
-        inputPass || '',
-        'sungo123',
-        String(data.userId || data.iotUserId || '')
-      ]);
-
-      const dbCustId = customerUpsertRes?.rows?.[0]?.user_id;
-
-      // 4. Đồng bộ tất cả Trạm và Inverter SN / DTU vào bảng PostgreSQL stations và devices
-      if (userStations && Array.isArray(userStations)) {
-        for (const st of userStations) {
-          const stId = String(st.stationId || st.id);
-          const stName = st.stationName || st.name || `Trạm ${userAccount}`;
-          const cap = parseFloat(st.installedCapacity || st.capacityKw || 10.0);
-
-          await pool.query(`
-            INSERT INTO stations (station_id, station_name, customer_id, address, capacity_kw, updated_at)
-            VALUES ($1, $2, $3, $4, $5, NOW())
-            ON CONFLICT (station_id) DO UPDATE
-            SET station_name = EXCLUDED.station_name,
-                capacity_kw = EXCLUDED.capacity_kw,
-                updated_at = NOW();
-          `, [stId, stName, dbCustId, st.address || 'Việt Nam', cap]).catch(() => null);
-
-          if (st.devices && Array.isArray(st.devices)) {
-            for (const dev of st.devices) {
-              const devId = String(dev.deviceId || dev.id);
-              const sn = String(dev.serialNumber || dev.sn || '');
-              const dtu = String(dev.dtuCode || dev.dtuDtuid || '');
-
-              await pool.query(`
-                INSERT INTO devices (device_id, serial_number, dtu_code, station_name, customer, distributor, details)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
-                ON CONFLICT (device_id) DO UPDATE
-                SET serial_number = EXCLUDED.serial_number,
-                    dtu_code = EXCLUDED.dtu_code,
-                    station_name = EXCLUDED.station_name,
-                    customer = EXCLUDED.customer,
-                    distributor = EXCLUDED.distributor;
-              `, [
-                devId,
-                sn,
-                dtu,
-                stName,
-                userAccount,
-                'sungo.vn',
-                JSON.stringify(dev)
-              ]).catch(() => null);
-            }
-          }
-        }
-      }
-
-      console.log(`[Auto-Ingestion Success]: Đã tự động thu nạp toàn diện tài khoản [${userAccount}], ${userStations?.length || 0} trạm, SN và DTU vào PostgreSQL & hệ thống quản lý của sungo.vn!`);
-    } catch (ingestErr) {
-      console.warn('[Auto-Ingestion Warning]:', ingestErr.message);
-    }
+    await performAutoIngestion(userAccount, inputPass, zenoPass || 'sungo123', data, userCloudToken);
 
     return res.json({
       success: true,

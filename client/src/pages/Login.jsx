@@ -270,18 +270,11 @@ export default function Login({ onLoginSuccess }) {
       <div className="w-full max-w-[420px] bg-[#161922] rounded-3xl border border-slate-800 shadow-2xl overflow-hidden">
         
         {/* Top Window Bar */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          {/* macOS Window Dots (Red, Yellow, Green) */}
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
-            <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
-            <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
-          </div>
+        <div className="text-center px-5 pt-5 pb-2">
           {/* Header Title */}
           <div className="text-sm font-black text-slate-300 tracking-wider">
             ZENO CLOUD
           </div>
-          <div className="w-12"></div> {/* Spacer balance */}
         </div>
 
         {/* Card Content */}

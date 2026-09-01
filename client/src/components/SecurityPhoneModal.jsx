@@ -64,11 +64,6 @@ export default function SecurityPhoneModal({ user, isOpen, onClose, onPhoneUpdat
         
         {/* Top Window Header */}
         <div className="flex items-center justify-between px-5 pt-4 pb-2 border-b border-slate-800/60">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
-            <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
-            <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
-          </div>
           <div className="text-xs font-black text-slate-300 tracking-wider">
             ZENO CLOUD SECURITY
           </div>

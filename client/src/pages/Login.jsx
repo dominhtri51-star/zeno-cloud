@@ -26,7 +26,6 @@ export default function Login({ onLoginSuccess }) {
   const [sunwiseOtp, setSunwiseOtp] = useState('');
   const [sunwisePassword, setSunwisePassword] = useState('');
   const [sunwiseConfirmPassword, setSunwiseConfirmPassword] = useState('');
-  const [sunwiseDtuId, setSunwiseDtuId] = useState('');
   const [sunwiseCurrency, setSunwiseCurrency] = useState('VND');
   const [sunwiseCaptchaId, setSunwiseCaptchaId] = useState('');
   const [sunwiseOtpLoading, setSunwiseOtpLoading] = useState(false);
@@ -188,6 +187,9 @@ export default function Login({ onLoginSuccess }) {
         setSunwiseSuccess(res.message || 'Mã xác thực OTP đã được Server Hãng gửi về email của bạn!');
         if (res.captchaId) {
           setSunwiseCaptchaId(res.captchaId);
+          try {
+            localStorage.setItem(`sunwise_captcha_${cleanEmail}`, res.captchaId);
+          } catch (e) {}
         }
         setSunwiseOtpCountdown(60);
       } else {
@@ -228,16 +230,20 @@ export default function Login({ onLoginSuccess }) {
       return setSunwiseError('Mật khẩu nhập lại không khớp!');
     }
 
+    const effectiveCaptchaId = sunwiseCaptchaId || localStorage.getItem(`sunwise_captcha_${cleanEmail}`);
+    if (!effectiveCaptchaId) {
+      return setSunwiseError('Vui lòng nhấn nút "Gửi" để nhận mã xác thực OTP từ Server Hãng trước khi bấm Đăng ký!');
+    }
+
     setSunwiseSubmitting(true);
     try {
       const res = await authService.registerSunwise({
         account: cleanAcc,
         email: cleanEmail,
         verifyCode: cleanOtp,
-        captchaId: sunwiseCaptchaId,
+        captchaId: effectiveCaptchaId,
         password: cleanPass,
         confirmPassword: cleanConfirm,
-        dtuId: sunwiseDtuId.trim(),
         currency: sunwiseCurrency
       });
 
@@ -466,19 +472,7 @@ export default function Login({ onLoginSuccess }) {
                   />
                 </div>
 
-                {/* 6. Vui lòng nhập DtuID + Scan Icon */}
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Vui lòng nhập DtuID"
-                    value={sunwiseDtuId}
-                    onChange={(e) => setSunwiseDtuId(e.target.value)}
-                    className="w-full pl-4 pr-12 py-3 bg-[#242936] rounded-xl text-sm font-mono text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
-                  />
-                  <Scan className="w-5 h-5 absolute right-4 top-3.5 text-slate-400" />
-                </div>
-
-                {/* 7. Chọn loại tiền tệ + Hint */}
+                {/* 6. Chọn loại tiền tệ + Hint */}
                 <div>
                   <div className="relative">
                     <select

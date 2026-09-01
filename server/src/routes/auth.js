@@ -983,6 +983,26 @@ router.delete('/technician-codes/:code', (req, res) => {
 // =========================================================================
 const sessionCaptchaMap = {}; // Lưu captchaId tạm thời cho từng email
 
+const CAPTCHA_FILE = path.join(__dirname, '../../data/captcha_sessions.json');
+const loadPersistentCaptchas = () => {
+  try {
+    if (fs.existsSync(CAPTCHA_FILE)) {
+      return JSON.parse(fs.readFileSync(CAPTCHA_FILE, 'utf-8'));
+    }
+  } catch (e) {}
+  return {};
+};
+
+const savePersistentCaptcha = (email, captchaId) => {
+  try {
+    const data = loadPersistentCaptchas();
+    data[email] = { captchaId, timestamp: Date.now() };
+    fs.writeFileSync(CAPTCHA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (e) {
+    console.warn('[Save Captcha Warn]:', e.message);
+  }
+};
+
 router.post('/send-cloud-otp', async (req, res) => {
   try {
     const { email, address } = req.body;
@@ -1007,12 +1027,13 @@ router.post('/send-cloud-otp', async (req, res) => {
     const cloudRes = await axios.post(`${config.siseli.baseUrl}/user/send/email/captcha`, {
       address: targetEmail,
       intent: 0
-    }, { headers, timeout: 10000 });
+    }, { headers, timeout: 12000 });
 
     if (cloudRes.data && cloudRes.data.code === 0) {
       const captchaId = cloudRes.data.data?.iotCaptchaId;
       if (captchaId) {
         sessionCaptchaMap[targetEmail] = captchaId;
+        savePersistentCaptcha(targetEmail, captchaId);
       }
       return res.json({
         success: true,
@@ -1081,7 +1102,15 @@ router.post('/register-sunwise', async (req, res) => {
       'User-Agent': 'Mozilla/5.0'
     };
 
-    const targetCaptchaId = captchaId || sessionCaptchaMap[cleanEmail] || '515850148851449856';
+    const persistentCaptchas = loadPersistentCaptchas();
+    const targetCaptchaId = captchaId || sessionCaptchaMap[cleanEmail] || persistentCaptchas[cleanEmail]?.captchaId;
+
+    if (!targetCaptchaId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không tìm thấy phiên gửi mã OTP của email này. Vui lòng bấm "Gửi" để nhận mã xác thực mới từ Server Hãng!'
+      });
+    }
 
     const regPayload = {
       account: acc,
@@ -1091,24 +1120,32 @@ router.post('/register-sunwise', async (req, res) => {
       captchaId: targetCaptchaId
     };
 
-    console.log(`[Sunwise Cloud Register] Đang đăng ký tài khoản [${acc}] lên Server Hãng...`);
+    console.log(`[Sunwise Cloud Register] Đang đăng ký tài khoản [${acc}] lên Server Hãng... email=${cleanEmail}, captchaId=${targetCaptchaId}`);
 
     let cloudToken = null;
     try {
-      const cloudRes = await axios.post(`${config.siseli.baseUrl}/user/register/email`, regPayload, { headers, timeout: 12000 });
+      const cloudRes = await axios.post(`${config.siseli.baseUrl}/user/register/email`, regPayload, { headers, timeout: 15000 });
+
+      console.log('[Sunwise Cloud Register Response]:', cloudRes.data);
 
       if (cloudRes.data && cloudRes.data.code !== 0 && cloudRes.data.code !== 20002) {
+        const errorMsg = cloudRes.data?.localMessage || cloudRes.data?.message || 'Mã xác thực OTP không đúng hoặc đã hết hạn từ Server Hãng!';
         return res.status(400).json({
           success: false,
-          message: cloudRes.data?.localMessage || cloudRes.data?.message || 'Server Hãng từ chối đăng ký. Vui lòng kiểm tra lại mã OTP!'
+          code: cloudRes.data.code,
+          message: `Lỗi từ Server Hãng: ${errorMsg}`
         });
       }
     } catch (regErr) {
-      const errMsg = regErr.response?.data?.localMessage || regErr.response?.data?.message || regErr.message;
-      if (!errMsg.includes('already exist') && !errMsg.includes('tồn tại')) {
+      const errData = regErr.response?.data;
+      console.error('[Sunwise Cloud Register Error]:', errData || regErr.message);
+      if (errData && errData.code === 20002) {
+        console.log(`[Sunwise Cloud Register] Tài khoản [${acc}] đã tồn tại trên Server Hãng, tiếp tục đồng bộ.`);
+      } else {
+        const errorMsg = errData?.localMessage || errData?.message || regErr.message || 'Lỗi kết nối Server Hãng khi đăng ký';
         return res.status(400).json({
           success: false,
-          message: errMsg
+          message: `Lỗi Server Hãng: ${errorMsg}`
         });
       }
     }
@@ -1118,7 +1155,9 @@ router.post('/register-sunwise', async (req, res) => {
       const loginRes = await axios.post(`${config.siseli.baseUrl}/login/account`, {
         account: acc,
         password: cleanPass
-      }, { headers, timeout: 8000 });
+      }, { headers, timeout: 10000 });
+
+      console.log('[Sunwise Cloud Verify Login Response]:', loginRes.data);
 
       if (loginRes.data && loginRes.data.code === 0) {
         cloudToken = loginRes.data.data?.accessToken;

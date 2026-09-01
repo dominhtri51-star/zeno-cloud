@@ -665,8 +665,6 @@ router.post('/config/read', async (req, res) => {
 });
 
 // 6.2. Cài Đặt Thông Số Kỹ Thuật & Đơn Giá Tiền Điện Cho Từng Trạm / Dự Án
-const systemSettings = require('../services/systemSettings');
-
 router.get('/settings', (req, res) => {
   const { stationId = 'ST-001' } = req.query;
   const data = systemSettings.getStationSettings(stationId);

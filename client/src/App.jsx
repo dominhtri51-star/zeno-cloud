@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
@@ -14,6 +15,7 @@ import Login from './pages/Login';
 
 function MainApp() {
   const { isAuthenticated, user } = useAuth();
+  const { isDark } = useTheme();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [selectedDeviceContext, setSelectedDeviceContext] = useState({
     stationId: null,
@@ -79,7 +81,7 @@ function MainApp() {
   // If user opens the public self-registration page directly
   if (currentPage === 'public-register') {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
+      <div className={`min-h-screen ${isDark ? 'bg-[#070b14] text-slate-100' : 'bg-slate-100 text-slate-900'} flex flex-col font-['Plus_Jakarta_Sans',sans-serif]`}>
         <PublicRegister onBackToDashboard={isAuthenticated ? () => setCurrentPage('stations') : null} />
       </div>
     );
@@ -91,7 +93,7 @@ function MainApp() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col selection:bg-cyan-500 selection:text-white font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className={`min-h-screen ${isDark ? 'bg-[#070b14] text-slate-100' : 'bg-slate-100 text-slate-900'} flex flex-col selection:bg-cyan-500 selection:text-white font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-300`}>
       {/* Top Navigation */}
       <Navbar onNavigate={handleNavigate} currentPage={currentPage} />
 
@@ -138,8 +140,10 @@ function MainApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

@@ -6,10 +6,12 @@ import {
 import InteractiveTopology from '../components/InteractiveTopology';
 import api, { monitoringService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import StationSettingsModal from '../components/StationSettingsModal';
 
 export default function Dashboard({ initialStationId, initialDeviceId, onNavigate }) {
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
   
   // Bộ lọc thời gian: DAY (Ngày) | MONTH (Tháng) | YEAR (Năm)
@@ -216,12 +218,12 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
     <div className="max-w-7xl mx-auto space-y-5 font-['Plus_Jakarta_Sans',sans-serif] animate-fade-in pb-16 px-2 sm:px-4">
       
       {/* 0. THANH ĐIỀU HƯỚNG & TIÊU ĐỀ TRẠM (ẨN TRÊN MOBILE, BẮT ĐẦU TRỰC TIẾP TỪ SƠ ĐỒ) */}
-      <div className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 bg-[#0b101e] border border-slate-800/90 p-3 sm:p-4 rounded-2xl shadow-xl">
+      <div className={`hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 ${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border p-3 sm:p-4 rounded-2xl shadow-xl transition-colors duration-300`}>
         <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
           {onNavigate && (
             <button
               onClick={() => onNavigate('stations')}
-              className="flex items-center space-x-1 sm:space-x-1.5 text-[11px] sm:text-xs font-bold text-slate-300 hover:text-cyan-300 transition py-1 sm:py-1.5 px-2 sm:px-3 rounded-xl bg-slate-800 border border-slate-700 shadow-sm cursor-pointer shrink-0"
+              className={`flex items-center space-x-1 sm:space-x-1.5 text-[11px] sm:text-xs font-bold transition py-1 sm:py-1.5 px-2 sm:px-3 rounded-xl border shadow-sm cursor-pointer shrink-0 ${isDark ? 'text-slate-300 hover:text-cyan-300 bg-slate-800 border-slate-700' : 'text-slate-700 hover:text-cyan-600 bg-slate-100 border-slate-200'}`}
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>← Trạm & Pin</span>
@@ -229,7 +231,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
           )}
 
           <div className="flex items-center space-x-1.5">
-            <span className="font-extrabold text-white text-sm sm:text-base tracking-wide font-mono truncate max-w-[140px] sm:max-w-none">
+            <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} text-sm sm:text-base tracking-wide font-mono truncate max-w-[140px] sm:max-w-none`}>
               {deviceInfo.stationId || 'STATION-01'}
             </span>
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
@@ -240,20 +242,20 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
           {/* Nút Cài Đặt Dự Án Này */}
           <button
             onClick={() => setIsProjectSettingsOpen(true)}
-            className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 hover:border-cyan-500/40 transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer"
+            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-cyan-300 border-slate-700 hover:border-cyan-500/40' : 'bg-slate-100 hover:bg-slate-200 text-cyan-700 border-slate-200 hover:border-cyan-400'}`}
             title="Cài đặt đơn giá tiền điện, công suất PV và pin lưu trữ riêng của dự án này"
           >
-            <Settings className="w-3.5 h-3.5 text-cyan-400" />
+            <Settings className="w-3.5 h-3.5 text-cyan-500" />
             <span>Cài Đặt Dự Án</span>
           </button>
 
-          <span className="px-2 py-0.5 sm:py-1 rounded-lg bg-slate-900 border border-slate-800 text-cyan-400 font-mono font-semibold flex items-center gap-1 text-[10px] sm:text-xs max-w-[180px] sm:max-w-none truncate">
+          <span className={`px-2 py-0.5 sm:py-1 rounded-lg border font-mono font-semibold flex items-center gap-1 text-[10px] sm:text-xs max-w-[180px] sm:max-w-none truncate ${isDark ? 'bg-slate-900 border-slate-800 text-cyan-400' : 'bg-slate-100 border-slate-200 text-cyan-700'}`}>
             <Cpu className="w-3 h-3 shrink-0" />
             <span className="truncate">{deviceInfo.deviceName} ({deviceInfo.serialNumber})</span>
           </span>
 
-          <span className="text-slate-400 font-medium flex items-center gap-1 text-[10px] sm:text-xs">
-            <span className="text-emerald-400 font-mono font-bold">🔴 {liveClock}</span>
+          <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium flex items-center gap-1 text-[10px] sm:text-xs`}>
+            <span className="text-emerald-500 font-mono font-bold">🔴 {liveClock}</span>
           </span>
         </div>
       </div>
@@ -282,28 +284,28 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
 
           {/* 3 THẺ ĐO ĐẠC SENSOR THỜI GIAN THỰC */}
           <div className="grid grid-cols-3 gap-2 sm:gap-4">
-            <div className="bg-[#0b101e] border border-slate-800/90 py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-emerald-500/40">
-              <span className="text-[10px] sm:text-xs text-slate-400 block font-bold uppercase tracking-wider truncate">ĐIỆN ÁP PIN</span>
-              <span className="text-base sm:text-2xl font-black text-emerald-400 font-mono mt-1 block">
+            <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-emerald-500/40`}>
+              <span className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} block font-bold uppercase tracking-wider truncate`}>ĐIỆN ÁP PIN</span>
+              <span className="text-base sm:text-2xl font-black text-emerald-500 font-mono mt-1 block">
                 {flowData.batteryVoltage} V
               </span>
-              <span className="text-[9px] sm:text-xs text-slate-500 font-mono block truncate">Dung lượng: {flowData.batterySoc}%</span>
+              <span className={`text-[9px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono block truncate`}>Dung lượng: {flowData.batterySoc}%</span>
             </div>
             
-            <div className="bg-[#0b101e] border border-slate-800/90 py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-cyan-500/40">
-              <span className="text-[10px] sm:text-xs text-slate-400 block font-bold uppercase tracking-wider truncate">ĐIỆN ÁP LƯỚI</span>
-              <span className="text-base sm:text-2xl font-black text-cyan-400 font-mono mt-1 block">
+            <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-cyan-500/40`}>
+              <span className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} block font-bold uppercase tracking-wider truncate`}>ĐIỆN ÁP LƯỚI</span>
+              <span className={`text-base sm:text-2xl font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-1 block`}>
                 {Math.round(flowData.gridVoltage)} V
               </span>
-              <span className="text-[9px] sm:text-xs text-slate-500 font-mono block truncate">Tần số: 50.0 Hz</span>
+              <span className={`text-[9px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono block truncate`}>Tần số: 50.0 Hz</span>
             </div>
 
-            <div className="bg-[#0b101e] border border-slate-800/90 py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-amber-500/40">
-              <span className="text-[10px] sm:text-xs text-slate-400 block font-bold uppercase tracking-wider truncate">NHIỆT ĐỘ MÁY</span>
-              <span className="text-base sm:text-2xl font-black text-amber-400 font-mono mt-1 block">
+            <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-amber-500/40`}>
+              <span className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} block font-bold uppercase tracking-wider truncate`}>NHIỆT ĐỘ MÁY</span>
+              <span className="text-base sm:text-2xl font-black text-amber-500 font-mono mt-1 block">
                 {flowData.temperature}°C
               </span>
-              <span className="text-[9px] sm:text-xs text-slate-500 font-mono block truncate">Tản nhiệt tối ưu</span>
+              <span className={`text-[9px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono block truncate`}>Tản nhiệt tối ưu</span>
             </div>
           </div>
         </div>
@@ -312,9 +314,9 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
         <div className="lg:col-span-5 space-y-5">
           
           {/* BỘ CHỌN THỜI GIAN & LỊCH TƯƠNG TÁC */}
-          <div className="flex items-center justify-between bg-[#0b101e] border border-slate-800/90 p-3 rounded-2xl shadow-lg">
+          <div className={`flex items-center justify-between ${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border p-3 rounded-2xl shadow-lg transition-colors duration-300`}>
             {/* Nút bấm chọn Scope NGÀY / THÁNG / NĂM */}
-            <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+            <div className={`flex ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'} p-1 rounded-xl border`}>
               {[
                 { id: 'DAY', label: 'NGÀY' },
                 { id: 'MONTH', label: 'THÁNG' },
@@ -323,10 +325,10 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                 <button
                   key={item.id}
                   onClick={() => setTimeScope(item.id)}
-                  className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition ${
+                  className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
                     timeScope === item.id
                       ? 'bg-cyan-500 text-slate-950 shadow-md font-extrabold'
-                      : 'text-slate-400 hover:text-slate-200'
+                      : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   {item.label}
@@ -335,13 +337,13 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
             </div>
 
             {/* Bộ Chọn Lịch Tương Tác */}
-            <div className="relative flex items-center bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 shadow-sm">
+            <div className={`relative flex items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'} border rounded-xl px-3 py-1.5 shadow-sm`}>
               {timeScope === 'DAY' && (
                 <input
                   type="date"
                   value={selectedDay}
                   onChange={(e) => setSelectedDay(e.target.value)}
-                  className="bg-transparent text-slate-200 text-xs font-bold font-mono focus:outline-none cursor-pointer"
+                  className={`bg-transparent ${isDark ? 'text-slate-200' : 'text-slate-800'} text-xs font-bold font-mono focus:outline-none cursor-pointer`}
                 />
               )}
 
@@ -350,7 +352,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   type="month"
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="bg-transparent text-slate-200 text-xs font-bold font-mono focus:outline-none cursor-pointer"
+                  className={`bg-transparent ${isDark ? 'text-slate-200' : 'text-slate-800'} text-xs font-bold font-mono focus:outline-none cursor-pointer`}
                 />
               )}
 
@@ -358,126 +360,126 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
-                  className="bg-transparent text-slate-200 text-xs font-bold font-mono focus:outline-none cursor-pointer pr-2"
+                  className={`bg-transparent ${isDark ? 'text-slate-200' : 'text-slate-800'} text-xs font-bold font-mono focus:outline-none cursor-pointer pr-2`}
                 >
                   {['2023', '2024', '2025', '2026', '2027'].map(yr => (
-                    <option key={yr} value={yr} className="bg-slate-900 text-white">
+                    <option key={yr} value={yr} className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                       {yr}
                     </option>
                   ))}
                 </select>
               )}
-              <Calendar className="w-3.5 h-3.5 text-slate-400 pointer-events-none ml-1.5" />
+              <Calendar className={`w-3.5 h-3.5 ${isDark ? 'text-slate-400' : 'text-slate-500'} pointer-events-none ml-1.5`} />
             </div>
           </div>
 
           {/* 6 CHỈ SỐ NĂNG LƯỢNG (PV, Tiêu thụ, Sạc pin, Xả pin, Bán điện, Mua điện) */}
-          <div className="bg-[#0b101e] border border-slate-800/90 rounded-2xl p-5 shadow-xl relative overflow-hidden space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-              <span className="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
-                <Activity className="w-4 h-4 text-cyan-400" />
+          <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border rounded-2xl p-5 shadow-xl relative overflow-hidden space-y-4 transition-colors duration-300`}>
+            <div className={`flex items-center justify-between border-b ${isDark ? 'border-slate-800/80' : 'border-slate-200'} pb-3`}>
+              <span className={`text-xs font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} uppercase tracking-wider flex items-center gap-2`}>
+                <Activity className="w-4 h-4 text-cyan-500" />
                 Sản Lượng & Tiêu Thụ Năng Lượng
               </span>
-              <span className="text-[11px] font-mono text-emerald-400 font-bold">
+              <span className="text-[11px] font-mono text-emerald-500 font-bold">
                 Tiết kiệm: ~{estimatedSavings.toLocaleString('vi-VN')} đ
               </span>
             </div>
 
             {loadingStats && (
-              <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-[1px] flex items-center justify-center z-10">
-                <div className="w-5 h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+              <div className={`absolute inset-0 ${isDark ? 'bg-slate-950/50' : 'bg-white/50'} backdrop-blur-[1px] flex items-center justify-center z-10`}>
+                <div className="w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
               </div>
             )}
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 text-xs">
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+              <div className={`p-2.5 rounded-xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'} border`}>
                 <div className="flex items-center space-x-1.5 mb-1">
                   <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                  <span className="text-slate-400 text-[11px] font-medium">PV Phát</span>
+                  <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] font-medium`}>PV Phát</span>
                 </div>
-                <span className="font-extrabold text-white font-mono text-sm block">
-                  {energyStats.pvEnergy.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">kWh</span>
+                <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} font-mono text-sm block`}>
+                  {energyStats.pvEnergy.toFixed(2)} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
                 </span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+              <div className={`p-2.5 rounded-xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'} border`}>
                 <div className="flex items-center space-x-1.5 mb-1">
                   <span className="w-2 h-2 rounded-full bg-sky-500"></span>
-                  <span className="text-slate-400 text-[11px] font-medium">Tiêu Thụ</span>
+                  <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] font-medium`}>Tiêu Thụ</span>
                 </div>
-                <span className="font-extrabold text-white font-mono text-sm block">
-                  {energyStats.loadEnergy.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">kWh</span>
+                <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} font-mono text-sm block`}>
+                  {energyStats.loadEnergy.toFixed(2)} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
                 </span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+              <div className={`p-2.5 rounded-xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'} border`}>
                 <div className="flex items-center space-x-1.5 mb-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <span className="text-slate-400 text-[11px] font-medium">Sạc Pin</span>
+                  <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] font-medium`}>Sạc Pin</span>
                 </div>
-                <span className="font-extrabold text-white font-mono text-sm block">
-                  {energyStats.chargeEnergy.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">kWh</span>
+                <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} font-mono text-sm block`}>
+                  {energyStats.chargeEnergy.toFixed(2)} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
                 </span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+              <div className={`p-2.5 rounded-xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'} border`}>
                 <div className="flex items-center space-x-1.5 mb-1">
                   <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                  <span className="text-slate-400 text-[11px] font-medium">Xả Pin</span>
+                  <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] font-medium`}>Xả Pin</span>
                 </div>
-                <span className="font-extrabold text-white font-mono text-sm block">
-                  {energyStats.dischargeEnergy.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">kWh</span>
+                <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} font-mono text-sm block`}>
+                  {energyStats.dischargeEnergy.toFixed(2)} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
                 </span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+              <div className={`p-2.5 rounded-xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'} border`}>
                 <div className="flex items-center space-x-1.5 mb-1">
                   <span className="w-2 h-2 rounded-full bg-teal-500"></span>
-                  <span className="text-slate-400 text-[11px] font-medium">Bán Điện</span>
+                  <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] font-medium`}>Bán Điện</span>
                 </div>
-                <span className="font-extrabold text-white font-mono text-sm block">
-                  {energyStats.sellEnergy.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">kWh</span>
+                <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} font-mono text-sm block`}>
+                  {energyStats.sellEnergy.toFixed(2)} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
                 </span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+              <div className={`p-2.5 rounded-xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'} border`}>
                 <div className="flex items-center space-x-1.5 mb-1">
                   <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                  <span className="text-slate-400 text-[11px] font-medium">Mua Điện</span>
+                  <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] font-medium`}>Mua Điện</span>
                 </div>
-                <span className="font-extrabold text-white font-mono text-sm block">
-                  {energyStats.buyEnergy.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">kWh</span>
+                <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} font-mono text-sm block`}>
+                  {energyStats.buyEnergy.toFixed(2)} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
                 </span>
               </div>
             </div>
           </div>
 
           {/* BIỂU ĐỒ NĂNG LƯỢNG 24H & COMBO CHART */}
-          <div className="bg-[#0b101e] border border-slate-800/90 rounded-2xl p-5 shadow-xl space-y-3.5">
+          <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border rounded-2xl p-5 shadow-xl space-y-3.5 transition-colors duration-300`}>
             
             {/* Header Đồ thị & Các nút Toggles */}
             {timeScope === 'DAY' ? (
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-200 font-extrabold">Đồ thị công suất 24 Giờ (Line Chart)</span>
-                  <span className="text-slate-400 font-mono text-[11px]">• Nhấn bật/tắt đường</span>
+                  <span className={`${isDark ? 'text-slate-200' : 'text-slate-800'} font-extrabold`}>Đồ thị công suất 24 Giờ (Line Chart)</span>
+                  <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} font-mono text-[11px]`}>• Nhấn bật/tắt đường</span>
                 </div>
                 {/* Nút bật tắt từng đường */}
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { id: 'pv', label: 'PV', color: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
-                    { id: 'load', label: 'Tải hòa lưới', color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' },
-                    { id: 'backup', label: 'Tải dự phòng', color: 'bg-orange-500/20 text-orange-300 border-orange-500/40' },
-                    { id: 'chg', label: 'Sạc pin', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
-                    { id: 'dis', label: 'Xả pin', color: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
-                    { id: 'grid', label: 'Lưới điện', color: 'bg-sky-500/20 text-sky-300 border-sky-500/40' },
-                    { id: 'soc', label: '% Pin (SOC)', color: 'bg-pink-500/20 text-pink-300 border-pink-500/40' }
+                    { id: 'pv', label: 'PV', color: isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-amber-50 text-amber-700 border-amber-300' },
+                    { id: 'load', label: 'Tải hòa lưới', color: isDark ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-cyan-50 text-cyan-700 border-cyan-300' },
+                    { id: 'backup', label: 'Tải dự phòng', color: isDark ? 'bg-orange-500/20 text-orange-300 border-orange-500/40' : 'bg-orange-50 text-orange-700 border-orange-300' },
+                    { id: 'chg', label: 'Sạc pin', color: isDark ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-emerald-50 text-emerald-700 border-emerald-300' },
+                    { id: 'dis', label: 'Xả pin', color: isDark ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' : 'bg-purple-50 text-purple-700 border-purple-300' },
+                    { id: 'grid', label: 'Lưới điện', color: isDark ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' : 'bg-sky-50 text-sky-700 border-sky-300' },
+                    { id: 'soc', label: '% Pin (SOC)', color: isDark ? 'bg-pink-500/20 text-pink-300 border-pink-500/40' : 'bg-pink-50 text-pink-700 border-pink-300' }
                   ].map(t => (
                     <button
                       key={t.id}
                       onClick={() => setLineToggles(prev => ({ ...prev, [t.id]: !prev[t.id] }))}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition ${
-                        lineToggles[t.id] ? t.color : 'bg-slate-900/60 border-slate-800 text-slate-500 opacity-60'
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
+                        lineToggles[t.id] ? t.color : isDark ? 'bg-slate-900/60 border-slate-800 text-slate-500 opacity-60' : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
                       }`}
                     >
                       ● {t.label}
@@ -490,22 +492,22 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center space-x-1">
                     <span className="w-2.5 h-2.5 rounded-sm bg-amber-500"></span>
-                    <span className="text-slate-300 font-medium">PV phát</span>
+                    <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'} font-medium`}>PV phát</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <span className="w-2.5 h-2.5 rounded-sm bg-sky-500"></span>
-                    <span className="text-slate-300 font-medium">Tải nhà</span>
+                    <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'} font-medium`}>Tải nhà</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <span className="w-2.5 h-1 rounded-sm bg-emerald-400"></span>
-                    <span className="text-slate-300 font-medium">Sạc pin</span>
+                    <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'} font-medium`}>Sạc pin</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <span className="w-2.5 h-1 rounded-sm bg-purple-400"></span>
-                    <span className="text-slate-300 font-medium">Xả pin</span>
+                    <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'} font-medium`}>Xả pin</span>
                   </div>
                 </div>
-                <span className="text-slate-400 font-mono text-[11px]">
+                <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} font-mono text-[11px]`}>
                   {timeScope === 'MONTH' ? `${chartData.length || 31} Ngày` : '12 Tháng'}
                 </span>
               </div>
@@ -513,16 +515,16 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
 
             {/* KHUNG VẼ ĐỒ THỊ */}
             {timeScope === 'DAY' ? (
-              <div className="relative w-full h-[180px] pl-10 pr-10 pb-5 border-b border-slate-800/80 flex items-end">
+              <div className={`relative w-full h-[180px] pl-10 pr-10 pb-5 border-b ${isDark ? 'border-slate-800/80' : 'border-slate-200'} flex items-end`}>
                 {/* Trục Y trái (kW) */}
-                <div className="absolute left-0 top-0 bottom-5 flex flex-col justify-between text-[9px] text-slate-400 font-mono font-bold">
+                <div className={`absolute left-0 top-0 bottom-5 flex flex-col justify-between text-[9px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-mono font-bold`}>
                   <span>{maxKw.toFixed(1)} kW</span>
                   <span>{(maxKw * 0.5).toFixed(1)} kW</span>
                   <span>0 kW</span>
                 </div>
 
                 {/* Trục Y phải (% SOC) */}
-                <div className="absolute right-0 top-0 bottom-5 flex flex-col justify-between text-[9px] text-pink-400 font-mono font-bold text-right">
+                <div className="absolute right-0 top-0 bottom-5 flex flex-col justify-between text-[9px] text-pink-500 font-mono font-bold text-right">
                   <span>100%</span>
                   <span>50%</span>
                   <span>0%</span>
@@ -530,9 +532,9 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
 
                 {/* SVG Multi-Line Paths */}
                 <svg viewBox="0 0 450 140" className="w-full h-full z-10 overflow-visible" preserveAspectRatio="none">
-                  <line x1="0" y1="0" x2="450" y2="0" stroke="#1e293b" strokeWidth="1" strokeDasharray="3 3" />
-                  <line x1="0" y1="70" x2="450" y2="70" stroke="#1e293b" strokeWidth="1" strokeDasharray="3 3" />
-                  <line x1="0" y1="140" x2="450" y2="140" stroke="#334155" strokeWidth="1" />
+                  <line x1="0" y1="0" x2="450" y2="0" stroke={isDark ? "#1e293b" : "#e2e8f0"} strokeWidth="1" strokeDasharray="3 3" />
+                  <line x1="0" y1="70" x2="450" y2="70" stroke={isDark ? "#1e293b" : "#e2e8f0"} strokeWidth="1" strokeDasharray="3 3" />
+                  <line x1="0" y1="140" x2="450" y2="140" stroke={isDark ? "#334155" : "#cbd5e1"} strokeWidth="1" />
 
                   {/* Đường PV (Vàng) */}
                   {lineToggles.pv && (
@@ -609,9 +611,9 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                 );
 
                 return (
-                  <div className="relative w-full h-[180px] pl-10 pb-5 border-b border-slate-800/80 flex items-end">
+                  <div className={`relative w-full h-[180px] pl-10 pb-5 border-b ${isDark ? 'border-slate-800/80' : 'border-slate-200'} flex items-end`}>
                     {/* Trục Y hiển thị kWh động */}
-                    <div className="absolute left-0 top-0 bottom-5 flex flex-col justify-between text-[9px] text-slate-400 font-mono font-bold">
+                    <div className={`absolute left-0 top-0 bottom-5 flex flex-col justify-between text-[9px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-mono font-bold`}>
                       <span>{Math.round(maxComboVal)} kWh</span>
                       <span>{Math.round(maxComboVal / 2)} kWh</span>
                       <span>0 kWh</span>
@@ -628,14 +630,14 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                             className="flex-1 h-full flex items-end justify-center space-x-[1px] sm:space-x-[1.5px] group relative cursor-pointer"
                           >
                             {/* Hover Tooltip chi tiết */}
-                            <div className="absolute bottom-full mb-2 hidden group-hover:flex flex-col bg-slate-900/95 border border-slate-700 p-2 rounded-xl text-[10px] font-mono text-white shadow-2xl z-30 pointer-events-none whitespace-nowrap min-w-[110px]">
-                              <span className="font-bold text-cyan-300 border-b border-slate-800 pb-1 mb-1">
+                            <div className={`absolute bottom-full mb-2 hidden group-hover:flex flex-col ${isDark ? 'bg-slate-900/95 border-slate-700 text-white' : 'bg-white/95 border-slate-300 text-slate-800 shadow-xl'} border p-2 rounded-xl text-[10px] font-mono shadow-2xl z-30 pointer-events-none whitespace-nowrap min-w-[110px]`}>
+                              <span className={`font-bold ${isDark ? 'text-cyan-300 border-slate-800' : 'text-cyan-700 border-slate-200'} border-b pb-1 mb-1`}>
                                 {timeScope === 'MONTH' ? `Ngày ${item.label}` : `Tháng ${item.label}`}
                               </span>
-                              <span className="text-amber-400">☀️ PV: {item.pv} kWh</span>
-                              <span className="text-sky-400">⚡ Tải: {item.load} kWh</span>
-                              {item.chg > 0 && <span className="text-emerald-400">🔋 Sạc: {item.chg} kWh</span>}
-                              {item.dis > 0 && <span className="text-purple-400">⚡ Xả: {item.dis} kWh</span>}
+                              <span className="text-amber-500">☀️ PV: {item.pv} kWh</span>
+                              <span className="text-sky-500">⚡ Tải: {item.load} kWh</span>
+                              {item.chg > 0 && <span className="text-emerald-500">🔋 Sạc: {item.chg} kWh</span>}
+                              {item.dis > 0 && <span className="text-purple-500">⚡ Xả: {item.dis} kWh</span>}
                             </div>
 
                             <div
@@ -671,7 +673,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
             )}
 
             {/* Trục X mốc thời gian */}
-            <div className="flex justify-between text-[10px] font-mono text-slate-400 pt-1 px-4 font-bold">
+            <div className={`flex justify-between text-[10px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'} pt-1 px-4 font-bold`}>
               {timeScope === 'DAY' ? (
                 <>
                   <span>00:00</span>
@@ -685,7 +687,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
               ) : timeScope === 'MONTH' ? (
                 <>
                   <span>01</span>
-                  <span className="text-sky-400 px-1 rounded bg-sky-500/20">07</span>
+                  <span className={`px-1 rounded ${isDark ? 'bg-sky-500/20 text-sky-400' : 'bg-sky-100 text-sky-700'}`}>07</span>
                   <span>14</span>
                   <span>21</span>
                   <span>28</span>

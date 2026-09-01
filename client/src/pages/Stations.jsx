@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import api, { monitoringService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import RemoteConfigModal from '../components/RemoteConfigModal';
 import ClaimDeviceModal from '../components/ClaimDeviceModal';
 import StationSettingsModal from '../components/StationSettingsModal';
@@ -16,6 +17,7 @@ import { Settings as SettingsIcon } from 'lucide-react';
 
 export default function Stations({ onNavigate, onSelectDevice }) {
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -199,13 +201,13 @@ export default function Stations({ onNavigate, onSelectDevice }) {
     <div className="space-y-6 max-w-5xl mx-auto font-['Plus_Jakarta_Sans',sans-serif] animate-fade-in pb-16">
       
       {/* 1. Header Trang */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#0b101e] border border-slate-800/90 p-5 rounded-2xl shadow-xl">
+      <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 ${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border p-5 rounded-2xl shadow-xl transition-colors duration-300`}>
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
-            <Zap className="w-6 h-6 text-amber-400" />
+          <h1 className={`text-xl sm:text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'} flex items-center gap-2.5`}>
+            <Zap className="w-6 h-6 text-amber-500" />
             {isHomeowner ? 'Hệ Thống Thiết Bị & Pin Lưu Trữ' : isDistributor ? 'Giám Sát Trạm & Kho Máy Biến Tần' : 'Trạm Phụ Trách & Cấu Hình Biến Tần'}
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} mt-1`}>
             {isHomeowner
               ? '🏠 Quyền Người Tiêu Dùng Cuối: Bấm vào thiết bị Inverter bên dưới để mở Bảng Điều Khiển hoặc bấm "Chia Sẻ Cho Đại Lý" để ủy quyền quản trị.'
               : isDistributor
@@ -226,7 +228,7 @@ export default function Stations({ onNavigate, onSelectDevice }) {
 
           <button
             onClick={loadStations}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+            className={`px-3.5 py-2 rounded-xl border transition text-xs font-bold flex items-center gap-1.5 cursor-pointer ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'}`}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Làm Mới</span>
@@ -235,7 +237,7 @@ export default function Stations({ onNavigate, onSelectDevice }) {
       </div>
 
       {/* 2. Thanh Tìm Kiếm & Bộ Lọc Nhanh Dự Án (Dành cho Admin Tổng Phân Phối & Kỹ Thuật Đại Lý) */}
-      <div className="bg-[#0b101e] border border-slate-800/90 p-4 rounded-2xl shadow-lg space-y-3.5">
+      <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border p-4 rounded-2xl shadow-lg space-y-3.5 transition-colors duration-300`}>
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
           
           {/* Ô Nhập Tìm Kiếm Tức Thì */}
@@ -437,17 +439,17 @@ export default function Stations({ onNavigate, onSelectDevice }) {
           {filteredStations.map((st) => (
             <div 
               key={st.stationId}
-              className="bg-[#0b101e] border border-slate-800/90 rounded-2xl p-5 shadow-2xl space-y-5 relative overflow-hidden transition-all hover:border-slate-700/80"
+              className={`${isDark ? 'bg-[#0b101e] border-slate-800/90 hover:border-slate-700/80' : 'bg-white border-slate-200 hover:border-cyan-400 shadow-md'} border rounded-2xl p-5 shadow-2xl space-y-5 relative overflow-hidden transition-all`}
             >
               {/* Header Trạm */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800/80">
+              <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b ${isDark ? 'border-slate-800/80' : 'border-slate-200'}`}>
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                    <h2 className="text-lg font-black text-white tracking-wide">
+                    <h2 className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'} tracking-wide`}>
                       {st.stationName}
                     </h2>
-                    <span className="text-xs font-mono font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-md">
+                    <span className={`text-xs font-mono font-bold ${isDark ? 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' : 'text-cyan-700 bg-cyan-50 border-cyan-200'} border px-2 py-0.5 rounded-md`}>
                       ID: {st.stationId}
                     </span>
                     {st.ownerName && (

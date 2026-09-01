@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { 
-  Sun, Shield, LogOut, Globe, UserCheck, Bell, Activity, Menu, X, 
+  Sun, Moon, Shield, LogOut, Globe, UserCheck, Bell, Activity, Menu, X, 
   LayoutDashboard, Zap, Users, Layers, AlertTriangle, UserPlus, Settings 
 } from 'lucide-react';
 
 export default function Navbar({ onNavigate, currentPage }) {
   const { user, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const userType = Number(user?.userType || 3);
 
@@ -32,12 +34,14 @@ export default function Navbar({ onNavigate, currentPage }) {
       { id: 'stations', label: 'Trạm Phụ Trách & Cấu Hình', icon: Zap },
       { id: 'customers', label: 'Khách Hàng Của Tôi', icon: Users },
       { id: 'alarms', label: 'Cảnh Báo & Sự Cố', icon: AlertTriangle },
+      { id: 'settings', label: 'Cài Đặt Tài Khoản', icon: Settings },
     ];
   } else {
     mobileNavItems = [
       { id: 'dashboard', label: 'Bảng Điều Khiển Trạm', icon: LayoutDashboard },
       { id: 'stations', label: 'Trạm & Pin Lưu Trữ', icon: Zap },
       { id: 'alarms', label: 'Nhật Ký & Cảnh Báo', icon: AlertTriangle },
+      { id: 'settings', label: 'Cài Đặt & Giao Diện', icon: Settings },
     ];
   }
 
@@ -49,39 +53,39 @@ export default function Navbar({ onNavigate, currentPage }) {
 
   return (
     <>
-      <header className="h-16 border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-xl sticky top-0 z-40 px-4 sm:px-6 flex items-center justify-between font-['Plus_Jakarta_Sans',sans-serif]">
+      <header className={`h-16 border-b ${isDark ? 'bg-slate-900/90 border-slate-800/80 text-white' : 'bg-white/95 border-slate-200 text-slate-900 shadow-sm'} backdrop-blur-xl sticky top-0 z-40 px-4 sm:px-6 flex items-center justify-between font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-300`}>
         {/* Brand & Logo */}
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigate('dashboard')}>
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-teal-500 to-amber-400 p-0.5 shadow-lg shadow-cyan-500/20 flex items-center justify-center">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-              <Sun className="w-5 h-5 text-cyan-400" />
+            <div className={`w-full h-full ${isDark ? 'bg-slate-950' : 'bg-white'} rounded-[10px] flex items-center justify-center`}>
+              <Sun className="w-5 h-5 text-cyan-500" />
             </div>
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-cyan-400 via-teal-300 to-amber-300 bg-clip-text text-transparent">
+              <span className="font-extrabold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-cyan-500 via-teal-400 to-amber-400 bg-clip-text text-transparent">
                 ZENO
               </span>
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${isDark ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'bg-cyan-50 text-cyan-700 border border-cyan-200'}`}>
                 SOLAR
               </span>
             </div>
-            <p className="hidden sm:block text-[10px] text-slate-400">{subtitle}</p>
+            <p className={`hidden sm:block text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{subtitle}</p>
           </div>
         </div>
 
         {/* Mode Tag & Status (Desktop) */}
         <div className="hidden lg:flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs text-slate-300">
+          <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${isDark ? 'bg-slate-800/80 border-slate-700 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'} border text-xs`}>
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-            <span className="text-emerald-400 font-medium">Zeno Cloud Live Connected</span>
+            <span className="text-emerald-500 font-medium">Zeno Cloud Live Connected</span>
           </div>
 
           {/* Cổng Đăng Ký chỉ dành cho Tổng phân phối */}
           {userType === 1 && (
             <button
               onClick={() => handleNavigate('public-register')}
-              className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 flex items-center gap-1.5 transition shadow"
+              className={`text-xs font-semibold px-3 py-1.5 rounded-xl ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-cyan-400 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-cyan-700 border-slate-200'} border flex items-center gap-1.5 transition shadow`}
             >
               <Globe className="w-3.5 h-3.5" /> Cổng Đăng Ký
             </button>
@@ -90,15 +94,28 @@ export default function Navbar({ onNavigate, currentPage }) {
 
         {/* User profile & Actions */}
         <div className="flex items-center gap-2 sm:gap-4">
-          <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-3 border-l border-slate-800">
+          {/* Nút Đổi Theme Nhanh Sáng / Tối */}
+          <button
+            onClick={toggleTheme}
+            className={`p-2 rounded-xl border transition flex items-center justify-center cursor-pointer shadow-sm ${
+              isDark 
+                ? 'bg-slate-800/90 border-slate-700 text-amber-300 hover:bg-slate-700 hover:text-amber-200' 
+                : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200 hover:text-cyan-600'
+            }`}
+            title={isDark ? 'Chuyển sang Theme Sáng (Light Mode)' : 'Chuyển sang Theme Tối (Dark Mode)'}
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          <div className={`flex items-center gap-2 sm:gap-3 pl-2 sm:pl-3 border-l ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-cyan-600 to-slate-800 flex items-center justify-center font-bold text-xs sm:text-sm text-cyan-200 border border-cyan-500/30">
               {user?.userName ? user.userName.charAt(0).toUpperCase() : 'Z'}
             </div>
             <div className="hidden sm:block text-right">
-              <div className="text-xs sm:text-sm font-semibold text-slate-200 leading-tight">
+              <div className={`text-xs sm:text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'} leading-tight`}>
                 {user?.userName || 'Người dùng'}
               </div>
-              <div className="text-[10px] text-cyan-400 flex items-center justify-end gap-1 font-medium">
+              <div className="text-[10px] text-cyan-500 flex items-center justify-end gap-1 font-medium">
                 <UserCheck className="w-3 h-3" /> {user?.roleName || 'Chủ Nhà'}
               </div>
             </div>
@@ -106,7 +123,7 @@ export default function Navbar({ onNavigate, currentPage }) {
 
           <button
             onClick={logout}
-            className="p-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
+            className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
             title="Đăng xuất"
           >
             <LogOut className="w-4 h-4" />
@@ -115,7 +132,7 @@ export default function Navbar({ onNavigate, currentPage }) {
           {/* Mobile Menu Toggle Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-xl text-slate-300 hover:bg-slate-800 transition"
+            className={`md:hidden p-2 rounded-xl ${isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'} transition cursor-pointer`}
             title="Mở menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

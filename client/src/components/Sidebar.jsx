@@ -1,9 +1,11 @@
 import React from 'react';
 import { LayoutDashboard, Users, Layers, Zap, AlertTriangle, Settings, UserPlus, HelpCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Sidebar({ currentPage, onNavigate }) {
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const userType = Number(user?.userType || 3); // 1: Distributor, 2: Installer, 3: Homeowner
 
   // Menu tùy biến chính xác 100% theo từng vai trò
@@ -38,14 +40,14 @@ export default function Sidebar({ currentPage, onNavigate }) {
       { id: 'dashboard', label: 'Bảng Điều Khiển Trạm', icon: LayoutDashboard },
       { id: 'stations', label: 'Trạm & Pin Lưu Trữ', icon: Zap },
       { id: 'alarms', label: 'Nhật Ký & Cảnh Báo', icon: AlertTriangle },
-      { id: 'settings', label: 'Cài Đặt Cá Nhân & Dự Án', icon: Settings },
+      { id: 'settings', label: 'Cài Đặt & Giao Diện', icon: Settings },
     ];
   }
 
   return (
-    <aside className="hidden md:flex w-64 border-r border-slate-800/80 bg-slate-900/40 p-4 flex-col justify-between shrink-0 min-h-[calc(100vh-4rem)] font-['Plus_Jakarta_Sans',sans-serif]">
+    <aside className={`hidden md:flex w-64 border-r ${isDark ? 'border-slate-800/80 bg-slate-900/40 text-slate-300' : 'border-slate-200 bg-white/90 text-slate-700 shadow-sm'} p-4 flex-col justify-between shrink-0 min-h-[calc(100vh-4rem)] font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-300`}>
       <div className="space-y-1.5">
-        <div className="px-3 py-2 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+        <div className={`px-3 py-2 text-[11px] font-bold tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase`}>
           {menuTitle}
         </div>
 
@@ -56,18 +58,22 @@ export default function Sidebar({ currentPage, onNavigate }) {
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer ${
                 isActive
-                  ? 'bg-gradient-to-r from-cyan-500/20 to-teal-500/10 text-cyan-300 border border-cyan-500/30 shadow-lg shadow-cyan-500/5'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  ? isDark
+                    ? 'bg-gradient-to-r from-cyan-500/20 to-teal-500/10 text-cyan-300 border border-cyan-500/30 shadow-lg shadow-cyan-500/5 font-bold'
+                    : 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-sm font-bold'
+                  : isDark
+                    ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
               <div className="flex items-center gap-3">
-                <Icon className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-cyan-500' : isDark ? 'text-slate-400' : 'text-slate-500'}`} />
                 <span>{item.label}</span>
               </div>
               {item.badge && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDark ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-cyan-100 text-cyan-700 border border-cyan-200'}`}>
                   {item.badge}
                 </span>
               )}
@@ -77,18 +83,18 @@ export default function Sidebar({ currentPage, onNavigate }) {
       </div>
 
       {/* System Status Card */}
-      <div className="mt-8 p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 relative overflow-hidden">
+      <div className={`mt-8 p-4 rounded-2xl ${isDark ? 'bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800' : 'bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 shadow-sm'} relative overflow-hidden`}>
         <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-cyan-500/10 rounded-full blur-xl pointer-events-none"></div>
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-300 mb-1">
+        <div className={`flex items-center gap-2 text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-800'} mb-1`}>
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
           ZENO Cloud Gateway v2.4
         </div>
-        <p className="text-[11px] text-slate-400 leading-relaxed mb-3">
+        <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'} leading-relaxed mb-3`}>
           {userType === 3
             ? 'Giám sát năng lượng mặt trời & Pin lithium thời gian thực.'
             : 'Hệ thống quản trị năng lượng mặt trời & Pin lưu trữ thông minh.'}
         </p>
-        <div className="text-[11px] text-emerald-400 font-mono font-bold">
+        <div className="text-[11px] text-emerald-500 font-mono font-bold">
           ● Live Connected
         </div>
       </div>

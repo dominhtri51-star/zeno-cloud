@@ -1,3 +1,6 @@
+import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import AvatarModal from './AvatarModal';
 import { 
   Sun, Moon, Shield, LogOut, Globe, UserCheck, Bell, Activity, Menu, X, 

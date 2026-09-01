@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Sun, Zap, Battery, Shield, Gauge, Calendar,
+  Sun, Zap, Battery, BatteryCharging, Shield, Gauge, Calendar,
   ChevronDown, ArrowLeft, RefreshCw, Activity, DollarSign, TrendingUp, Cpu, Settings,
   Home, CloudSun, Layers, Globe, CheckCircle2
 } from 'lucide-react';
@@ -499,17 +499,17 @@ export default function Dashboard({ initialStationId, initialDeviceId, initialFl
               </span>
             </div>
 
-            {/* THẺ 3: THỜI TIẾT TẠI VỊ TRÍ LẮP ĐẶT (ĐỒNG BỘ THỜI GIAN THỰC NGÀY / ĐÊM) */}
+            {/* THẺ 3: SẠC PIN */}
             <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-emerald-500/40`}>
               <span className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} block font-bold uppercase tracking-wider truncate flex items-center justify-center gap-1`}>
-                <CloudSun className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="truncate">THỜI TIẾT TẠI VỊ TRÍ</span>
+                <BatteryCharging className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="truncate">SẠC PIN</span>
               </span>
-              <span className={`text-base sm:text-2xl font-black ${weather.color} font-mono mt-1 block`}>
-                {weather.icon} {weather.temp}
+              <span className="text-base sm:text-2xl font-black text-emerald-500 font-mono mt-1 block">
+                {effectiveChargeEnergy} kWh
               </span>
               <span className={`text-[9px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono block truncate`}>
-                Bức xạ: {weather.irradiance} • {weather.status}
+                Dung lượng: {flowData.batterySoc}% • {flowData.batteryVoltage}V
               </span>
             </div>
           </div>

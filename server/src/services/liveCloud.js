@@ -771,6 +771,14 @@ class LiveCloudService {
           totalLoadIntegral += ((k0.load + k1.load) / 2) * dtHours;
         }
 
+        // Áp dụng định luật vật lý cho ngày
+        const finalDayPv = Number(totalPvIntegral.toFixed(2));
+        const finalDayChg = hasBattery ? Number(totalChgIntegral.toFixed(2)) : 0;
+        const finalDayDis = hasBattery ? Number(totalDisIntegral.toFixed(2)) : 0;
+        const finalDaySell = Number(Math.min(totalSellIntegral, Math.max(0, finalDayPv - finalDayChg)).toFixed(2));
+        const finalDayLoad = Number(totalLoadIntegral.toFixed(2));
+        const finalDayBuy = Number(totalBuyIntegral.toFixed(2));
+
         // 24 mốc giờ trên đồ thị
         for (let h = 0; h < 24; h++) {
           const hourLabel = `${pad(h)}:00`;
@@ -820,12 +828,12 @@ class LiveCloudService {
           scope: 'DAY',
           time: reqTime,
           summary: {
-            pvEnergy: Number(totalPvIntegral.toFixed(2)),
-            loadEnergy: Number(totalLoadIntegral.toFixed(2)),
-            chargeEnergy: Number(totalChgIntegral.toFixed(2)),
-            dischargeEnergy: Number(totalDisIntegral.toFixed(2)),
-            sellEnergy: Number(totalSellIntegral.toFixed(2)),
-            buyEnergy: Number(totalBuyIntegral.toFixed(2))
+            pvEnergy: finalDayPv,
+            loadEnergy: finalDayLoad,
+            chargeEnergy: finalDayChg,
+            dischargeEnergy: finalDayDis,
+            sellEnergy: finalDaySell,
+            buyEnergy: finalDayBuy
           },
           chartData: chartData
         };
@@ -847,78 +855,88 @@ class LiveCloudService {
 
         const rawList = (monthRes?.data?.code === 0 && Array.isArray(monthRes.data?.data)) ? monthRes.data.data : [];
 
-        // 2. Tích phân đồ thị công suất 24h từng ngày từ máy chủ viễn trắc
-        const dayPromises = [];
-        for (let d = 1; d <= daysInMonth; d++) {
+        // 2. Tích phân các ngày viễn trắc theo lô tuần tự để tránh nghẽn Cloud
+        const telemetryDays = [];
+        const sampleDays = [];
+        // Lấy các ngày gần nhất hoặc ngày có sản lượng để tính mẫu
+        for (let d = Math.max(1, daysInMonth - 10); d <= daysInMonth; d++) {
+          sampleDays.push(d);
+        }
+
+        for (const d of sampleDays) {
           const dateKey = `${y}-${pad(m)}-${pad(d)}`;
           const cacheKey = `${targetDeviceId}_${dateKey}`;
           const isToday = (y === now.getFullYear() && m === (now.getMonth() + 1) && d === now.getDate());
 
           if (!isToday && dailyIntegralCache.has(cacheKey)) {
-            dayPromises.push(Promise.resolve({ day: d, data: dailyIntegralCache.get(cacheKey) }));
+            telemetryDays.push({ day: d, ...dailyIntegralCache.get(cacheKey) });
           } else {
             const fromUtcMs = Date.UTC(y, m - 1, d, 0, 0, 0) - 7 * 3600 * 1000;
             const toUtcMs = Date.UTC(y, m - 1, d, 23, 59, 59) - 7 * 3600 * 1000;
             const fmtIso = ms => new Date(ms).toISOString().split('.')[0] + 'Z';
 
-            const p = axios.post(
-              `${this.baseUrl}/deviceState/attribute/keys/history`,
-              {
-                deviceId: targetDeviceId,
-                keys: ['pvInputPower', 'pv2InputPower', 'pv3InputPower', 'pv4InputPower', 'batteryPower', 'batteryCapacity', 'batteryChargingCurrent', 'batteryDischargeCurrent', 'GridPower', 'CTPower', 'acOutputActivePower'],
-                fromTime: fmtIso(fromUtcMs),
-                toTime: fmtIso(toUtcMs),
-                page: 1,
-                count: 500
-              },
-              { headers, timeout: 6000 }
-            ).then(res => {
+            try {
+              const res = await axios.post(
+                `${this.baseUrl}/deviceState/attribute/keys/history`,
+                {
+                  deviceId: targetDeviceId,
+                  keys: ['pvInputPower', 'pv2InputPower', 'batteryPower', 'batteryCapacity', 'batteryChargingCurrent', 'batteryDischargeCurrent', 'GridPower', 'CTPower', 'acOutputActivePower'],
+                  fromTime: fmtIso(fromUtcMs),
+                  toTime: fmtIso(toUtcMs),
+                  page: 1,
+                  count: 500
+                },
+                { headers, timeout: 6000 }
+              );
+
               const list = res.data?.data?.list || [];
-              if (list.length === 0) return { day: d, data: null };
+              if (list.length > 50) {
+                let pvE = 0, chgE = 0, disE = 0, buyE = 0, sellE = 0, loadE = 0;
+                for (let i = 1; i < list.length; i++) {
+                  const k0 = normalizeRecordToKw(list[i - 1]);
+                  const k1 = normalizeRecordToKw(list[i]);
+                  const t0 = new Date(list[i - 1].time).getTime();
+                  const t1 = new Date(list[i].time).getTime();
+                  const dt = (t1 - t0) / (3600 * 1000);
+                  if (dt > 2 || dt <= 0) continue;
 
-              const dayHasBat = hasBattery || list.some(r => parseFloat(r.batteryCapacity) > 0 || Math.abs(parseFloat(r.batteryPower) || 0) > 0.05 || parseFloat(r.batteryChargingCurrent) > 0 || parseFloat(r.batteryDischargeCurrent) > 0);
+                  pvE += ((k0.pv + k1.pv) / 2) * dt;
+                  chgE += hasBattery ? (((k0.chg + k1.chg) / 2) * dt) : 0;
+                  disE += hasBattery ? (((k0.dis + k1.dis) / 2) * dt) : 0;
+                  buyE += ((k0.buy + k1.buy) / 2) * dt;
+                  sellE += ((k0.sell + k1.sell) / 2) * dt;
+                  loadE += ((k0.load + k1.load) / 2) * dt;
+                }
 
-              let pvE = 0, chgE = 0, disE = 0, buyE = 0, sellE = 0, loadE = 0;
-              for (let i = 1; i < list.length; i++) {
-                const k0 = normalizeRecordToKw(list[i - 1]);
-                const k1 = normalizeRecordToKw(list[i]);
-                const t0 = new Date(list[i - 1].time).getTime();
-                const t1 = new Date(list[i].time).getTime();
-                const dt = (t1 - t0) / (3600 * 1000);
-                if (dt > 2 || dt <= 0) continue;
+                const resDay = {
+                  pv: Number(pvE.toFixed(2)),
+                  chg: hasBattery ? Number(chgE.toFixed(2)) : 0,
+                  dis: hasBattery ? Number(disE.toFixed(2)) : 0,
+                  load: Number(loadE.toFixed(2)),
+                  buy: Number(buyE.toFixed(2)),
+                  sell: Number(Math.min(sellE, Math.max(0, pvE - chgE)).toFixed(2))
+                };
 
-                pvE += ((k0.pv + k1.pv) / 2) * dt;
-                chgE += dayHasBat ? (((k0.chg + k1.chg) / 2) * dt) : 0;
-                disE += dayHasBat ? (((k0.dis + k1.dis) / 2) * dt) : 0;
-                buyE += ((k0.buy + k1.buy) / 2) * dt;
-                sellE += ((k0.sell + k1.sell) / 2) * dt;
-                loadE += ((k0.load + k1.load) / 2) * dt;
+                if (!isToday) {
+                  dailyIntegralCache.set(cacheKey, resDay);
+                }
+                telemetryDays.push({ day: d, ...resDay });
               }
-
-              const resDay = {
-                pv: Number(pvE.toFixed(2)),
-                chg: Number(chgE.toFixed(2)),
-                dis: Number(disE.toFixed(2)),
-                load: Number(loadE.toFixed(2)),
-                buy: Number(buyE.toFixed(2)),
-                sell: Number(sellE.toFixed(2))
-              };
-
-              if (!isToday && list.length > 50) {
-                dailyIntegralCache.set(cacheKey, resDay);
-              }
-              return { day: d, data: resDay };
-            }).catch(() => ({ day: d, data: null }));
-
-            dayPromises.push(p);
+            } catch (e) {
+              // ignore single day error
+            }
           }
         }
 
-        const integratedDays = await Promise.all(dayPromises);
-        const dayMap = new Map();
-        integratedDays.forEach(item => {
-          if (item && item.data) dayMap.set(item.day, item.data);
-        });
+        // Tính tỷ lệ chuẩn hóa mẫu từ các ngày viễn trắc thực tế
+        const sumSamplePv = telemetryDays.reduce((s, t) => s + t.pv, 0);
+        const rLoad = sumSamplePv > 0 ? (telemetryDays.reduce((s, t) => s + t.load, 0) / sumSamplePv) : 1.45;
+        const rChg = (hasBattery && sumSamplePv > 0) ? (telemetryDays.reduce((s, t) => s + t.chg, 0) / sumSamplePv) : (hasBattery ? 0.35 : 0);
+        const rDis = (hasBattery && sumSamplePv > 0) ? (telemetryDays.reduce((s, t) => s + t.dis, 0) / sumSamplePv) : (hasBattery ? 0.30 : 0);
+        const rBuy = sumSamplePv > 0 ? (telemetryDays.reduce((s, t) => s + t.buy, 0) / sumSamplePv) : 0.55;
+        const rawRSell = sumSamplePv > 0 ? (telemetryDays.reduce((s, t) => s + t.sell, 0) / sumSamplePv) : 0.005;
+        // Bán điện cho hệ bám tải CT không thể vượt quá 2% PV
+        const rSell = Math.min(0.02, Math.max(0.001, rawRSell));
 
         let chartData = [];
         let totalPv = 0, totalLoad = 0, totalChg = 0, totalDis = 0, totalSell = 0, totalBuy = 0;
@@ -926,14 +944,23 @@ class LiveCloudService {
         for (let d = 1; d <= daysInMonth; d++) {
           const rawItem = rawList.find(r => r.timeDisplay === String(d) || r.timeDisplay === pad(d) || (r.time && r.time.endsWith(`-${pad(d)}`)));
           const rawPv = rawItem ? parseFloat(rawItem.generatedEnergy || rawItem.value || 0) : 0;
-          const telemetry = dayMap.get(d);
+          const telemetry = telemetryDays.find(t => t.day === d);
 
           let pv = rawPv > 0 ? Number(rawPv.toFixed(2)) : (telemetry ? telemetry.pv : 0);
-          let chg = (hasBattery || (telemetry && telemetry.chg > 0)) ? (telemetry ? telemetry.chg : 0) : 0;
-          let dis = (hasBattery || (telemetry && telemetry.dis > 0)) ? (telemetry ? telemetry.dis : 0) : 0;
-          let load = telemetry ? telemetry.load : (pv > 0 ? Number((pv * 1.5).toFixed(2)) : 0);
-          let buy = telemetry ? telemetry.buy : (pv > 0 ? Number(Math.max(0, load - (pv - chg) - dis).toFixed(2)) : 0);
-          let sell = telemetry ? telemetry.sell : (pv > 0 ? Number(Math.max(0, (pv - chg - load) * 0.9).toFixed(2)) : 0);
+          let chg = telemetry ? telemetry.chg : (hasBattery ? Number((pv * rChg).toFixed(2)) : 0);
+          let dis = telemetry ? telemetry.dis : (hasBattery ? Number((pv * rDis).toFixed(2)) : 0);
+          let sell = telemetry ? telemetry.sell : Number((pv * rSell).toFixed(2));
+          let load = telemetry ? telemetry.load : Number((pv * rLoad).toFixed(2));
+          let buy = telemetry ? telemetry.buy : Number((pv * rBuy).toFixed(2));
+
+          // Ràng buộc bảo toàn năng lượng
+          sell = Number(Math.min(sell, Math.max(0, pv - chg)).toFixed(2));
+          if (hasBattery) {
+            dis = Number(Math.min(dis, chg * 1.05 + 5).toFixed(2));
+          } else {
+            chg = 0;
+            dis = 0;
+          }
 
           totalPv += pv;
           totalLoad += load;
@@ -978,7 +1005,7 @@ class LiveCloudService {
 
       const rawYearList = (yearRes?.data?.code === 0 && Array.isArray(yearRes.data?.data)) ? yearRes.data.data : [];
 
-      // Lấy dữ liệu tháng 8 / tháng có dữ liệu gần nhất làm mẫu tính tỷ lệ chính xác từ viễn trắc
+      // Lấy dữ liệu tháng 8 làm mẫu tỷ lệ chính xác từ viễn trắc
       let sampleMonthSummary = null;
       try {
         const sampleMonthRes = await this.getEnergyStatistics(userToken, targetStationId, 'MONTH', `${reqTime}-08`);
@@ -991,14 +1018,14 @@ class LiveCloudService {
         load: sampleMonthSummary.loadEnergy / sampleMonthSummary.pvEnergy,
         chg: hasBattery ? (sampleMonthSummary.chargeEnergy / sampleMonthSummary.pvEnergy) : 0,
         dis: hasBattery ? (sampleMonthSummary.dischargeEnergy / sampleMonthSummary.pvEnergy) : 0,
-        sell: sampleMonthSummary.sellEnergy / sampleMonthSummary.pvEnergy,
+        sell: Math.min(0.02, sampleMonthSummary.sellEnergy / sampleMonthSummary.pvEnergy),
         buy: sampleMonthSummary.buyEnergy / sampleMonthSummary.pvEnergy
       } : { 
-        load: 1.5, 
-        chg: hasBattery ? 0.2 : 0, 
-        dis: hasBattery ? 0.18 : 0, 
-        sell: 0.05, 
-        buy: 0.45 
+        load: 1.45, 
+        chg: hasBattery ? 0.35 : 0, 
+        dis: hasBattery ? 0.30 : 0, 
+        sell: 0.005, 
+        buy: 0.55 
       };
 
       let chartData = [];
@@ -1018,7 +1045,6 @@ class LiveCloudService {
 
         if (isReal) {
           if (m === 8 && sampleMonthSummary && sampleMonthSummary.pvEnergy > 0) {
-            // Tháng 8 đã được tích phân chính xác 100%
             pv = sampleMonthSummary.pvEnergy;
             load = sampleMonthSummary.loadEnergy;
             chg = hasBattery ? sampleMonthSummary.chargeEnergy : 0;
@@ -1031,6 +1057,15 @@ class LiveCloudService {
             load = Number((pv * pvRatio.load).toFixed(2));
             sell = Number((pv * pvRatio.sell).toFixed(2));
             buy = Number((pv * pvRatio.buy).toFixed(2));
+
+            // Ràng buộc vật lý
+            sell = Number(Math.min(sell, Math.max(0, pv - chg)).toFixed(2));
+            if (hasBattery) {
+              dis = Number(Math.min(dis, chg * 1.05 + 5).toFixed(2));
+            } else {
+              chg = 0;
+              dis = 0;
+            }
           }
         }
 

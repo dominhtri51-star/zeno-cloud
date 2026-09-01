@@ -7,9 +7,11 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const isHomeowner = user?.role === 'homeowner' || user?.role === 'customer';
 
   // Tab hiện tại: 'wifi' (Cấu hình Wi-Fi qua Bluetooth) | 'claim' (Thu nạp SN)
@@ -224,61 +226,74 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in font-['Plus_Jakarta_Sans',sans-serif]">
-      <div className="bg-[#0c1222] border border-slate-800/90 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in font-['Plus_Jakarta_Sans',sans-serif]">
+      <div className={`w-full max-w-lg rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] transition-colors duration-300 ${
+        isDark ? 'bg-[#0c1222] border border-slate-800/90 text-white' : 'bg-white border border-slate-200 text-slate-900 shadow-2xl'
+      }`}>
         
         {/* Header Modal */}
-        <div className="p-4 border-b border-slate-800/90 flex items-center justify-between bg-[#0e1628]">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <Bluetooth className="w-5 h-5" />
+        <div className={`p-3.5 sm:p-4 border-b flex items-center justify-between ${
+          isDark ? 'border-slate-800/90 bg-[#0e1628]' : 'border-slate-200 bg-slate-50/90'
+        }`}>
+          <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 pr-2">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shrink-0">
+              <Bluetooth className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-extrabold text-white">Cấu Hình Wi-Fi Qua Bluetooth</h2>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h2 className={`text-sm sm:text-base font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>Cấu Hình Wi-Fi Bluetooth</h2>
+                <span className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
                   BLE PROVISIONING
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Kết nối Bluetooth Inverter và thiết lập Wi-Fi nhà khách</p>
+              <p className={`text-[11px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} truncate mt-0.5`}>Kết nối Bluetooth Inverter và thiết lập Wi-Fi nhà khách</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer">
-            <X className="w-5 h-5" />
+          <button 
+            onClick={onClose} 
+            className={`p-1.5 sm:p-2 rounded-xl transition cursor-pointer shrink-0 ${
+              isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* 2 Tabs Chuyển Đổi */}
-        <div className="flex border-b border-slate-800 bg-slate-950/60 p-1.5 gap-1.5">
+        <div className={`flex border-b p-1.5 gap-1.5 ${isDark ? 'border-slate-800 bg-slate-950/60' : 'border-slate-200 bg-slate-100'}`}>
           <button
             type="button"
             onClick={() => setActiveTab('wifi')}
-            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+            className={`flex-1 py-2 px-2 sm:px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
               activeTab === 'wifi'
-                ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/10 text-emerald-300 border border-emerald-500/30 shadow-lg'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                ? isDark
+                  ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/10 text-emerald-300 border border-emerald-500/30 shadow-lg'
+                  : 'bg-white text-emerald-700 border border-emerald-300 shadow-sm'
+                : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
             }`}
           >
-            <Bluetooth className="w-4 h-4 text-emerald-400" />
-            <span>1. Kết Nối Bluetooth & Cài Wi-Fi</span>
+            <Bluetooth className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+            <span className="truncate">1. Cài Wi-Fi Bluetooth</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('claim')}
-            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+            className={`flex-1 py-2 px-2 sm:px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
               activeTab === 'claim'
-                ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/10 text-emerald-300 border border-emerald-500/30 shadow-lg'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                ? isDark
+                  ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/10 text-emerald-300 border border-emerald-500/30 shadow-lg'
+                  : 'bg-white text-emerald-700 border border-emerald-300 shadow-sm'
+                : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
             }`}
           >
-            <PlusCircle className="w-4 h-4 text-emerald-400" />
-            <span>2. Thu Nạp Thiết Bị (Nhập SN)</span>
+            <PlusCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+            <span className="truncate">2. Thu Nạp Thiết Bị (SN)</span>
           </button>
         </div>
 
         {/* Modal Body Container */}
-        <div className="overflow-y-auto p-4 sm:p-5">
+        <div className="overflow-y-auto p-3.5 sm:p-5 flex-1 custom-scrollbar">
           
           {/* ========================================================= */}
           {/* ========== TAB 1: CẤU HÌNH WI-FI QUA BLUETOOTH ========== */}

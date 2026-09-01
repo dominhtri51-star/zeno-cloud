@@ -4,8 +4,10 @@ import {
   Wrench, Users, Sparkles, X, AlertCircle, RefreshCw 
 } from 'lucide-react';
 import { authService } from '../services/api';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function TechnicianCodeModal({ isOpen, onClose }) {
+  const { isDark } = useTheme();
   const [codes, setCodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newCode, setNewCode] = useState('');
@@ -89,23 +91,29 @@ export default function TechnicianCodeModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in font-['Plus_Jakarta_Sans',sans-serif]">
-      <div className="bg-[#0b101e] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl shadow-cyan-500/10 space-y-6 relative max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in font-['Plus_Jakarta_Sans',sans-serif]">
+      <div className={`w-full max-w-2xl rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-2xl space-y-4 sm:space-y-5 relative max-h-[92vh] flex flex-col overflow-hidden transition-colors duration-300 ${
+        isDark ? 'bg-[#0b101e] border border-cyan-500/30 text-white shadow-cyan-500/10' : 'bg-white border border-slate-200 text-slate-900 shadow-2xl'
+      }`}>
         
         {/* Modal Header */}
-        <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-800/80">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-amber-500/20 border border-cyan-500/40 text-cyan-400">
-              <KeyRound className="w-6 h-6" />
+        <div className={`flex items-start justify-between gap-3 pb-3 sm:pb-4 border-b ${
+          isDark ? 'border-slate-800/80' : 'border-slate-200'
+        }`}>
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-amber-500/20 border border-cyan-500/40 text-cyan-500 flex items-center justify-center shrink-0">
+              <KeyRound className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg sm:text-xl font-black text-white">Quản Lý Mã Kỹ Thuật Viên / Thợ</h2>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h2 className={`text-base sm:text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Quản Lý Mã Kỹ Thuật Viên / Thợ</h2>
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                  isDark ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-cyan-50 text-cyan-700 border-cyan-200'
+                }`}>
                   Master
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className={`text-[11px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} mt-0.5 truncate`}>
                 Cấp phát mã kích hoạt để Kỹ thuật viên / Thợ tự động đăng ký quyền Kỹ Thuật (Installer).
               </p>
             </div>
@@ -113,28 +121,32 @@ export default function TechnicianCodeModal({ isOpen, onClose }) {
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className={`p-1.5 sm:p-2 rounded-xl transition cursor-pointer shrink-0 ${
+              isDark ? 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800' : 'bg-slate-100 border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-200'
+            }`}
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* Alerts */}
         {error && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-400 flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-500 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
         {success && (
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-600 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 shrink-0" />
             <span>{success}</span>
           </div>
         )}
 
         {/* Form Tạo Mã Mới */}
-        <form onSubmit={handleCreateCode} className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+        <form onSubmit={handleCreateCode} className={`p-3.5 sm:p-4 rounded-2xl border space-y-3 ${
+          isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'
+        }`}>
           <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
             <Sparkles className="w-4 h-4 text-amber-400" />
             <span>Tạo Thêm Mã Kỹ Thuật Viên Mới</span>

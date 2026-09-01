@@ -7,8 +7,10 @@ import {
   Flame, Power, Wrench, RotateCcw
 } from 'lucide-react';
 import api from '../services/api';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function RemoteConfigModal({ station, isOpen, onClose }) {
+  const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState('quick'); // 'quick' | 'advanced'
 
   // ================= 1. CÀI ĐẶT NHANH (MẶC ĐỊNH CHUẨN XÁC THEO HÌNH) =================
@@ -505,55 +507,63 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* Cửa sổ Popup: Chiều cao cố định h-[86vh] max-h-[760px], Footer ghim đáy tuyệt đối không bị khuyết */}
-      <div className="bg-[#0b101e] border border-slate-800/90 rounded-2xl w-full max-w-2xl shadow-2xl animate-scale-up h-[86vh] max-h-[760px] flex flex-col overflow-hidden relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Cửa sổ Popup: Chiều cao linh hoạt, responsive tràn viền trên mobile */}
+      <div className={`w-full max-w-2xl sm:rounded-3xl rounded-2xl shadow-2xl animate-scale-up h-[92vh] max-h-[820px] flex flex-col overflow-hidden relative transition-colors duration-300 ${
+        isDark ? 'bg-[#0b101e] border border-slate-800/90 text-white' : 'bg-white border border-slate-200 text-slate-900 shadow-2xl'
+      }`}>
         
         {/* Header - Cố định ở đỉnh */}
-        <div className="shrink-0 flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#0d1424] z-20">
-          <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/25">
-              <Sliders className="w-5 h-5" />
+        <div className={`shrink-0 flex items-center justify-between p-3.5 sm:p-5 border-b z-20 ${
+          isDark ? 'border-slate-800 bg-[#0d1424]' : 'border-slate-200 bg-slate-50/90'
+        }`}>
+          <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 pr-2">
+            <div className="p-2 sm:p-2.5 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/25 shrink-0">
+              <Sliders className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-base sm:text-lg text-white">Cấu Hình Inverter & Pin BMS Từ Xa</h3>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h3 className={`font-extrabold text-sm sm:text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>Cấu Hình Inverter & Pin BMS</h3>
                 {loadingCurrent ? (
-                  <span className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-medium flex items-center gap-1 animate-pulse">
-                    <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Đang đọc từ Inverter...
+                  <span className="text-[9px] sm:text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-medium flex items-center gap-1 animate-pulse">
+                    <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Đang đọc...
                   </span>
                 ) : (
                   loadedFromCloud && (
-                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-                      <CheckCircle className="w-2.5 h-2.5" /> Đã nạp thông số Inverter thực tế
+                    <span className="text-[9px] sm:text-[10px] text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                      <CheckCircle className="w-2.5 h-2.5" /> Đã nạp thông số
                     </span>
                   )
                 )}
               </div>
-              <p className="text-xs text-slate-400">Trạm: <span className="text-cyan-400 font-bold">{station?.stationName || 'sungoPlant'}</span> (41 Thanh Ghi Chuẩn)</p>
+              <p className={`text-[11px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} truncate mt-0.5`}>Trạm: <span className="text-cyan-500 font-bold">{station?.stationName || 'sungoPlant'}</span> (41 Thanh Ghi Chuẩn)</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className={`p-1.5 sm:p-2 rounded-xl transition cursor-pointer shrink-0 ${
+              isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+            }`}
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* Tab Selector - Cố định */}
-        <div className="shrink-0 flex border-b border-slate-800 bg-[#0a0f1d] px-4 pt-2 z-20">
+        <div className={`shrink-0 flex border-b px-4 pt-2 z-20 ${
+          isDark ? 'border-slate-800 bg-[#0a0f1d]' : 'border-slate-200 bg-slate-100/80'
+        }`}>
           <button
             type="button"
             onClick={() => setActiveTab('quick')}
             className={`pb-2.5 px-4 font-bold text-xs sm:text-sm flex items-center gap-2 border-b-2 transition cursor-pointer ${
               activeTab === 'quick'
-                ? 'border-amber-500 text-amber-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-amber-500 text-amber-500'
+                : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <Zap className="w-4 h-4" />
-            <span>Cài Đặt Nhanh (1-Chạm)</span>
+            <span>Cài Đặt Nhanh (Preset Chuẩn)</span>
           </button>
 
           <button
@@ -561,12 +571,12 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
             onClick={() => setActiveTab('advanced')}
             className={`pb-2.5 px-4 font-bold text-xs sm:text-sm flex items-center gap-2 border-b-2 transition cursor-pointer ${
               activeTab === 'advanced'
-                ? 'border-cyan-500 text-cyan-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-amber-500 text-amber-500'
+                : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Wrench className="w-4 h-4" />
-            <span>Cài Đặt Nâng Cao (41 Thanh Ghi Hãng)</span>
+            <Layers className="w-4 h-4" />
+            <span>Cài Đặt Nâng Cao (41 Thanh Ghi)</span>
           </button>
         </div>
 

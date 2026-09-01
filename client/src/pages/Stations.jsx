@@ -462,12 +462,12 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                       ID: {st.stationId}
                     </span>
                     {st.ownerName && (
-                      <span className="text-[11px] font-medium text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-md">
-                        Chủ: <span className="text-slate-200 font-semibold">{st.ownerName}</span>
+                      <span className={`text-[11px] font-medium border px-2 py-0.5 rounded-md ${isDark ? 'text-slate-400 bg-slate-900 border-slate-800' : 'text-slate-600 bg-slate-100 border-slate-200'}`}>
+                        Chủ: <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>{st.ownerName}</span>
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                  <div className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                     <span>{st.address || 'Hồ Chí Minh, Vietnam'}</span>
                   </div>
@@ -483,14 +483,14 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                         <span
                           key={sh.shareId || sh.dealerAccount}
                           onClick={(e) => isHomeowner && handleOpenShareModal(st, e)}
-                          className={`px-2 py-0.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[11px] text-slate-300 flex items-center gap-1.5 ${
-                            isHomeowner ? 'cursor-pointer hover:border-cyan-500/50 hover:text-cyan-300 transition' : ''
-                          }`}
+                          className={`px-2 py-0.5 rounded-lg border text-[11px] flex items-center gap-1.5 ${
+                            isDark ? 'bg-slate-900/90 border-slate-800 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'
+                          } ${isHomeowner ? 'cursor-pointer hover:border-cyan-500/50 hover:text-cyan-400 transition' : ''}`}
                           title={isHomeowner ? 'Bấm để quản lý quyền ủy quyền đại lý' : ''}
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                          <span className="font-bold text-white">{sh.dealerName || sh.dealerAccount}</span>
-                          <span className="text-[10px] text-cyan-400 font-mono">({sh.dealerAccount})</span>
+                          <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{sh.dealerName || sh.dealerAccount}</span>
+                          <span className="text-[10px] text-cyan-500 font-mono">({sh.dealerAccount})</span>
                         </span>
                       ))}
                     </div>
@@ -498,19 +498,19 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 text-xs">
-                  <div className="bg-slate-900/90 border border-slate-800 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-right">
-                    <span className="text-[9px] sm:text-[10px] text-slate-400 block font-semibold">Công Suất Lắp Đặt</span>
-                    <span className="font-extrabold text-amber-400 font-mono text-xs sm:text-sm">{st.installedCapacity || `${st.capacityKw} kWp`}</span>
+                  <div className={`border px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-right ${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'}`}>
+                    <span className={`text-[9px] sm:text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} block font-semibold`}>Công Suất Lắp Đặt</span>
+                    <span className="font-extrabold text-amber-500 font-mono text-xs sm:text-sm">{st.installedCapacity || `${st.capacityKw} kWp`}</span>
                   </div>
 
                   {/* Nút Chia Sẻ Cho Đại Lý */}
                   {isHomeowner && (
                     <button
                       onClick={(e) => handleOpenShareModal(st, e)}
-                      className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-teal-500/20 via-cyan-500/20 to-amber-500/20 hover:from-teal-500/30 text-cyan-300 border border-cyan-500/40 transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer shadow-md shadow-cyan-500/10"
+                      className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-teal-500/20 via-cyan-500/20 to-amber-500/20 hover:from-teal-500/30 text-cyan-500 border border-cyan-500/40 transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer shadow-md shadow-cyan-500/10"
                       title="Chia sẻ quyền quản trị cho Đại lý"
                     >
-                      <Share2 className="w-3.5 h-3.5 text-cyan-400" />
+                      <Share2 className="w-3.5 h-3.5 text-cyan-500" />
                       <span>Chia Sẻ Đại Lý</span>
                     </button>
                   )}
@@ -518,10 +518,14 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                   {/* Nút Cài Đặt Dự Án */}
                   <button
                     onClick={(e) => handleOpenProjectSettings(st, e)}
-                    className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 hover:border-cyan-500/40 transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer"
+                    className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer ${
+                      isDark 
+                        ? 'bg-slate-800 hover:bg-slate-700 text-cyan-300 border-slate-700 hover:border-cyan-500/40' 
+                        : 'bg-slate-100 hover:bg-slate-200 text-cyan-700 border-slate-300 shadow-sm hover:border-cyan-500'
+                    }`}
                     title="Cài đặt đơn giá tiền điện, công suất PV và pin lưu trữ của dự án này"
                   >
-                    <SettingsIcon className="w-3.5 h-3.5 text-cyan-400" />
+                    <SettingsIcon className="w-3.5 h-3.5 text-cyan-500" />
                     <span>Cài đặt dự án</span>
                   </button>
 
@@ -529,10 +533,14 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                   {!isHomeowner && (
                     <button
                       onClick={(e) => handleOpenConfig(st, e)}
-                      className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer"
+                      className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer ${
+                        isDark 
+                          ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700' 
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 shadow-sm'
+                      }`}
                       title="Cấu hình Inverter từ xa"
                     >
-                      <Sliders className="w-3.5 h-3.5 text-amber-400" />
+                      <Sliders className="w-3.5 h-3.5 text-amber-500" />
                       <span>Cấu hình</span>
                     </button>
                   )}
@@ -541,10 +549,10 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                   {isDistributor && (
                     <button
                       onClick={(e) => handleDeleteStationClick(st, e)}
-                      className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-500/50 transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer"
+                      className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 hover:border-rose-500/50 transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer"
                       title="Xóa trạm tạo sai"
                     >
-                      <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                      <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                       <span>Xóa</span>
                     </button>
                   )}
@@ -553,9 +561,9 @@ export default function Stations({ onNavigate, onSelectDevice }) {
 
               {/* Danh sách Thiết Bị (Devices / Inverters) của Trạm */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <div className={`flex items-center justify-between text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>
                   <span>Thiết Bị Inverter Trong Trạm ({(st.devices && st.devices.length) || 1})</span>
-                  <span className="text-cyan-400 lowercase text-[10px] sm:text-[11px] font-medium">• Bấm để xem Bảng Điều Khiển</span>
+                  <span className="text-cyan-500 lowercase text-[10px] sm:text-[11px] font-medium">• Bấm để xem Bảng Điều Khiển</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -578,10 +586,14 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                       <div
                         key={dev.deviceId}
                         onClick={() => handleDeviceClick(st, dev)}
-                        className={`group p-3 sm:p-4 rounded-xl cursor-pointer transition-all duration-200 flex flex-col justify-between relative ${
+                        className={`group p-3 sm:p-4 rounded-2xl cursor-pointer transition-all duration-200 flex flex-col justify-between relative ${
                           isDeviceMatched
-                            ? 'bg-gradient-to-br from-cyan-950/40 via-slate-900 to-[#0d1424] border-2 border-cyan-400 shadow-xl shadow-cyan-500/20 ring-1 ring-cyan-400/50'
-                            : 'bg-gradient-to-br from-slate-900 to-[#0d1424] hover:from-slate-850 hover:to-[#111a30] border border-slate-800/90 hover:border-cyan-500/60 shadow-lg hover:shadow-cyan-500/10'
+                            ? isDark
+                              ? 'bg-gradient-to-br from-cyan-950/40 via-slate-900 to-[#0d1424] border-2 border-cyan-400 shadow-xl shadow-cyan-500/20 ring-1 ring-cyan-400/50'
+                              : 'bg-gradient-to-br from-cyan-50 via-white to-teal-50 border-2 border-cyan-500 shadow-xl shadow-cyan-500/10'
+                            : isDark
+                              ? 'bg-gradient-to-br from-slate-900 to-[#0d1424] hover:from-slate-850 hover:to-[#111a30] border border-slate-800/90 hover:border-cyan-500/60 shadow-lg hover:shadow-cyan-500/10'
+                              : 'bg-gradient-to-br from-slate-50 to-white hover:from-cyan-50/40 hover:to-white border border-slate-200 hover:border-cyan-400 shadow-sm hover:shadow-md'
                         }`}
                       >
                         {/* Match Tags Badge nếu khớp từ khóa tìm kiếm */}
@@ -598,54 +610,56 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                             <div className="flex items-center space-x-2.5 sm:space-x-3">
                               <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center group-hover:scale-105 transition shrink-0 ${
                                 isDeviceMatched 
-                                  ? 'bg-cyan-500/30 border-cyan-400 text-cyan-300 shadow-sm'
-                                  : 'bg-gradient-to-tr from-cyan-500/20 to-teal-500/20 border-cyan-500/30 text-cyan-400'
+                                  ? 'bg-cyan-500/30 border-cyan-400 text-cyan-400 shadow-sm'
+                                  : 'bg-gradient-to-tr from-cyan-500/20 to-teal-500/20 border-cyan-500/30 text-cyan-500'
                               }`}>
                                 <Cpu className="w-4 h-4 sm:w-5 sm:h-5" />
                               </div>
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1.5">
                                   <h3 className={`font-extrabold text-xs sm:text-sm truncate ${
-                                    isDeviceMatched ? 'text-cyan-300' : 'text-white group-hover:text-cyan-300'
+                                    isDeviceMatched 
+                                      ? 'text-cyan-500' 
+                                      : isDark ? 'text-white group-hover:text-cyan-300' : 'text-slate-900 group-hover:text-cyan-600'
                                   }`}>
                                     {dev.deviceName || 'Inverter'}
                                   </h3>
-                                  <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                                  <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
                                     Online
                                   </span>
                                 </div>
-                                <p className="text-[10px] sm:text-[11px] text-slate-400 font-mono truncate">
+                                <p className={`text-[10px] sm:text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-mono truncate`}>
                                   {dev.machineType || 'Hybrid Inverter'}
                                 </p>
                               </div>
                             </div>
 
                             <div className="flex items-center gap-1 shrink-0">
-                              <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-1 transition" />
+                              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-cyan-500 group-hover:translate-x-1 transition" />
                             </div>
                           </div>
 
                           {/* Hardware Identifiers */}
-                          <div className={`border rounded-lg p-2 sm:p-2.5 space-y-1 text-xs font-mono transition ${
+                          <div className={`border rounded-xl p-2 sm:p-2.5 space-y-1 text-xs font-mono transition ${
                             isDeviceMatched 
-                              ? 'bg-slate-950/90 border-cyan-500/40' 
-                              : 'bg-[#0b101e] border-slate-800'
+                              ? isDark ? 'bg-slate-950/90 border-cyan-500/40' : 'bg-white border-cyan-400 shadow-sm'
+                              : isDark ? 'bg-[#0b101e] border-slate-800' : 'bg-slate-50 border-slate-200'
                           }`}>
-                            <div className="flex items-center justify-between gap-2 text-slate-300 text-[11px]">
-                              <span className="text-slate-500 flex items-center gap-1 shrink-0">
-                                <Hash className="w-3 h-3 text-slate-500" />
+                            <div className={`flex items-center justify-between gap-2 ${isDark ? 'text-slate-300' : 'text-slate-700'} text-[11px]`}>
+                              <span className={`${isDark ? 'text-slate-500' : 'text-slate-400'} flex items-center gap-1 shrink-0`}>
+                                <Hash className="w-3 h-3 text-slate-400" />
                                 Số Serial:
                               </span>
-                              <span className={`font-bold font-mono truncate text-right ${isSnMatch ? 'text-amber-300 bg-amber-500/20 px-1 rounded border border-amber-500/40' : 'text-white'}`}>
+                              <span className={`font-bold font-mono truncate text-right ${isSnMatch ? 'text-amber-500 bg-amber-500/15 px-1 rounded border border-amber-500/30' : isDark ? 'text-white' : 'text-slate-900'}`}>
                                 {dev.serialNumber}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between gap-2 text-slate-300 text-[11px]">
-                              <span className="text-slate-500 flex items-center gap-1 shrink-0">
-                                <Radio className="w-3 h-3 text-slate-500" />
+                            <div className={`flex items-center justify-between gap-2 ${isDark ? 'text-slate-300' : 'text-slate-700'} text-[11px]`}>
+                              <span className={`${isDark ? 'text-slate-500' : 'text-slate-400'} flex items-center gap-1 shrink-0`}>
+                                <Radio className="w-3 h-3 text-slate-400" />
                                 Mã DTU:
                               </span>
-                              <span className={`font-bold font-mono truncate text-right text-[10px] sm:text-[11px] ${isDtuMatch ? 'text-cyan-300 bg-cyan-500/20 px-1 rounded border border-cyan-500/40' : 'text-cyan-300'}`}>
+                              <span className={`font-bold font-mono truncate text-right text-[10px] sm:text-[11px] ${isDtuMatch ? 'text-cyan-500 bg-cyan-500/15 px-1 rounded border border-cyan-500/30' : 'text-cyan-500'}`}>
                                 {dev.dtuCode}
                               </span>
                             </div>
@@ -653,9 +667,9 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                         </div>
 
                         {/* Action trigger button */}
-                        <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                          <span className="text-slate-400 text-[10px] sm:text-[11px] font-medium truncate">Viễn trắc realtime</span>
-                          <div className="flex items-center gap-1 font-bold text-cyan-400 group-hover:text-cyan-300 text-[11px] sm:text-xs shrink-0">
+                        <div className={`mt-3 pt-2.5 border-t ${isDark ? 'border-slate-800/80 text-slate-400' : 'border-slate-200 text-slate-500'} flex items-center justify-between text-xs`}>
+                          <span className="text-[10px] sm:text-[11px] font-medium truncate">Viễn trắc realtime</span>
+                          <div className="flex items-center gap-1 font-bold text-cyan-500 group-hover:text-cyan-600 text-[11px] sm:text-xs shrink-0">
                             <span>Mở Bảng Điều Khiển</span>
                             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />
                           </div>

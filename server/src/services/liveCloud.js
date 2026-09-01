@@ -7,50 +7,63 @@ const systemSettings = require('./systemSettings');
 // Bộ nhớ đệm Tích phân chuỗi thời gian thực tế hàng ngày (Daily Integral Cache)
 const dailyIntegralCache = new Map();
 
+function toKwField(val) {
+  if (val === undefined || val === null || val === '') return 0;
+  const num = parseFloat(val);
+  if (isNaN(num)) return 0;
+  // Nếu giá trị tuyệt đối > 30 (VD: 158W, 498W, 1491W), dữ liệu đang ở đơn vị Watts -> chia 1000 để ra kW
+  // Nếu <= 30 (VD: 0.258 kW, 1.491 kW, 5.0 kW), dữ liệu đã ở đơn vị kW
+  return Math.abs(num) > 30 ? num / 1000 : num;
+}
+
 function normalizeRecordToKw(p) {
   if (!p) return { pv: 0, chg: 0, dis: 0, buy: 0, sell: 0, load: 0, backup: 0, grid: 0, soc: 0 };
 
-  const rawBat = parseFloat(p.batteryPower) || 0;
-  const rawCt = parseFloat(p.CTPower) || 0;
-  const rawAc = parseFloat(p.acOutputActivePower) || 0;
-  const rawGrid = parseFloat(p.GridPower) || 0;
-  const rawPv1 = parseFloat(p.pvInputPower) || 0;
-  const rawPv2 = parseFloat(p.pv2InputPower) || 0;
-  const rawPv3 = parseFloat(p.pv3InputPower) || 0;
-  const rawPv4 = parseFloat(p.pv4InputPower) || 0;
+  const rawPv1 = toKwField(p.pvInputPower);
+  const rawPv2 = toKwField(p.pv2InputPower);
+  const rawPv3 = toKwField(p.pv3InputPower);
+  const rawPv4 = toKwField(p.pv4InputPower);
+  const pvKw = Math.max(0, rawPv1 + rawPv2 + rawPv3 + rawPv4);
+
+  const rawBat = toKwField(p.batteryPower);
+  const rawBatDisCur = parseFloat(p.batteryDischargeCurrent) || 0;
+  const rawBatChgCur = parseFloat(p.batteryChargingCurrent) || 0;
   const soc = Math.round(parseFloat(p.batteryCapacity) || 0);
 
-  // Nhận biết bản ghi trả về Watts hay kW (VD: -337W, 12W, 188W -> isWatts = true)
-  const isWatts = Math.abs(rawBat) > 25 || Math.abs(rawCt) > 25 || Math.abs(rawAc) > 25 || Math.abs(rawGrid) > 25;
+  // Xác định chuẩn xác công suất sạc & xả pin (kW):
+  // - batKw < 0: Pin đang nạp điện (Sạc pin)
+  // - batKw > 0: Pin đang phát điện cho tải (Xả pin)
+  let chgKw = 0;
+  let disKw = 0;
 
-  const toKw = (v) => {
-    if (Math.abs(v) > 25 || isWatts) return v / 1000;
-    return v;
+  if (rawBat < 0) {
+    chgKw = Math.abs(rawBat);
+  } else if (rawBat > 0) {
+    disKw = rawBat;
+  } else {
+    if (rawBatChgCur > 0) chgKw = (rawBatChgCur * 50) / 1000;
+    if (rawBatDisCur > 0) disKw = (rawBatDisCur * 50) / 1000;
+  }
+
+  const rawGrid = toKwField(p.GridPower);
+  const buyKw = rawGrid > 0 ? rawGrid : 0;
+  const sellKw = rawGrid < 0 ? Math.abs(rawGrid) : 0;
+
+  const rawCt = toKwField(p.CTPower);
+  const backupKw = toKwField(p.acOutputActivePower);
+  const loadKw = rawCt > 0 ? rawCt : Math.max(0, pvKw + disKw + buyKw - chgKw - sellKw);
+
+  return {
+    pv: Number(pvKw.toFixed(4)),
+    chg: Number(chgKw.toFixed(4)),
+    dis: Number(disKw.toFixed(4)),
+    buy: Number(buyKw.toFixed(4)),
+    sell: Number(sellKw.toFixed(4)),
+    load: Number(loadKw.toFixed(4)),
+    backup: Number(backupKw.toFixed(4)),
+    grid: Number(rawGrid.toFixed(4)),
+    soc
   };
-
-  const pvKw = (Math.abs(rawPv1) > 25 ? rawPv1 / 1000 : rawPv1) + 
-               (Math.abs(rawPv2) > 25 ? rawPv2 / 1000 : rawPv2) + 
-               (Math.abs(rawPv3) > 25 ? rawPv3 / 1000 : rawPv3) + 
-               (Math.abs(rawPv4) > 25 ? rawPv4 / 1000 : rawPv4);
-  const batKw = toKw(rawBat);
-  const chgKw = batKw < 0 ? Math.abs(batKw) : 0;
-  const disKw = batKw > 0 ? batKw : 0;
-
-  const gridKw = toKw(rawGrid);
-  const buyKw = gridKw > 0 ? gridKw : 0;
-  const sellKw = gridKw < 0 ? Math.abs(gridKw) : 0;
-
-  const ctKw = rawCt > 0 ? (rawCt > 25 || isWatts ? rawCt / 1000 : rawCt) : toKw(rawAc);
-  const backupKw = toKw(rawAc);
-  const loadKw = ctKw > 0 ? ctKw : Math.max(0, pvKw + disKw + buyKw - chgKw - sellKw);
-
-  return { pv: pvKw, chg: chgKw, dis: disKw, buy: buyKw, sell: sellKw, load: loadKw, backup: backupKw, grid: gridKw, soc };
-}
-
-function toKwValue(val) {
-  const num = parseFloat(val) || 0;
-  if (Math.abs(num) > 25) return num / 1000;
-  return num;
 }
 
 class LiveCloudService {
@@ -538,6 +551,24 @@ class LiveCloudService {
       let batteryDisCurrent = hasFields ? (parseFloat(fields['batteryDischargeCurrent']?.value) || 0) : 0;
       let batteryChgCurrent = hasFields ? (parseFloat(fields['batteryChargingCurrent']?.value) || 0) : 0;
 
+      // Chuẩn hóa chiều sạc / xả pin:
+      // - Xả pin (Discharging -> Inverter -> Tải): batWatts > 0 hoặc batteryDisCurrent > 0
+      // - Sạc pin (Charging -> Inverter -> Pin): batWatts < 0 hoặc batteryChgCurrent > 0
+      if (batteryDisCurrent > 0 && batteryChgCurrent === 0 && batWatts <= 0) {
+        batWatts = Math.abs(batWatts) > 0 ? Math.abs(batWatts) : Math.round(batteryDisCurrent * (batteryVoltage || 50));
+      } else if (batteryChgCurrent > 0 && batteryDisCurrent === 0 && batWatts >= 0) {
+        batWatts = -Math.abs(batWatts) < 0 ? -Math.abs(batWatts) : -Math.round(batteryChgCurrent * (batteryVoltage || 50));
+      }
+
+      let batteryCurrent = 0;
+      if (batteryDisCurrent > 0) {
+        batteryCurrent = batteryDisCurrent;
+      } else if (batteryChgCurrent > 0) {
+        batteryCurrent = -batteryChgCurrent;
+      } else if (Math.abs(batWatts) > 0 && batteryVoltage > 0) {
+        batteryCurrent = Number((batWatts / batteryVoltage).toFixed(2));
+      }
+
       let rawGridWatts = hasFields ? Math.round(getFieldVal('GridPower', 0)) : 0;
       let gridWatts = Math.abs(rawGridWatts) < 5 ? 0 : rawGridWatts;
       let gridVoltage = hasFields ? Number((parseFloat(fields['acInputVoltage']?.value || fields['outputVoltage']?.value) || 0.0).toFixed(1)) : 0.0;
@@ -583,7 +614,7 @@ class LiveCloudService {
         pv2Current: Number((parseFloat(fields['pv2Current']?.value || fields['pv2InputCurrent']?.value) || (pv2 > 0 ? (6.5).toFixed(2) : 0))),
 
         batteryVoltage: batteryVoltage,
-        batteryCurrent: batteryDisCurrent > 0 ? -batteryDisCurrent : batteryChgCurrent,
+        batteryCurrent: batteryCurrent,
         batteryTemp: Number((parseFloat(fields['batteryTemperature']?.value || fields['bmsTemp']?.value) || (tempC > 0 ? Math.max(25, Math.round(tempC - 4)) : 0))),
 
         backupVoltage: Number((parseFloat(fields['acOutputVoltage']?.value || fields['epsVoltage']?.value) || (backupWatts > 0 ? (gridVoltage > 0 ? gridVoltage : 228.5) : 0))),
@@ -670,16 +701,16 @@ class LiveCloudService {
         };
       }
 
-      // Kiểm tra trạng thái Pin thực tế của Inverter (điện áp > 35V và có sạc/xả)
+      // Kiểm tra trạng thái Pin thực tế của Inverter
       const latestStateRes = await axios.get(
         `${this.baseUrl}/remote/device/state/latest?deviceId=${targetDeviceId}&dataSource=1&_t=${Date.now()}`,
-        { headers, timeout: 5000 }
+        { headers, timeout: 6000 }
       ).catch(() => null);
       const fields = latestStateRes?.data?.data?.fields || {};
       const batVol = parseFloat(fields['batteryVoltage']?.value || 0);
       const batSoc = parseInt(fields['batteryCapacity']?.value || 0, 10);
       const batPower = parseFloat(fields['batteryPower']?.value || 0);
-      const hasBattery = batVol > 35 && (batSoc > 0 || Math.abs(batPower) > 5);
+      let hasBattery = batVol > 35 && (batSoc > 0 || Math.abs(batPower) > 5 || parseInt(fields['batteryType']?.value || 0, 10) > 0);
 
       // 1. XỬ LÝ CHO CHẾ ĐỘ NGÀY (TÍCH PHÂN 24H THỜI GIAN THỰC TỪ BẢN GHI ĐIỂM)
       if (scope === 'DAY') {
@@ -696,7 +727,7 @@ class LiveCloudService {
           `${this.baseUrl}/deviceState/attribute/keys/history`,
           {
             deviceId: targetDeviceId,
-            keys: ['pvInputPower', 'pv2InputPower', 'batteryPower', 'batteryCapacity', 'GridPower', 'CTPower', 'acOutputActivePower'],
+            keys: ['pvInputPower', 'pv2InputPower', 'pv3InputPower', 'pv4InputPower', 'batteryPower', 'batteryCapacity', 'batteryChargingCurrent', 'batteryDischargeCurrent', 'GridPower', 'CTPower', 'acOutputActivePower'],
             fromTime: fmtIso(fromUtcMs),
             toTime: fmtIso(toUtcMs),
             orderByTimeAsc: true,
@@ -708,6 +739,11 @@ class LiveCloudService {
 
         const rawList = historyRes?.data?.code === 0 ? historyRes.data.data?.list || [] : [];
         
+        // Tự động nhận diện nếu bản ghi viễn trắc chứa dữ liệu sạc/xả hoặc SOC pin
+        if (!hasBattery && rawList.some(r => parseFloat(r.batteryCapacity) > 0 || Math.abs(parseFloat(r.batteryPower) || 0) > 0.05 || parseFloat(r.batteryChargingCurrent) > 0 || parseFloat(r.batteryDischargeCurrent) > 0)) {
+          hasBattery = true;
+        }
+
         let chartData = [];
         let totalPvIntegral = 0;
         let totalLoadIntegral = 0;
@@ -829,16 +865,18 @@ class LiveCloudService {
               `${this.baseUrl}/deviceState/attribute/keys/history`,
               {
                 deviceId: targetDeviceId,
-                keys: ['pvInputPower', 'pv2InputPower', 'batteryPower', 'batteryCapacity', 'GridPower', 'CTPower', 'acOutputActivePower'],
+                keys: ['pvInputPower', 'pv2InputPower', 'pv3InputPower', 'pv4InputPower', 'batteryPower', 'batteryCapacity', 'batteryChargingCurrent', 'batteryDischargeCurrent', 'GridPower', 'CTPower', 'acOutputActivePower'],
                 fromTime: fmtIso(fromUtcMs),
                 toTime: fmtIso(toUtcMs),
                 page: 1,
                 count: 500
               },
-              { headers, timeout: 5000 }
+              { headers, timeout: 6000 }
             ).then(res => {
               const list = res.data?.data?.list || [];
               if (list.length === 0) return { day: d, data: null };
+
+              const dayHasBat = hasBattery || list.some(r => parseFloat(r.batteryCapacity) > 0 || Math.abs(parseFloat(r.batteryPower) || 0) > 0.05 || parseFloat(r.batteryChargingCurrent) > 0 || parseFloat(r.batteryDischargeCurrent) > 0);
 
               let pvE = 0, chgE = 0, disE = 0, buyE = 0, sellE = 0, loadE = 0;
               for (let i = 1; i < list.length; i++) {
@@ -850,8 +888,8 @@ class LiveCloudService {
                 if (dt > 2 || dt <= 0) continue;
 
                 pvE += ((k0.pv + k1.pv) / 2) * dt;
-                chgE += hasBattery ? (((k0.chg + k1.chg) / 2) * dt) : 0;
-                disE += hasBattery ? (((k0.dis + k1.dis) / 2) * dt) : 0;
+                chgE += dayHasBat ? (((k0.chg + k1.chg) / 2) * dt) : 0;
+                disE += dayHasBat ? (((k0.dis + k1.dis) / 2) * dt) : 0;
                 buyE += ((k0.buy + k1.buy) / 2) * dt;
                 sellE += ((k0.sell + k1.sell) / 2) * dt;
                 loadE += ((k0.load + k1.load) / 2) * dt;
@@ -891,8 +929,8 @@ class LiveCloudService {
           const telemetry = dayMap.get(d);
 
           let pv = rawPv > 0 ? Number(rawPv.toFixed(2)) : (telemetry ? telemetry.pv : 0);
-          let chg = hasBattery ? (telemetry ? telemetry.chg : 0) : 0;
-          let dis = hasBattery ? (telemetry ? telemetry.dis : 0) : 0;
+          let chg = (hasBattery || (telemetry && telemetry.chg > 0)) ? (telemetry ? telemetry.chg : 0) : 0;
+          let dis = (hasBattery || (telemetry && telemetry.dis > 0)) ? (telemetry ? telemetry.dis : 0) : 0;
           let load = telemetry ? telemetry.load : (pv > 0 ? Number((pv * 1.5).toFixed(2)) : 0);
           let buy = telemetry ? telemetry.buy : (pv > 0 ? Number(Math.max(0, load - (pv - chg) - dis).toFixed(2)) : 0);
           let sell = telemetry ? telemetry.sell : (pv > 0 ? Number(Math.max(0, (pv - chg - load) * 0.9).toFixed(2)) : 0);

@@ -256,14 +256,16 @@ export default function Stations({ onNavigate, onSelectDevice }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Nút Thêm & Cấu Hình WiFi Thiết Bị (Mở cho toàn bộ các cấp: Tổng PP, Thợ & Chủ Nhà) */}
-          <button
-            onClick={() => setIsClaimOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 via-teal-500 to-amber-400 hover:from-cyan-400 text-slate-950 transition text-xs font-black flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 cursor-pointer"
-          >
-            <Wifi className="w-4 h-4" />
-            <span>+ Cấu Hình WiFi & Thêm Thiết Bị</span>
-          </button>
+          {/* Nút Thêm & Cấu Hình WiFi Thiết Bị (CHỈ HIỂN THỊ DUY NHẤT Ở TÀI KHOẢN NGƯỜI TIÊU DÙNG CUỐI) */}
+          {isHomeowner && (
+            <button
+              onClick={() => setIsClaimOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 via-teal-500 to-amber-400 hover:from-cyan-400 text-slate-950 transition text-xs font-black flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 cursor-pointer"
+            >
+              <Wifi className="w-4 h-4" />
+              <span>+ Cấu Hình WiFi & Liên Kết Thiết Bị</span>
+            </button>
+          )}
 
           <button
             onClick={loadStations}

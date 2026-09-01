@@ -521,84 +521,27 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
                 </span>
               </div>
 
-              {/* Ô nhập mã DTU & Nút Dò tìm trên Cloud */}
+              {/* Ô nhập mã DTU */}
               <div className="space-y-1.5">
                 <label className={`text-xs font-bold flex items-center justify-between ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                  <span>Mã DTU Datalogger (20 số) hoặc Số Serial Biến Tần:</span>
+                  <span>Mã DTU Datalogger:</span>
                   <span className="text-[10px] text-amber-500 font-semibold">* Tự điền từ Bluetooth hoặc tem máy</span>
                 </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={dtuCode}
-                      onChange={(e) => {
-                        setDtuCode(e.target.value);
-                        setLookupResult(null);
-                        setLookupError('');
-                      }}
-                      placeholder="VD: 96796956562056303625 hoặc 3528214760-1"
-                      className={`w-full py-2.5 px-3.5 rounded-xl text-sm font-mono font-bold transition focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                        isDark 
-                          ? 'bg-[#11192d] border border-slate-700 text-white placeholder-slate-500' 
-                          : 'bg-white border border-slate-300 text-slate-900 placeholder-slate-400'
-                      }`}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleLookupDtu()}
-                    disabled={isLookingUp || !dtuCode.trim()}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 shrink-0 shadow-md"
-                  >
-                    <Search className={`w-3.5 h-3.5 ${isLookingUp ? 'animate-spin' : ''}`} />
-                    <span>{isLookingUp ? 'Đang dò...' : 'Dò tìm Cloud'}</span>
-                  </button>
-                </div>
+                <input
+                  type="text"
+                  value={dtuCode}
+                  onChange={(e) => {
+                    setDtuCode(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="VD: 96796956562056303625"
+                  className={`w-full py-2.5 px-3.5 rounded-xl text-sm font-mono font-bold transition focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                    isDark 
+                      ? 'bg-[#11192d] border border-slate-700 text-white placeholder-slate-500' 
+                      : 'bg-white border border-slate-300 text-slate-900 placeholder-slate-400'
+                  }`}
+                />
               </div>
-
-              {/* Kết quả Dò tìm thành công từ Cloud Hãng */}
-              {lookupResult && (
-                <div className={`p-3.5 rounded-2xl border transition animate-fade-in ${
-                  isDark ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200' : 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                }`}>
-                  <div className="flex items-center justify-between pb-2 border-b border-emerald-500/20 mb-2.5">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                      <span className="text-xs font-extrabold text-emerald-600 uppercase tracking-wide">
-                        ✓ ĐÃ TÌM THẤY TRÊN CLOUD HÃNG
-                      </span>
-                    </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      lookupResult.isOnline ? 'bg-emerald-500/20 text-emerald-600' : 'bg-slate-500/20 text-slate-500'
-                    }`}>
-                      {lookupResult.isOnline ? '● Online (Đang chạy)' : '○ Offline'}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-[10px] opacity-70 block font-semibold">Tên Trạm Thực Tế:</span>
-                      <strong className="font-bold">{lookupResult.stationName}</strong>
-                    </div>
-                    <div>
-                      <span className="text-[10px] opacity-70 block font-semibold">Công Suất / Model:</span>
-                      <strong>{lookupResult.installedCapacity || '12 kWp'} ({lookupResult.devices?.[0]?.machineType || 'W70'})</strong>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-[10px] opacity-70 block font-semibold">Địa Chỉ Lắp Đặt:</span>
-                      <span className="truncate block">{lookupResult.address || 'Việt Nam'}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {lookupError && (
-                <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs rounded-xl flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{lookupError}</span>
-                </div>
-              )}
 
               {/* Tên trạm hiển thị */}
               <div className="space-y-1.5">
@@ -634,26 +577,6 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
                       : 'bg-white border border-slate-300 text-slate-900 placeholder-slate-400'
                   }`}
                 />
-              </div>
-
-              {/* Chọn Đại lý phụ trách */}
-              <div className="space-y-1.5">
-                <label className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                  Đại Lý Lắp Đặt / Phụ Trách Hỗ Trợ:
-                </label>
-                <select
-                  value={installer}
-                  onChange={(e) => setInstaller(e.target.value)}
-                  className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                    isDark 
-                      ? 'bg-[#11192d] border border-slate-700 text-white' 
-                      : 'bg-white border border-slate-300 text-slate-900'
-                  }`}
-                >
-                  {dealerList.map(d => (
-                    <option key={d.account} value={d.account}>{d.name}</option>
-                  ))}
-                </select>
               </div>
 
               {error && (

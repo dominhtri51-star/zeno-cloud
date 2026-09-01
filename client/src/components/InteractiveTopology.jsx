@@ -6,7 +6,6 @@ import {
   Shield, 
   Home, 
   X, 
-  ChevronRight, 
   Activity, 
   CheckCircle2, 
   TrendingUp, 
@@ -94,37 +93,37 @@ export default function InteractiveTopology({
         </div>
       </div>
 
-      {/* 2. Khung vẽ sơ đồ trung tâm gom gọn, thông thoáng và dòng điện chạm trực tiếp */}
-      <div className="relative w-full min-h-[380px] xs:min-h-[400px] sm:min-h-[440px] md:min-h-[460px] flex items-center justify-center py-2">
+      {/* 2. KHUNG VẼ SƠ ĐỒ TRUNG TÂM - TỶ LỆ PHẦN TRĂM TUYỆT ĐỐI KHỚP TÂM 100% */}
+      <div className="relative w-full h-[370px] xs:h-[390px] sm:h-[420px] md:h-[440px] flex items-center justify-center my-1">
         
-        {/* SVG Circuit Lines Layer - Kéo dài đi sâu vào trong các thẻ để chạm sát viền 100% */}
+        {/* SVG CIRCUIT LINES LAYER - Tọa độ 0-100% khớp chính xác tâm các thẻ */}
         <svg 
-          viewBox="0 0 800 480" 
+          viewBox="0 0 100 100" 
           className="absolute inset-0 w-full h-full pointer-events-none z-0"
-          preserveAspectRatio="xMidYMid meet"
+          preserveAspectRatio="none"
         >
           <defs>
-            <filter id="glow-amber" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#f59e0b" floodOpacity="0.9" />
+            <filter id="glow-amber" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="0" stdDeviation="0.6" floodColor="#f59e0b" floodOpacity="0.9" />
             </filter>
-            <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#0284c7" floodOpacity="0.9" />
+            <filter id="glow-blue" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="0" stdDeviation="0.6" floodColor="#0284c7" floodOpacity="0.9" />
             </filter>
-            <filter id="glow-emerald" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#10b981" floodOpacity="0.9" />
+            <filter id="glow-emerald" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="0" stdDeviation="0.6" floodColor="#10b981" floodOpacity="0.9" />
             </filter>
-            <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#06b6d4" floodOpacity="0.9" />
+            <filter id="glow-cyan" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="0" stdDeviation="0.6" floodColor="#06b6d4" floodOpacity="0.9" />
             </filter>
 
             <style>{`
               @keyframes flow-forward {
-                from { stroke-dashoffset: 36; }
+                from { stroke-dashoffset: 8; }
                 to { stroke-dashoffset: 0; }
               }
               @keyframes flow-backward {
                 from { stroke-dashoffset: 0; }
-                to { stroke-dashoffset: 36; }
+                to { stroke-dashoffset: 8; }
               }
               .flow-pv { animation: flow-forward 1.2s linear infinite; }
               .flow-grid { animation: flow-forward 1.4s linear infinite; }
@@ -135,104 +134,109 @@ export default function InteractiveTopology({
             `}</style>
           </defs>
 
-          {/* DÂY TĨNH NỐI LIỀN TRỰC TIẾP TỪ THẺ VÀO CỔNG INVERTER (ĐI SÂU VÀO TRONG THẺ ĐỂ KHÔNG CÒN KHOẢNG HỞ) */}
-          <path d="M 170 95 L 170 185 L 330 185" fill="none" stroke={isDark ? "#1e293b" : "#cbd5e1"} strokeWidth="2.5" strokeLinecap="round" />
-          <path d="M 630 95 L 630 185 L 470 185" fill="none" stroke={isDark ? "#1e293b" : "#cbd5e1"} strokeWidth="2.5" strokeLinecap="round" />
-          <path d="M 150 385 L 150 275 L 330 275" fill="none" stroke={isDark ? "#1e293b" : "#cbd5e1"} strokeWidth="2.5" strokeLinecap="round" />
-          <path d="M 400 305 L 400 385" fill="none" stroke={isDark ? "#1e293b" : "#cbd5e1"} strokeWidth="2.5" strokeLinecap="round" />
-          <path d="M 470 275 L 650 275 L 650 385" fill="none" stroke={isDark ? "#1e293b" : "#cbd5e1"} strokeWidth="2.5" strokeLinecap="round" />
+          {/* DÂY TĨNH NỐI TỪ TÂM CÁC THẺ (18%, 50%, 82%) VÀO CÁC CỔNG INVERTER (36%, 50%, 64%) */}
+          <path d="M 18 10 L 18 38 L 36 38" fill="none" stroke={isDark ? "#1e293b" : "#cbd5e1"} strokeWidth="0.65" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M 82 10 L 82 38 L 64 38" fill="none" stroke={isDark ? "#1e293b" : "#cbd5e1"} strokeWidth="0.65" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M 18 90 L 18 62 L 36 62" fill="none" stroke={isDark ? "#1e293b" : "#cbd5e1"} strokeWidth="0.65" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M 50 62 L 50 90" fill="none" stroke={isDark ? "#1e293b" : "#cbd5e1"} strokeWidth="0.65" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M 64 62 L 82 62 L 82 90" fill="none" stroke={isDark ? "#1e293b" : "#cbd5e1"} strokeWidth="0.65" strokeLinecap="round" strokeLinejoin="round" />
 
-          {/* CÁC NỐT ĐIỆN TỬ CỐ ĐỊNH TẠI CỔNG THIẾT BỊ */}
-          <circle cx="330" cy="185" r="3" fill={isDark ? "#334155" : "#94a3b8"} />
-          <circle cx="470" cy="185" r="3" fill={isDark ? "#334155" : "#94a3b8"} />
-          <circle cx="330" cy="275" r="3" fill={isDark ? "#334155" : "#94a3b8"} />
-          <circle cx="400" cy="305" r="3" fill={isDark ? "#334155" : "#94a3b8"} />
-          <circle cx="470" cy="275" r="3" fill={isDark ? "#334155" : "#94a3b8"} />
+          {/* CÁC NỐT ĐIỆN TỬ CỐ ĐỊNH TẠI CỔNG INVERTER */}
+          <circle cx="36" cy="38" r="0.8" fill={isDark ? "#475569" : "#94a3b8"} />
+          <circle cx="64" cy="38" r="0.8" fill={isDark ? "#475569" : "#94a3b8"} />
+          <circle cx="36" cy="62" r="0.8" fill={isDark ? "#475569" : "#94a3b8"} />
+          <circle cx="50" cy="62" r="0.8" fill={isDark ? "#475569" : "#94a3b8"} />
+          <circle cx="64" cy="62" r="0.8" fill={isDark ? "#475569" : "#94a3b8"} />
 
-          {/* DÒNG ĐIỆN PHÁT SÁNG ĐỘNG CHẠM THẲNG VÀO CÁC Ô CHI TIẾT */}
+          {/* DÒNG ĐIỆN PHÁT SÁNG ĐỘNG CHẠM THẲNG VÀO TRUNG TÂM CÁC Ô CHI TIẾT */}
           {pvPower > 0 && (
             <g>
               <path 
-                d="M 170 95 L 170 185 L 330 185" 
+                d="M 18 10 L 18 38 L 36 38" 
                 fill="none" 
                 stroke="#f59e0b" 
-                strokeWidth="3.5" 
+                strokeWidth="0.85" 
                 strokeLinecap="round" 
-                strokeDasharray="8 6"
+                strokeLinejoin="round"
+                strokeDasharray="2 1.5"
                 className="flow-pv"
                 filter="url(#glow-amber)"
               />
-              <circle cx="330" cy="185" r="4" fill="#f59e0b" filter="url(#glow-amber)" />
+              <circle cx="36" cy="38" r="1.1" fill="#f59e0b" filter="url(#glow-amber)" />
             </g>
           )}
 
           {displayGridPower !== 0 && (
             <g>
               <path 
-                d="M 630 95 L 630 185 L 470 185" 
+                d="M 82 10 L 82 38 L 64 38" 
                 fill="none" 
                 stroke="#0ea5e9" 
-                strokeWidth="3.5" 
+                strokeWidth="0.85" 
                 strokeLinecap="round" 
-                strokeDasharray="8 6"
+                strokeLinejoin="round"
+                strokeDasharray="2 1.5"
                 className="flow-grid"
                 filter="url(#glow-blue)"
               />
-              <circle cx="470" cy="185" r="4" fill="#0ea5e9" filter="url(#glow-blue)" />
+              <circle cx="64" cy="38" r="1.1" fill="#0ea5e9" filter="url(#glow-blue)" />
             </g>
           )}
           
           {Math.abs(batteryPower) > 5 && (
             <g>
               <path 
-                d="M 150 385 L 150 275 L 330 275" 
+                d="M 18 90 L 18 62 L 36 62" 
                 fill="none" 
                 stroke={isBatteryDischarging ? "#a855f7" : "#10b981"} 
-                strokeWidth="3.5" 
+                strokeWidth="0.85" 
                 strokeLinecap="round" 
-                strokeDasharray="8 6"
+                strokeLinejoin="round"
+                strokeDasharray="2 1.5"
                 className={isBatteryDischarging ? "flow-bat-discharge" : "flow-bat-charge"}
                 filter="url(#glow-emerald)"
               />
-              <circle cx="330" cy="275" r="4" fill={isBatteryDischarging ? "#a855f7" : "#10b981"} filter="url(#glow-emerald)" />
+              <circle cx="36" cy="62" r="1.1" fill={isBatteryDischarging ? "#a855f7" : "#10b981"} filter="url(#glow-emerald)" />
             </g>
           )}
 
           {displayBackupPower > 0 && (
             <g>
               <path 
-                d="M 400 305 L 400 385" 
+                d="M 50 62 L 50 90" 
                 fill="none" 
                 stroke="#f97316" 
-                strokeWidth="3.5" 
+                strokeWidth="0.85" 
                 strokeLinecap="round" 
-                strokeDasharray="8 6"
+                strokeLinejoin="round"
+                strokeDasharray="2 1.5"
                 className="flow-backup"
                 filter="url(#glow-amber)"
               />
-              <circle cx="400" cy="305" r="4" fill="#f97316" filter="url(#glow-amber)" />
+              <circle cx="50" cy="62" r="1.1" fill="#f97316" filter="url(#glow-amber)" />
             </g>
           )}
 
           {loadPower > 0 && (
             <g>
               <path 
-                d="M 470 275 L 650 275 L 650 385" 
+                d="M 64 62 L 82 62 L 82 90" 
                 fill="none" 
                 stroke="#06b6d4" 
-                strokeWidth="3.5" 
+                strokeWidth="0.85" 
                 strokeLinecap="round" 
-                strokeDasharray="8 6"
+                strokeLinejoin="round"
+                strokeDasharray="2 1.5"
                 className="flow-load"
                 filter="url(#glow-cyan)"
               />
-              <circle cx="470" cy="275" r="4" fill="#06b6d4" filter="url(#glow-cyan)" />
+              <circle cx="64" cy="62" r="1.1" fill="#06b6d4" filter="url(#glow-cyan)" />
             </g>
           )}
         </svg>
 
-        {/* ================= INVERTER TRUNG TÂM GÔM GỌN ================= */}
-        <div className="relative z-10 flex flex-col items-center justify-center -translate-y-1 sm:-translate-y-2 scale-95 xs:scale-100 sm:scale-105 md:scale-110">
+        {/* ================= INVERTER TRUNG TÂM (Căn giữa 50%, 50%) ================= */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center justify-center scale-90 xs:scale-95 sm:scale-100 md:scale-105">
           <InverterUnit
             batteryVoltage={batteryVoltage}
             gridVoltage={gridVoltage}
@@ -240,35 +244,32 @@ export default function InteractiveTopology({
           />
         </div>
 
-        {/* ================= 5 THẺ KÍNH MỜ GÔM GỌN, CHẠM DÂY LIỀN MẠCH, NHẤN MỞ POPUP ================= */}
+        {/* ================= 5 THẺ KÍNH MỜ GÔM GỌN, CHẠM DÂY TRÚNG TÂM 100% ================= */}
 
-        {/* 1. TOP LEFT: PIN MẶT TRỜI (Ẩn PV1/PV2 inline, bấm mở popup) */}
+        {/* 1. TOP LEFT: PIN MẶT TRỜI (Tâm tại X = 18%, Y = 2%) */}
         <div 
           onClick={() => setActiveModal('solar')}
           title="Nhấn để xem chi tiết chuỗi PV1, PV2, điện áp & dòng điện"
-          className={`absolute top-2 left-2 sm:top-4 sm:left-6 z-20 w-[30%] max-w-[130px] min-w-[92px] ${isDark ? 'bg-[#0c1322]/90 hover:bg-[#111c33] border-slate-700/70 text-white' : 'bg-white/95 hover:bg-slate-50 border-slate-200 text-slate-800 shadow-md'} backdrop-blur-md rounded-2xl p-2.5 sm:p-3 shadow-xl flex flex-col items-center text-center border hover:border-amber-400 hover:shadow-amber-500/20 cursor-pointer transition-all duration-200 active:scale-95 group`}
+          className={`absolute left-[18%] -translate-x-1/2 top-[2%] z-20 w-[28%] max-w-[125px] min-w-[86px] ${isDark ? 'bg-[#0c1322]/90 hover:bg-[#111c33] border-slate-700/70 text-white' : 'bg-white/95 hover:bg-slate-50 border-slate-200 text-slate-800 shadow-md'} backdrop-blur-md rounded-2xl py-2 px-1.5 sm:py-2.5 sm:px-2 shadow-xl flex flex-col items-center text-center border hover:border-amber-400 hover:shadow-amber-500/20 cursor-pointer transition-all duration-200 active:scale-95 group`}
         >
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-400 mb-1 shadow-md shadow-amber-400/20 group-hover:scale-110 transition-transform">
-            <Sun className="w-4 h-4 sm:w-4.5 sm:h-4.5 animate-[spin_10s_linear_infinite]" />
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-400 mb-0.5 shadow-md shadow-amber-400/20 group-hover:scale-110 transition-transform">
+            <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-[spin_10s_linear_infinite]" />
           </div>
           <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight`}>Pin mặt trời</span>
-          <span className={`text-sm sm:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
+          <span className={`text-sm sm:text-base md:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
             {pvPower}W
-          </span>
-          <span className={`text-[8px] sm:text-[9px] font-semibold ${isDark ? 'text-amber-400/90' : 'text-amber-600'} flex items-center gap-0.5 mt-0.5 opacity-80 group-hover:opacity-100`}>
-            Chi tiết <ChevronRight className="w-2.5 h-2.5" />
           </span>
         </div>
 
-        {/* 2. TOP RIGHT: LƯỚI ĐIỆN */}
+        {/* 2. TOP RIGHT: LƯỚI ĐIỆN (Tâm tại X = 82%, Y = 2%) */}
         <div 
           onClick={() => setActiveModal('grid')}
           title="Nhấn để xem chi tiết điện áp, tần số và dòng điện lưới EVN"
-          className={`absolute top-2 right-2 sm:top-4 sm:right-6 z-20 w-[30%] max-w-[130px] min-w-[92px] ${isDark ? 'bg-[#0c1322]/90 hover:bg-[#111c33] border-slate-700/70 text-white' : 'bg-white/95 hover:bg-slate-50 border-slate-200 text-slate-800 shadow-md'} backdrop-blur-md rounded-2xl p-2.5 sm:p-3 shadow-xl flex flex-col items-center text-center border hover:border-sky-400 hover:shadow-sky-500/20 cursor-pointer transition-all duration-200 active:scale-95 group`}
+          className={`absolute left-[82%] -translate-x-1/2 top-[2%] z-20 w-[28%] max-w-[125px] min-w-[86px] ${isDark ? 'bg-[#0c1322]/90 hover:bg-[#111c33] border-slate-700/70 text-white' : 'bg-white/95 hover:bg-slate-50 border-slate-200 text-slate-800 shadow-md'} backdrop-blur-md rounded-2xl py-2 px-1.5 sm:py-2.5 sm:px-2 shadow-xl flex flex-col items-center text-center border hover:border-sky-400 hover:shadow-sky-500/20 cursor-pointer transition-all duration-200 active:scale-95 group`}
         >
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 mb-1 shadow-md shadow-sky-500/20 group-hover:scale-110 transition-transform">
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 mb-0.5 shadow-md shadow-sky-500/20 group-hover:scale-110 transition-transform">
             <svg 
-              className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-sky-400" 
+              className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400" 
               viewBox="0 0 24 24" 
               fill="none" 
               stroke="currentColor" 
@@ -284,66 +285,54 @@ export default function InteractiveTopology({
             </svg>
           </div>
           <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight`}>Lưới điện</span>
-          <span className={`text-sm sm:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
+          <span className={`text-sm sm:text-base md:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
             {displayGridPower}W
-          </span>
-          <span className={`text-[8px] sm:text-[9px] font-semibold ${isDark ? 'text-sky-400/90' : 'text-sky-600'} flex items-center gap-0.5 mt-0.5 opacity-80 group-hover:opacity-100`}>
-            Chi tiết <ChevronRight className="w-2.5 h-2.5" />
           </span>
         </div>
 
-        {/* 3. BOTTOM LEFT: PIN LƯU TRỮ */}
+        {/* 3. BOTTOM LEFT: PIN LƯU TRỮ (Tâm tại X = 18%, Y = bottom 2%) */}
         <div 
           onClick={() => setActiveModal('battery')}
           title="Nhấn để xem chi tiết pin lưu trữ BMS, dung lượng SOC và nhiệt độ"
-          className={`absolute bottom-2 left-2 sm:bottom-4 sm:left-6 z-20 w-[30%] max-w-[125px] min-w-[88px] ${isDark ? 'bg-[#0c1322]/90 hover:bg-[#111c33] border-slate-700/70 text-white' : 'bg-white/95 hover:bg-slate-50 border-slate-200 text-slate-800 shadow-md'} backdrop-blur-md rounded-2xl p-2.5 sm:p-3 shadow-xl flex flex-col items-center text-center border hover:border-emerald-400 hover:shadow-emerald-500/20 cursor-pointer transition-all duration-200 active:scale-95 group`}
+          className={`absolute left-[18%] -translate-x-1/2 bottom-[2%] z-20 w-[28%] max-w-[125px] min-w-[86px] ${isDark ? 'bg-[#0c1322]/90 hover:bg-[#111c33] border-slate-700/70 text-white' : 'bg-white/95 hover:bg-slate-50 border-slate-200 text-slate-800 shadow-md'} backdrop-blur-md rounded-2xl py-2 px-1.5 sm:py-2.5 sm:px-2 shadow-xl flex flex-col items-center text-center border hover:border-emerald-400 hover:shadow-emerald-500/20 cursor-pointer transition-all duration-200 active:scale-95 group`}
         >
-          <div className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-500 text-[8px] sm:text-[9.5px] font-bold flex items-center gap-1 mb-1 shadow-sm group-hover:scale-105 transition-transform">
-            <Battery className="w-3 h-3" />
+          <div className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-500 text-[8px] sm:text-[9px] font-bold flex items-center gap-0.5 mb-0.5 shadow-sm group-hover:scale-105 transition-transform">
+            <Battery className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
             <span>{batterySoc}%</span>
           </div>
           <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight truncate w-full`}>Pin lưu trữ</span>
-          <span className={`text-sm sm:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
+          <span className={`text-sm sm:text-base md:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
             {Math.abs(batteryPower)}W
-          </span>
-          <span className={`text-[8px] sm:text-[9px] font-semibold ${isDark ? 'text-emerald-400/90' : 'text-emerald-600'} flex items-center gap-0.5 mt-0.5 opacity-80 group-hover:opacity-100`}>
-            Chi tiết <ChevronRight className="w-2.5 h-2.5" />
           </span>
         </div>
 
-        {/* 4. BOTTOM MIDDLE: TẢI DỰ PHÒNG */}
+        {/* 4. BOTTOM MIDDLE: TẢI DỰ PHÒNG (Tâm tại X = 50%, Y = bottom 2%) */}
         <div 
           onClick={() => setActiveModal('backup')}
           title="Nhấn để xem chi tiết tải ưu tiên EPS / UPS và điện áp đầu ra"
-          className={`absolute bottom-2 left-1/2 -translate-x-1/2 sm:bottom-4 z-20 w-[30%] max-w-[125px] min-w-[88px] ${isDark ? 'bg-[#0c1322]/90 hover:bg-[#111c33] border-slate-700/70 text-white' : 'bg-white/95 hover:bg-slate-50 border-slate-200 text-slate-800 shadow-md'} backdrop-blur-md rounded-2xl p-2.5 sm:p-3 shadow-xl flex flex-col items-center text-center border hover:border-amber-400 hover:shadow-amber-500/20 cursor-pointer transition-all duration-200 active:scale-95 group`}
+          className={`absolute left-1/2 -translate-x-1/2 bottom-[2%] z-20 w-[28%] max-w-[125px] min-w-[86px] ${isDark ? 'bg-[#0c1322]/90 hover:bg-[#111c33] border-slate-700/70 text-white' : 'bg-white/95 hover:bg-slate-50 border-slate-200 text-slate-800 shadow-md'} backdrop-blur-md rounded-2xl py-2 px-1.5 sm:py-2.5 sm:px-2 shadow-xl flex flex-col items-center text-center border hover:border-amber-400 hover:shadow-amber-500/20 cursor-pointer transition-all duration-200 active:scale-95 group`}
         >
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-500 mb-1 shadow-md shadow-amber-500/20 group-hover:scale-110 transition-transform">
-            <Shield className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-500 mb-0.5 shadow-md shadow-amber-500/20 group-hover:scale-110 transition-transform">
+            <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
           <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight truncate w-full`}>Tải dự phòng</span>
-          <span className={`text-sm sm:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
+          <span className={`text-sm sm:text-base md:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
             {displayBackupPower}W
-          </span>
-          <span className={`text-[8px] sm:text-[9px] font-semibold ${isDark ? 'text-amber-400/90' : 'text-amber-600'} flex items-center gap-0.5 mt-0.5 opacity-80 group-hover:opacity-100`}>
-            Chi tiết <ChevronRight className="w-2.5 h-2.5" />
           </span>
         </div>
 
-        {/* 5. BOTTOM RIGHT: TẢI HÒA LƯỚI */}
+        {/* 5. BOTTOM RIGHT: TẢI HÒA LƯỚI (Tâm tại X = 82%, Y = bottom 2%) */}
         <div 
           onClick={() => setActiveModal('load')}
           title="Nhấn để xem chi tiết phân bổ nguồn cấp cho tải gia đình"
-          className={`absolute bottom-2 right-2 sm:bottom-4 sm:right-6 z-20 w-[30%] max-w-[125px] min-w-[88px] ${isDark ? 'bg-[#0c1322]/90 hover:bg-[#111c33] border-slate-700/70 text-white' : 'bg-white/95 hover:bg-slate-50 border-slate-200 text-slate-800 shadow-md'} backdrop-blur-md rounded-2xl p-2.5 sm:p-3 shadow-xl flex flex-col items-center text-center border hover:border-emerald-400 hover:shadow-emerald-500/20 cursor-pointer transition-all duration-200 active:scale-95 group`}
+          className={`absolute left-[82%] -translate-x-1/2 bottom-[2%] z-20 w-[28%] max-w-[125px] min-w-[86px] ${isDark ? 'bg-[#0c1322]/90 hover:bg-[#111c33] border-slate-700/70 text-white' : 'bg-white/95 hover:bg-slate-50 border-slate-200 text-slate-800 shadow-md'} backdrop-blur-md rounded-2xl py-2 px-1.5 sm:py-2.5 sm:px-2 shadow-xl flex flex-col items-center text-center border hover:border-emerald-400 hover:shadow-emerald-500/20 cursor-pointer transition-all duration-200 active:scale-95 group`}
         >
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-500 mb-1 shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
-            <Home className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-emerald-500" />
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-500 mb-0.5 shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+            <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
           </div>
           <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight truncate w-full`}>Tải hòa lưới</span>
-          <span className={`text-sm sm:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
+          <span className={`text-sm sm:text-base md:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
             {loadPower}W
-          </span>
-          <span className={`text-[8px] sm:text-[9px] font-semibold ${isDark ? 'text-emerald-400/90' : 'text-emerald-600'} flex items-center gap-0.5 mt-0.5 opacity-80 group-hover:opacity-100`}>
-            Chi tiết <ChevronRight className="w-2.5 h-2.5" />
           </span>
         </div>
 

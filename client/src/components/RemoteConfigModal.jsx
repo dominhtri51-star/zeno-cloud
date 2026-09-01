@@ -607,9 +607,9 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
           {activeTab === 'quick' && (
             <div className="space-y-4 animate-fade-in">
               <div className="space-y-3">
-                <div className="flex items-center justify-between pb-1 border-b border-slate-800/80">
-                  <label className="block text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5 text-amber-400" /> CÀI ĐẶT NHANH (QUICK SETUP)
+                <div className={`flex items-center justify-between pb-1 border-b ${isDark ? 'border-slate-800/80' : 'border-slate-200'}`}>
+                  <label className={`block text-xs font-black ${isDark ? 'text-amber-400' : 'text-amber-600'} uppercase tracking-wider flex items-center gap-1.5`}>
+                    <Zap className="w-3.5 h-3.5" /> CÀI ĐẶT NHANH (QUICK SETUP)
                   </label>
 
                   <button
@@ -617,172 +617,186 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                     onClick={handleApplyRecommendedPreset}
                     className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow-md ${
                       isRecommendedActive
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-emerald-500/10 ring-1 ring-emerald-500/30'
-                        : 'bg-slate-800/90 text-slate-300 border border-slate-700 hover:border-emerald-500 hover:text-emerald-400'
+                        ? isDark
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-emerald-500/10 ring-1 ring-emerald-500/30'
+                          : 'bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-sm ring-1 ring-emerald-400/30'
+                        : isDark
+                          ? 'bg-slate-800/90 text-slate-300 border border-slate-700 hover:border-emerald-500 hover:text-emerald-400'
+                          : 'bg-white text-slate-700 border border-slate-300 hover:border-emerald-500 hover:text-emerald-700 shadow-sm'
                     }`}
                     title="Nhấp để tự động nạp cấu hình tối ưu 100%"
                   >
-                    <Check className={`w-3.5 h-3.5 ${isRecommendedActive ? 'text-emerald-400' : 'text-slate-400'}`} />
+                    <Check className={`w-3.5 h-3.5 ${isRecommendedActive ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-slate-400' : 'text-slate-500')}`} />
                     <span>Chuẩn Khuyên Dùng 100%</span>
                   </button>
                 </div>
 
                 {/* 1. Chế Độ Hoạt Động -> Mặc định: Tự Dùng Tối Đa */}
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-300 block">
+                  <label className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} block`}>
                     1. Chế Độ Hoạt Động (Chế độ ưu tiên đầu ra — outputSourcePrioritySetting)
                   </label>
                   <div className="relative">
                     <select
                       value={workMode}
                       onChange={(e) => handleWorkModeChange(e.target.value)}
-                      className="w-full bg-[#101828] border border-slate-800 hover:border-amber-500/60 focus:border-amber-500 text-slate-100 text-xs font-bold rounded-xl py-2.5 pl-3.5 pr-9 appearance-none cursor-pointer focus:outline-none transition shadow-sm"
+                      className={`w-full ${
+                        isDark ? 'bg-[#101828] border-slate-800 text-slate-100 hover:border-amber-500/60' : 'bg-white border-slate-300 text-slate-900 shadow-sm hover:border-amber-500'
+                      } border focus:border-amber-500 text-xs font-bold rounded-xl py-2.5 pl-3.5 pr-9 appearance-none cursor-pointer focus:outline-none transition`}
                     >
-                      <option value="SELF_CONSUMPTION" className="bg-slate-900 text-white">
+                      <option value="SELF_CONSUMPTION" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                         ⚡ 4: self (Tự dùng / Self-Consumption)
                       </option>
-                      <option value="BATTERY_FIRST" className="bg-slate-900 text-white">
+                      <option value="BATTERY_FIRST" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                         🔋 1: Solar First (Ưu tiên PV)
                       </option>
-                      <option value="BACKUP_UPS" className="bg-slate-900 text-white">
+                      <option value="BACKUP_UPS" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                         🛡️ 2: Utility First (Ưu tiên lưới)
                       </option>
-                      <option value="FEED_IN_GRID" className="bg-slate-900 text-white">
+                      <option value="FEED_IN_GRID" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                         🌐 3: SUB (Solar Utility Battery)
                       </option>
                     </select>
-                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <ChevronDown className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-500'} absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none`} />
                   </div>
                 </div>
 
                 {/* 2. Mô Hình Năng Lượng PV -> Mặc định: Load First */}
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-300 block">
+                  <label className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} block`}>
                     2. Mô Hình Năng Lượng PV (Chế độ ưu tiên sạc PV — chargerSourcePrioritySetting)
                   </label>
                   <div className="relative">
                     <select
                       value={pvEnergyModel}
                       onChange={(e) => handlePvModelChange(e.target.value)}
-                      className="w-full bg-[#101828] border border-slate-800 hover:border-cyan-500/60 focus:border-cyan-500 text-slate-100 text-xs font-bold rounded-xl py-2.5 pl-3.5 pr-9 appearance-none cursor-pointer focus:outline-none transition shadow-sm"
+                      className={`w-full ${
+                        isDark ? 'bg-[#101828] border-slate-800 text-slate-100 hover:border-cyan-500/60' : 'bg-white border-slate-300 text-slate-900 shadow-sm hover:border-cyan-500'
+                      } border focus:border-cyan-500 text-xs font-bold rounded-xl py-2.5 pl-3.5 pr-9 appearance-none cursor-pointer focus:outline-none transition`}
                     >
-                      <option value="LOAD_FIRST" className="bg-slate-900 text-white">
+                      <option value="LOAD_FIRST" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                         ☀️ Ưu Tiên Tải Đầu Tiên (Load First) — Chuẩn tối ưu
                       </option>
-                      <option value="BATTERY_FIRST" className="bg-slate-900 text-white">
+                      <option value="BATTERY_FIRST" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                         🔋 Ưu Tiên Sạc Pin (Battery First / Solar Only)
                       </option>
-                      <option value="GRID_FIRST" className="bg-slate-900 text-white">
+                      <option value="GRID_FIRST" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                         ⚡ Ưu Tiên Hòa Lưới (Grid First / Solar & Grid)
                       </option>
                     </select>
-                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <ChevronDown className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-500'} absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none`} />
                   </div>
                 </div>
 
                 {/* 3. Thiết Bị Đo Đếm Phụ Tải -> Mặc định: Kẹp Dòng CT */}
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-300 block">
+                  <label className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} block`}>
                     3. Thiết Bị Đo Đếm Phụ Tải (Cảm biến đo bám tải — CT_MeterSetting)
                   </label>
                   <div className="relative">
                     <select
                       value={ctMeterType}
                       onChange={(e) => handleCtMeterChange(e.target.value)}
-                      className="w-full bg-[#101828] border border-slate-800 hover:border-teal-500/60 focus:border-teal-500 text-slate-100 text-xs font-bold rounded-xl py-2.5 pl-3.5 pr-9 appearance-none cursor-pointer focus:outline-none transition shadow-sm"
+                      className={`w-full ${
+                        isDark ? 'bg-[#101828] border-slate-800 text-slate-100 hover:border-teal-500/60' : 'bg-white border-slate-300 text-slate-900 shadow-sm hover:border-teal-500'
+                      } border focus:border-teal-500 text-xs font-bold rounded-xl py-2.5 pl-3.5 pr-9 appearance-none cursor-pointer focus:outline-none transition`}
                     >
-                      <option value="CT" className="bg-slate-900 text-white">
+                      <option value="CT" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                         🧲 Kẹp Dòng CT (CT Clamp) — Đo tức thời chống phát ngược
                       </option>
-                      <option value="METER" className="bg-slate-900 text-white">
+                      <option value="METER" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                         📟 Đồng Hồ Điện Meter — Đo 2 chiều qua cổng RS485
                       </option>
                     </select>
-                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <ChevronDown className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-500'} absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none`} />
                   </div>
                 </div>
 
                 {/* 4. Cài Đặt Thời Gian & 5. Loại Pin (Mặc định lithium theo hình) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-300 block flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-sky-400" /> 4. Cài Đặt Thời Gian
+                    <label className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} block flex items-center gap-1.5`}>
+                      <Clock className="w-3.5 h-3.5 text-sky-500" /> 4. Cài Đặt Thời Gian
                     </label>
-                    <div className="bg-[#101828] border border-slate-800 rounded-xl py-2 px-3 flex items-center justify-between">
-                      <span className="text-[11px] text-slate-400 font-medium">UTC+7 (VN):</span>
-                      <span className="text-xs font-bold text-sky-300 font-mono">{currentTimeVn || 'Đang đồng bộ...'}</span>
+                    <div className={`${isDark ? 'bg-[#101828] border-slate-800' : 'bg-white border-slate-300 shadow-sm'} border rounded-xl py-2 px-3 flex items-center justify-between`}>
+                      <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium`}>UTC+7 (VN):</span>
+                      <span className={`text-xs font-bold ${isDark ? 'text-sky-300' : 'text-sky-700'} font-mono`}>{currentTimeVn || 'Đang đồng bộ...'}</span>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-300 block flex items-center gap-1.5">
-                      <Battery className="w-3.5 h-3.5 text-emerald-400" /> 5. Loại Pin (Battery Type)
+                    <label className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} block flex items-center gap-1.5`}>
+                      <Battery className="w-3.5 h-3.5 text-emerald-500" /> 5. Loại Pin (Battery Type)
                     </label>
                     <div className="relative">
                       <select
                         value={batteryType}
                         onChange={(e) => handleBatteryTypeChange(e.target.value)}
-                        className="w-full bg-[#101828] border border-slate-800 hover:border-emerald-500/60 focus:border-emerald-500 text-emerald-300 text-xs font-bold rounded-xl py-2 pl-3 pr-8 appearance-none cursor-pointer focus:outline-none transition shadow-sm font-mono"
+                        className={`w-full ${
+                          isDark ? 'bg-[#101828] border-slate-800 text-emerald-300 hover:border-emerald-500/60' : 'bg-white border-slate-300 text-emerald-700 shadow-sm hover:border-emerald-500'
+                        } border focus:border-emerald-500 text-xs font-bold rounded-xl py-2 pl-3 pr-8 appearance-none cursor-pointer focus:outline-none transition font-mono`}
                       >
-                        <option value="lithium" className="bg-slate-900 text-emerald-300">
+                        <option value="lithium" className={isDark ? 'bg-slate-900 text-emerald-300' : 'bg-white text-emerald-700'}>
                           lithium (Lithium BMS CAN/485)
                         </option>
-                        <option value="pylon485" className="bg-slate-900 text-white">
+                        <option value="pylon485" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                           pylon485 (Pylontech RS485 - Chuẩn)
                         </option>
-                        <option value="use" className="bg-slate-900 text-white">
+                        <option value="use" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                           use (User-Defined Tùy Chỉnh)
                         </option>
-                        <option value="agm" className="bg-slate-900 text-white">
+                        <option value="agm" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                           agm (Kín Khí AGM)
                         </option>
-                        <option value="fld" className="bg-slate-900 text-white">
+                        <option value="fld" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                           fld (Axit Ngập Nước Flooded)
                         </option>
                       </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <ChevronDown className={`w-3.5 h-3.5 ${isDark ? 'text-slate-400' : 'text-slate-500'} absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none`} />
                     </div>
                   </div>
                 </div>
 
                 {/* 6. Giao Thức Lithium (Mặc định 1: CANBUS theo hình) */}
                 <div className="space-y-1 pt-1">
-                  <label className="text-xs font-bold text-slate-300 block flex items-center gap-1.5">
-                    <Cpu className="w-3.5 h-3.5 text-purple-400" /> 6. Giao Thức Lithium (LiProtocol)
+                  <label className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} block flex items-center gap-1.5`}>
+                    <Cpu className="w-3.5 h-3.5 text-purple-500" /> 6. Giao Thức Lithium (LiProtocol)
                   </label>
                   <div className="relative">
                     <select
                       value={liProtocol}
                       onChange={(e) => handleLiProtocolChange(e.target.value)}
-                      className="w-full bg-[#101828] border border-slate-800 hover:border-purple-500/60 focus:border-purple-500 text-purple-300 text-xs font-bold rounded-xl py-2.5 pl-3.5 pr-9 appearance-none cursor-pointer focus:outline-none transition shadow-sm font-mono"
+                      className={`w-full ${
+                        isDark ? 'bg-[#101828] border-slate-800 text-purple-300 hover:border-purple-500/60' : 'bg-white border-slate-300 text-purple-700 shadow-sm hover:border-purple-500'
+                      } border focus:border-purple-500 text-xs font-bold rounded-xl py-2.5 pl-3.5 pr-9 appearance-none cursor-pointer focus:outline-none transition font-mono`}
                     >
-                      <option value="1" className="bg-slate-900 text-purple-300">
+                      <option value="1" className={isDark ? 'bg-slate-900 text-purple-300' : 'bg-white text-purple-700'}>
                         1: CANBUS (CANBUS Lithium BMS)
                       </option>
-                      <option value="0" className="bg-slate-900 text-white">
+                      <option value="0" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                         0: pylon485 (Pylontech RS485)
                       </option>
-                      <option value="2" className="bg-slate-900 text-white">
+                      <option value="2" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                         2: Deye / Growatt (Giao thức Deye / Growatt)
                       </option>
                     </select>
-                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <ChevronDown className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-500'} absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none`} />
                   </div>
                 </div>
               </div>
 
               {/* Khối Quản Lý Pin 10/10 (Mặc định: Sạc 60A, Xả 100A, SOC 20%) */}
-              <div className="space-y-3.5 pt-2 border-t border-slate-800/80">
-                <div className="flex items-center justify-between text-xs font-black text-slate-300 uppercase tracking-wider">
+              <div className={`space-y-3.5 pt-2 border-t ${isDark ? 'border-slate-800/80' : 'border-slate-200'}`}>
+                <div className={`flex items-center justify-between text-xs font-black ${isDark ? 'text-slate-300' : 'text-slate-700'} uppercase tracking-wider`}>
                   <span>QUẢN LÝ PIN LƯU TRỮ BMS</span>
-                  <span className="text-emerald-400 text-[11px] font-mono font-bold">● TỰ ĐỘNG CÂN BẰNG</span>
+                  <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-600'} text-[11px] font-mono font-bold`}>● TỰ ĐỘNG CÂN BẰNG</span>
                 </div>
 
                 {/* Dòng Sạc Pin: 60A */}
-                <div className="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800/90 shadow-sm space-y-1.5">
+                <div className={`${isDark ? 'bg-slate-900/90 border-slate-800/90' : 'bg-slate-50 border-slate-200 shadow-sm'} p-3.5 rounded-2xl border space-y-1.5`}>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-200">Dòng Sạc Pin BMS Tối Đa</span>
-                    <span className="text-sm font-extrabold text-amber-400 font-mono">{chargeCurrent} A</span>
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Dòng Sạc Pin BMS Tối Đa</span>
+                    <span className="text-sm font-extrabold text-amber-500 font-mono">{chargeCurrent} A</span>
                   </div>
                   <input
                     type="range"
@@ -791,19 +805,19 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                     step="5"
                     value={chargeCurrent}
                     onChange={(e) => handleChargeCurrentChange(Number(e.target.value))}
-                    className="w-full h-1.5 bg-slate-750 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    className={`w-full h-1.5 ${isDark ? 'bg-slate-750' : 'bg-slate-200'} rounded-lg appearance-none cursor-pointer accent-amber-500`}
                   />
-                  <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                  <div className={`flex justify-between text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium`}>
                     <span>10A (Êm dịu)</span>
                     <span>100A (Sạc nhanh)</span>
                   </div>
                 </div>
 
                 {/* Dòng Xả Pin BMS Tối Đa: 100A */}
-                <div className="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800/90 shadow-sm space-y-1.5">
+                <div className={`${isDark ? 'bg-slate-900/90 border-slate-800/90' : 'bg-slate-50 border-slate-200 shadow-sm'} p-3.5 rounded-2xl border space-y-1.5`}>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-200">Dòng Xả Pin BMS Tối Đa (MaximumBatteryDischargeCurrent)</span>
-                    <span className="text-sm font-extrabold text-cyan-400 font-mono">{dischargeCurrent} A</span>
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Dòng Xả Pin BMS Tối Đa (MaximumBatteryDischargeCurrent)</span>
+                    <span className="text-sm font-extrabold text-cyan-500 font-mono">{dischargeCurrent} A</span>
                   </div>
                   <input
                     type="range"
@@ -812,19 +826,19 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                     step="5"
                     value={dischargeCurrent}
                     onChange={(e) => handleDischargeCurrentChange(Number(e.target.value))}
-                    className="w-full h-1.5 bg-slate-750 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                    className={`w-full h-1.5 ${isDark ? 'bg-slate-750' : 'bg-slate-200'} rounded-lg appearance-none cursor-pointer accent-cyan-500`}
                   />
-                  <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                  <div className={`flex justify-between text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium`}>
                     <span>10A (Tiết kiệm)</span>
                     <span>120A (Công suất cao)</span>
                   </div>
                 </div>
 
                 {/* Dòng Xả Pin Khi Có Lưới: 80A */}
-                <div className="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800/90 shadow-sm space-y-1.5">
+                <div className={`${isDark ? 'bg-slate-900/90 border-slate-800/90' : 'bg-slate-50 border-slate-200 shadow-sm'} p-3.5 rounded-2xl border space-y-1.5`}>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-200">Dòng Xả Pin Khi Có Lưới (BatteryDischargeCurrentInGrid)</span>
-                    <span className="text-sm font-extrabold text-teal-400 font-mono">{dischargeInGridCurrent} A</span>
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Dòng Xả Pin Khi Có Lưới (BatteryDischargeCurrentInGrid)</span>
+                    <span className="text-sm font-extrabold text-teal-500 font-mono">{dischargeInGridCurrent} A</span>
                   </div>
                   <input
                     type="range"
@@ -833,19 +847,19 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                     step="5"
                     value={dischargeInGridCurrent}
                     onChange={(e) => handleDischargeInGridCurrentChange(Number(e.target.value))}
-                    className="w-full h-1.5 bg-slate-750 rounded-lg appearance-none cursor-pointer accent-teal-500"
+                    className={`w-full h-1.5 ${isDark ? 'bg-slate-750' : 'bg-slate-200'} rounded-lg appearance-none cursor-pointer accent-teal-500`}
                   />
-                  <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                  <div className={`flex justify-between text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium`}>
                     <span>10A (Bảo vệ lưới)</span>
                     <span>120A (Xả tối đa)</span>
                   </div>
                 </div>
 
                 {/* Ngưỡng Ngắt Xả Pin: 20% */}
-                <div className="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800/90 shadow-sm space-y-1.5">
+                <div className={`${isDark ? 'bg-slate-900/90 border-slate-800/90' : 'bg-slate-50 border-slate-200 shadow-sm'} p-3.5 rounded-2xl border space-y-1.5`}>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-200">Ngưỡng Ngắt Xả Pin (Cut-off SOC)</span>
-                    <span className="text-sm font-extrabold text-emerald-400 font-mono">{cutoffSoc} %</span>
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Ngưỡng Ngắt Xả Pin (Cut-off SOC)</span>
+                    <span className="text-sm font-extrabold text-emerald-500 font-mono">{cutoffSoc} %</span>
                   </div>
                   <input
                     type="range"
@@ -854,9 +868,9 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                     step="1"
                     value={cutoffSoc}
                     onChange={(e) => handleCutoffSocChange(Number(e.target.value))}
-                    className="w-full h-1.5 bg-slate-750 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                    className={`w-full h-1.5 ${isDark ? 'bg-slate-750' : 'bg-slate-200'} rounded-lg appearance-none cursor-pointer accent-emerald-500`}
                   />
-                  <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                  <div className={`flex justify-between text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium`}>
                     <span>5% (Xả kiệt)</span>
                     <span>30% (Bảo vệ pin tối đa)</span>
                   </div>
@@ -868,12 +882,14 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
           {/* ================= TAB 2: CÀI ĐẶT NÂNG CAO (41 THANH GHI MODBUS) ================= */}
           {activeTab === 'advanced' && (
             <div className="space-y-3.5 animate-fade-in">
-              <div className="p-3 bg-cyan-950/40 border border-cyan-800/60 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+              <div className={`p-3 border rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 ${
+                isDark ? 'bg-cyan-950/40 border-cyan-800/60' : 'bg-cyan-50 border-cyan-200 shadow-sm'
+              }`}>
                 <div className="flex items-center space-x-2">
-                  <Wrench className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                  <Wrench className={`w-4 h-4 ${isDark ? 'text-cyan-400' : 'text-cyan-600'} flex-shrink-0`} />
                   <div>
-                    <span className="text-cyan-300 text-xs font-bold block">Cấu hình chuyên sâu 41 thanh ghi Modbus chuẩn hãng</span>
-                    <span className="text-[10px] text-slate-400 font-mono">41 / 41 Registers</span>
+                    <span className={`${isDark ? 'text-cyan-300' : 'text-cyan-900'} text-xs font-bold block`}>Cấu hình chuyên sâu 41 thanh ghi Modbus chuẩn hãng</span>
+                    <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-mono`}>41 / 41 Registers</span>
                   </div>
                 </div>
 
@@ -883,40 +899,44 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                   onClick={handleApplyAdvRecommendedPreset}
                   className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow-md w-full sm:w-auto justify-center ${
                     isAdvRecommendedActive
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-emerald-500/10 ring-1 ring-emerald-500/30'
-                      : 'bg-slate-800/90 text-amber-300 border border-amber-500/50 hover:bg-amber-500/20 hover:border-amber-400'
+                      ? isDark
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-emerald-500/10 ring-1 ring-emerald-500/30'
+                        : 'bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-sm ring-1 ring-emerald-400/30'
+                      : isDark
+                        ? 'bg-slate-800/90 text-amber-300 border border-amber-500/50 hover:bg-amber-500/20 hover:border-amber-400'
+                        : 'bg-white text-amber-700 border border-amber-300 hover:bg-amber-50 shadow-sm'
                   }`}
                   title="Khôi phục toàn bộ 41 thanh ghi Modbus về chuẩn khuyên dùng 100%"
                 >
-                  <RotateCcw className={`w-3.5 h-3.5 ${isAdvRecommendedActive ? 'text-emerald-400' : 'text-amber-400'}`} />
+                  <RotateCcw className={`w-3.5 h-3.5 ${isAdvRecommendedActive ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-amber-400' : 'text-amber-600')}`} />
                   <span>Chuẩn Khuyên Dùng 100% (Khôi Phục)</span>
                 </button>
               </div>
 
               {/* NHÓM 1: Chế Độ Nguồn & Vận Hành */}
-              <div className="bg-slate-900/90 rounded-xl border border-slate-800 overflow-hidden">
+              <div className={`${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-sm'} rounded-xl border overflow-hidden`}>
                 <button
                   type="button"
                   onClick={() => toggleSection('group1')}
-                  className="w-full p-3.5 flex items-center justify-between text-left hover:bg-slate-850 transition cursor-pointer"
+                  className={`w-full p-3.5 flex items-center justify-between text-left ${isDark ? 'hover:bg-slate-850' : 'hover:bg-slate-50'} transition cursor-pointer`}
                 >
                   <div className="flex items-center space-x-2">
-                    <Power className="w-4 h-4 text-amber-400" />
-                    <span className="text-xs font-bold text-slate-100">1. Chế Độ Nguồn & Vận Hành (Priority & Operation)</span>
+                    <Power className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-500'}`} />
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>1. Chế Độ Nguồn & Vận Hành (Priority & Operation)</span>
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandedSections.group1 ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-500'} transition-transform ${expandedSections.group1 ? 'rotate-180' : ''}`} />
                 </button>
                 {expandedSections.group1 && (
-                  <div className="p-3.5 border-t border-slate-800/80 space-y-3 bg-[#0a0f1d]">
+                  <div className={`p-3.5 border-t ${isDark ? 'border-slate-800/80 bg-[#0a0f1d]' : 'border-slate-200 bg-slate-50/70'} space-y-3`}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           outputSourcePrioritySetting
                         </label>
                         <select
                           value={advConfig.outputSourcePrioritySetting}
                           onChange={e => handleAdvChange('outputSourcePrioritySetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="4">4: self (Tự dùng / Self-Consumption)</option>
                           <option value="1">1: Solar First (Ưu tiên PV)</option>
@@ -926,13 +946,13 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           chargerSourcePrioritySetting
                         </label>
                         <select
                           value={advConfig.chargerSourcePrioritySetting}
                           onChange={e => handleAdvChange('chargerSourcePrioritySetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="2">2: Solar First (Load First)</option>
                           <option value="1">1: Solar Only (Chỉ dùng PV)</option>
@@ -941,13 +961,13 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           gridTieOperationSetting (Hòa lưới)
                         </label>
                         <select
                           value={advConfig.gridTieOperationSetting}
                           onChange={e => handleAdvChange('gridTieOperationSetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="0">0: Zero Export (Bám tải)</option>
                           <option value="1">1: Feed-in (Phát lưới)</option>
@@ -955,13 +975,13 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           OnlyPVSell (Chỉ bán điện PV)
                         </label>
                         <select
                           value={advConfig.OnlyPVSell}
                           onChange={e => handleAdvChange('OnlyPVSell', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="0">0: Tắt</option>
                           <option value="1">1: Bật</option>
@@ -969,13 +989,13 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           machineNotAllowOutput (Khóa ngắt ngõ ra)
                         </label>
                         <select
                           value={advConfig.machineNotAllowOutput}
                           onChange={e => handleAdvChange('machineNotAllowOutput', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="0">0: Bình thường</option>
                           <option value="1">1: Khóa ngắt đầu ra</option>
@@ -987,29 +1007,29 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
               </div>
 
               {/* NHÓM 2: Đo Đếm & Bám Tải */}
-              <div className="bg-slate-900/90 rounded-xl border border-slate-800 overflow-hidden">
+              <div className={`${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-sm'} rounded-xl border overflow-hidden`}>
                 <button
                   type="button"
                   onClick={() => toggleSection('group2')}
-                  className="w-full p-3.5 flex items-center justify-between text-left hover:bg-slate-850 transition cursor-pointer"
+                  className={`w-full p-3.5 flex items-center justify-between text-left ${isDark ? 'hover:bg-slate-850' : 'hover:bg-slate-50'} transition cursor-pointer`}
                 >
                   <div className="flex items-center space-x-2">
-                    <Gauge className="w-4 h-4 text-teal-400" />
-                    <span className="text-xs font-bold text-slate-100">2. Đo Đếm & Bám Tải (CT & Zero-Export Settings)</span>
+                    <Gauge className={`w-4 h-4 ${isDark ? 'text-teal-400' : 'text-teal-500'}`} />
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>2. Đo Đếm & Bám Tải (CT & Zero-Export Settings)</span>
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandedSections.group2 ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-500'} transition-transform ${expandedSections.group2 ? 'rotate-180' : ''}`} />
                 </button>
                 {expandedSections.group2 && (
-                  <div className="p-3.5 border-t border-slate-800/80 space-y-3 bg-[#0a0f1d]">
+                  <div className={`p-3.5 border-t ${isDark ? 'border-slate-800/80 bg-[#0a0f1d]' : 'border-slate-200 bg-slate-50/70'} space-y-3`}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           CT_MeterSetting (Cảm biến đo)
                         </label>
                         <select
                           value={advConfig.CT_MeterSetting}
                           onChange={e => handleAdvChange('CT_MeterSetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="1">1: Kẹp dòng CT</option>
                           <option value="2">2: Đồng hồ Meter RS485</option>
@@ -1017,40 +1037,40 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           CTRatio (Tỷ lệ biến dòng CT)
                         </label>
                         <input
                           type="number"
                           value={advConfig.CTRatio}
                           onChange={e => handleAdvChange('CTRatio', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-white font-mono"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs rounded-lg p-2 font-mono focus:outline-none focus:border-cyan-500`}
                           placeholder="1"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           ZeroToGrid (Công suất bù Zero Watt)
                         </label>
                         <input
                           type="number"
                           value={advConfig.ZeroToGrid}
                           onChange={e => handleAdvChange('ZeroToGrid', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-white font-mono"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs rounded-lg p-2 font-mono focus:outline-none focus:border-cyan-500`}
                           placeholder="0 W"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           FeedPower (Giới hạn công suất phát Watt)
                         </label>
                         <input
                           type="number"
                           value={advConfig.FeedPower}
                           onChange={e => handleAdvChange('FeedPower', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-white font-mono"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs rounded-lg p-2 font-mono focus:outline-none focus:border-cyan-500`}
                           placeholder="0 W"
                         />
                       </div>
@@ -1060,29 +1080,29 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
               </div>
 
               {/* NHÓM 3: Cấu Hình Pin & BMS Lithium */}
-              <div className="bg-slate-900/90 rounded-xl border border-slate-800 overflow-hidden">
+              <div className={`${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-sm'} rounded-xl border overflow-hidden`}>
                 <button
                   type="button"
                   onClick={() => toggleSection('group3')}
-                  className="w-full p-3.5 flex items-center justify-between text-left hover:bg-slate-850 transition cursor-pointer"
+                  className={`w-full p-3.5 flex items-center justify-between text-left ${isDark ? 'hover:bg-slate-850' : 'hover:bg-slate-50'} transition cursor-pointer`}
                 >
                   <div className="flex items-center space-x-2">
-                    <Battery className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs font-bold text-slate-100">3. Cấu Hình Pin & BMS Lithium (Battery Protocol)</span>
+                    <Battery className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-500'}`} />
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>3. Cấu Hình Pin & BMS Lithium (Battery Protocol)</span>
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandedSections.group3 ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-500'} transition-transform ${expandedSections.group3 ? 'rotate-180' : ''}`} />
                 </button>
                 {expandedSections.group3 && (
-                  <div className="p-3.5 border-t border-slate-800/80 space-y-3 bg-[#0a0f1d]">
+                  <div className={`p-3.5 border-t ${isDark ? 'border-slate-800/80 bg-[#0a0f1d]' : 'border-slate-200 bg-slate-50/70'} space-y-3`}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           batteryTypeSettings (Loại pin)
                         </label>
                         <select
                           value={advConfig.batteryTypeSettings}
                           onChange={e => handleAdvChange('batteryTypeSettings', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="3">3: Lithium (Giao tiếp BMS)</option>
                           <option value="2">2: USE (User-defined Tự định nghĩa)</option>
@@ -1092,13 +1112,13 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           LiProtocol (Giao thức Lithium)
                         </label>
                         <select
                           value={advConfig.LiProtocol}
                           onChange={e => handleAdvChange('LiProtocol', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white font-mono"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 font-mono focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="1">1: CANBUS (CANBUS Lithium)</option>
                           <option value="0">0: pylon485 (Pylontech)</option>
@@ -1107,13 +1127,13 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           LiActive (Kích hoạt Lithium)
                         </label>
                         <select
                           value={advConfig.LiActive}
                           onChange={e => handleAdvChange('LiActive', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="1">1: Bật</option>
                           <option value="0">0: Tắt</option>
@@ -1121,26 +1141,26 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           BMSAddress (Địa chỉ cổng BMS)
                         </label>
                         <input
                           type="number"
                           value={advConfig.BMSAddress}
                           onChange={e => handleAdvChange('BMSAddress', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-white font-mono"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs rounded-lg p-2 font-mono focus:outline-none focus:border-cyan-500`}
                           placeholder="0"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           BMSError (Xử lý khi lỗi BMS)
                         </label>
                         <select
                           value={advConfig.BMSError}
                           onChange={e => handleAdvChange('BMSError', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="0">0: Cảnh báo</option>
                           <option value="1">1: Ngắt sạc / xả</option>
@@ -1148,13 +1168,13 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           TOUEnable (Cài đặt theo khung giờ)
                         </label>
                         <select
                           value={advConfig.TOUEnable}
                           onChange={e => handleAdvChange('TOUEnable', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="0">0: Tắt</option>
                           <option value="1">1: Bật</option>
@@ -1166,114 +1186,114 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
               </div>
 
               {/* NHÓM 4: Quản Lý Dòng & Ngưỡng Dung Lượng Pin */}
-              <div className="bg-slate-900/90 rounded-xl border border-slate-800 overflow-hidden">
+              <div className={`${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-sm'} rounded-xl border overflow-hidden`}>
                 <button
                   type="button"
                   onClick={() => toggleSection('group4')}
-                  className="w-full p-3.5 flex items-center justify-between text-left hover:bg-slate-850 transition cursor-pointer"
+                  className={`w-full p-3.5 flex items-center justify-between text-left ${isDark ? 'hover:bg-slate-850' : 'hover:bg-slate-50'} transition cursor-pointer`}
                 >
                   <div className="flex items-center space-x-2">
-                    <Activity className="w-4 h-4 text-cyan-400" />
-                    <span className="text-xs font-bold text-slate-100">4. Quản Lý Dòng & Ngưỡng Dung Lượng (Current & SOC)</span>
+                    <Activity className={`w-4 h-4 ${isDark ? 'text-cyan-400' : 'text-cyan-500'}`} />
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>4. Quản Lý Dòng & Ngưỡng Dung Lượng (Current & SOC)</span>
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandedSections.group4 ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-500'} transition-transform ${expandedSections.group4 ? 'rotate-180' : ''}`} />
                 </button>
                 {expandedSections.group4 && (
-                  <div className="p-3.5 border-t border-slate-800/80 space-y-3 bg-[#0a0f1d]">
+                  <div className={`p-3.5 border-t ${isDark ? 'border-slate-800/80 bg-[#0a0f1d]' : 'border-slate-200 bg-slate-50/70'} space-y-3`}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           maxTotalChargeCurrentSetting (Dòng sạc tối đa A)
                         </label>
                         <input
                           type="number"
                           value={advConfig.maxTotalChargeCurrentSetting}
                           onChange={e => handleAdvChange('maxTotalChargeCurrentSetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-amber-400 font-mono font-bold"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-amber-400' : 'bg-white border-slate-300 text-amber-700 shadow-sm'} border text-xs rounded-lg p-2 font-mono font-bold focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           maxUtilityChargeCurrentSetting (Dòng sạc lưới A)
                         </label>
                         <input
                           type="number"
                           value={advConfig.maxUtilityChargeCurrentSetting}
                           onChange={e => handleAdvChange('maxUtilityChargeCurrentSetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-amber-400 font-mono font-bold"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-amber-400' : 'bg-white border-slate-300 text-amber-700 shadow-sm'} border text-xs rounded-lg p-2 font-mono font-bold focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           MaximumBatteryDischargeCurrent (Dòng xả tối đa A)
                         </label>
                         <input
                           type="number"
                           value={advConfig.MaximumBatteryDischargeCurrent}
                           onChange={e => handleAdvChange('MaximumBatteryDischargeCurrent', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-cyan-400 font-mono font-bold"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-cyan-400' : 'bg-white border-slate-300 text-cyan-700 shadow-sm'} border text-xs rounded-lg p-2 font-mono font-bold focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           BatteryDischargeCurrentInGrid (Dòng xả khi có lưới A)
                         </label>
                         <input
                           type="number"
                           value={advConfig.BatteryDischargeCurrentInGrid}
                           onChange={e => handleAdvChange('BatteryDischargeCurrentInGrid', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-cyan-400 font-mono font-bold"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-cyan-400' : 'bg-white border-slate-300 text-cyan-700 shadow-sm'} border text-xs rounded-lg p-2 font-mono font-bold focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           StopDischargeSOC (Ngưỡng ngắt xả %)
                         </label>
                         <input
                           type="number"
                           value={advConfig.StopDischargeSOC}
                           onChange={e => handleAdvChange('StopDischargeSOC', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-emerald-400 font-mono font-bold"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-emerald-400' : 'bg-white border-slate-300 text-emerald-700 shadow-sm'} border text-xs rounded-lg p-2 font-mono font-bold focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           UnderSOC (Ngưỡng cảnh báo pin yếu %)
                         </label>
                         <input
                           type="number"
                           value={advConfig.UnderSOC}
                           onChange={e => handleAdvChange('UnderSOC', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-emerald-400 font-mono font-bold"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-emerald-400' : 'bg-white border-slate-300 text-emerald-700 shadow-sm'} border text-xs rounded-lg p-2 font-mono font-bold focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           RedischargeSOC (Ngưỡng phục hồi xả %)
                         </label>
                         <input
                           type="number"
                           value={advConfig.RedischargeSOC}
                           onChange={e => handleAdvChange('RedischargeSOC', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-emerald-400 font-mono font-bold"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-emerald-400' : 'bg-white border-slate-300 text-emerald-700 shadow-sm'} border text-xs rounded-lg p-2 font-mono font-bold focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           MaxChargeSOC (Ngưỡng sạc đầy tối đa %)
                         </label>
                         <input
                           type="number"
                           value={advConfig.MaxChargeSOC}
                           onChange={e => handleAdvChange('MaxChargeSOC', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-emerald-400 font-mono font-bold"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-emerald-400' : 'bg-white border-slate-300 text-emerald-700 shadow-sm'} border text-xs rounded-lg p-2 font-mono font-bold focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
                     </div>
@@ -1282,23 +1302,23 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
               </div>
 
               {/* NHÓM 5: Cài Đặt Điện Áp Sạc/Xả Theo Volt */}
-              <div className="bg-slate-900/90 rounded-xl border border-slate-800 overflow-hidden">
+              <div className={`${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-sm'} rounded-xl border overflow-hidden`}>
                 <button
                   type="button"
                   onClick={() => toggleSection('group5')}
-                  className="w-full p-3.5 flex items-center justify-between text-left hover:bg-slate-850 transition cursor-pointer"
+                  className={`w-full p-3.5 flex items-center justify-between text-left ${isDark ? 'hover:bg-slate-850' : 'hover:bg-slate-50'} transition cursor-pointer`}
                 >
                   <div className="flex items-center space-x-2">
-                    <Zap className="w-4 h-4 text-yellow-400" />
-                    <span className="text-xs font-bold text-slate-100">5. Điện Áp Sạc/Xả Theo Volt (Voltage Levels & Equalization)</span>
+                    <Zap className={`w-4 h-4 ${isDark ? 'text-yellow-400' : 'text-amber-500'}`} />
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>5. Điện Áp Sạc/Xả Theo Volt (Voltage Levels & Equalization)</span>
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandedSections.group5 ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-500'} transition-transform ${expandedSections.group5 ? 'rotate-180' : ''}`} />
                 </button>
                 {expandedSections.group5 && (
-                  <div className="p-3.5 border-t border-slate-800/80 space-y-3 bg-[#0a0f1d]">
+                  <div className={`p-3.5 border-t ${isDark ? 'border-slate-800/80 bg-[#0a0f1d]' : 'border-slate-200 bg-slate-50/70'} space-y-3`}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           bulkChargingVoltageSetting (Điện áp sạc hấp thụ V)
                         </label>
                         <input
@@ -1306,12 +1326,12 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                           step="0.1"
                           value={advConfig.bulkChargingVoltageSetting}
                           onChange={e => handleAdvChange('bulkChargingVoltageSetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-white font-mono"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs rounded-lg p-2 font-mono focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           flotingChargingVoltageSetting (Điện áp sạc thả nổi V)
                         </label>
                         <input
@@ -1319,12 +1339,12 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                           step="0.1"
                           value={advConfig.flotingChargingVoltageSetting}
                           onChange={e => handleAdvChange('flotingChargingVoltageSetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-white font-mono"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs rounded-lg p-2 font-mono focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           LowBatteryCutOffVoltageSetting (Điện áp cắt pin yếu V)
                         </label>
                         <input
@@ -1332,12 +1352,12 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                           step="0.1"
                           value={advConfig.LowBatteryCutOffVoltageSetting}
                           onChange={e => handleAdvChange('LowBatteryCutOffVoltageSetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-white font-mono"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs rounded-lg p-2 font-mono focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           comebackBatteryModeVolSBUPriority (V phục hồi Pin)
                         </label>
                         <input
@@ -1345,12 +1365,12 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                           step="0.1"
                           value={advConfig.comebackBatteryModeVolSBUPriority}
                           onChange={e => handleAdvChange('comebackBatteryModeVolSBUPriority', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-white font-mono"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs rounded-lg p-2 font-mono focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           batteryEqualizationVoltageSetting (Điện áp cân bằng V)
                         </label>
                         <input
@@ -1358,19 +1378,19 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                           step="0.1"
                           value={advConfig.batteryEqualizationVoltageSetting}
                           onChange={e => handleAdvChange('batteryEqualizationVoltageSetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-white font-mono"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs rounded-lg p-2 font-mono focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           batteryEqualizationIntervalSetting (Chu kỳ cân bằng ngày)
                         </label>
                         <input
                           type="number"
                           value={advConfig.batteryEqualizationIntervalSetting}
                           onChange={e => handleAdvChange('batteryEqualizationIntervalSetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-white font-mono"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs rounded-lg p-2 font-mono focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
                     </div>
@@ -1379,29 +1399,29 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
               </div>
 
               {/* NHÓM 6: Lưới Điện AC & Tiêu Chuẩn Hòa Lưới */}
-              <div className="bg-slate-900/90 rounded-xl border border-slate-800 overflow-hidden">
+              <div className={`${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-sm'} rounded-xl border overflow-hidden`}>
                 <button
                   type="button"
                   onClick={() => toggleSection('group6')}
-                  className="w-full p-3.5 flex items-center justify-between text-left hover:bg-slate-850 transition cursor-pointer"
+                  className={`w-full p-3.5 flex items-center justify-between text-left ${isDark ? 'hover:bg-slate-850' : 'hover:bg-slate-50'} transition cursor-pointer`}
                 >
                   <div className="flex items-center space-x-2">
-                    <Radio className="w-4 h-4 text-indigo-400" />
-                    <span className="text-xs font-bold text-slate-100">6. Lưới Điện AC & Tiêu Chuẩn (Grid & Output Standards)</span>
+                    <Radio className={`w-4 h-4 ${isDark ? 'text-indigo-400' : 'text-indigo-500'}`} />
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>6. Lưới Điện AC & Tiêu Chuẩn (Grid & Output Standards)</span>
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandedSections.group6 ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-500'} transition-transform ${expandedSections.group6 ? 'rotate-180' : ''}`} />
                 </button>
                 {expandedSections.group6 && (
-                  <div className="p-3.5 border-t border-slate-800/80 space-y-3 bg-[#0a0f1d]">
+                  <div className={`p-3.5 border-t ${isDark ? 'border-slate-800/80 bg-[#0a0f1d]' : 'border-slate-200 bg-slate-50/70'} space-y-3`}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           acInputRangeSetting (Dải điện lưới đầu vào)
                         </label>
                         <select
                           value={advConfig.acInputRangeSetting}
                           onChange={e => handleAdvChange('acInputRangeSetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="1">1: UPS (170V - 280V)</option>
                           <option value="0">0: Appliance (90V - 280V)</option>
@@ -1409,13 +1429,13 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           outputVoltageSettings (Điện áp đầu ra)
                         </label>
                         <select
                           value={advConfig.outputVoltageSettings}
                           onChange={e => handleAdvChange('outputVoltageSettings', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="230">230 V (Chuẩn Việt Nam)</option>
                           <option value="220">220 V</option>
@@ -1424,13 +1444,13 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           outputFrequencySetting (Tần số đầu ra)
                         </label>
                         <select
                           value={advConfig.outputFrequencySetting}
                           onChange={e => handleAdvChange('outputFrequencySetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="0">50 Hz</option>
                           <option value="1">60 Hz</option>
@@ -1438,13 +1458,13 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           GFCICheck (Kiểm tra rò điện đất GFCI)
                         </label>
                         <select
                           value={advConfig.GFCICheck}
                           onChange={e => handleAdvChange('GFCICheck', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="1">1: Bật</option>
                           <option value="0">0: Tắt</option>
@@ -1456,29 +1476,29 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
               </div>
 
               {/* NHÓM 7: Nguồn Dự Phòng EPS & Bảo Vệ Tự Động */}
-              <div className="bg-slate-900/90 rounded-xl border border-slate-800 overflow-hidden">
+              <div className={`${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-sm'} rounded-xl border overflow-hidden`}>
                 <button
                   type="button"
                   onClick={() => toggleSection('group7')}
-                  className="w-full p-3.5 flex items-center justify-between text-left hover:bg-slate-850 transition cursor-pointer"
+                  className={`w-full p-3.5 flex items-center justify-between text-left ${isDark ? 'hover:bg-slate-850' : 'hover:bg-slate-50'} transition cursor-pointer`}
                 >
                   <div className="flex items-center space-x-2">
-                    <Shield className="w-4 h-4 text-rose-400" />
-                    <span className="text-xs font-bold text-slate-100">7. Nguồn Dự Phòng EPS & Bảo Vệ Tự Động (EPS & Protections)</span>
+                    <Shield className={`w-4 h-4 ${isDark ? 'text-rose-400' : 'text-rose-500'}`} />
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>7. Nguồn Dự Phòng EPS & Bảo Vệ Tự Động (EPS & Protections)</span>
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandedSections.group7 ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-500'} transition-transform ${expandedSections.group7 ? 'rotate-180' : ''}`} />
                 </button>
                 {expandedSections.group7 && (
-                  <div className="p-3.5 border-t border-slate-800/80 space-y-3 bg-[#0a0f1d]">
+                  <div className={`p-3.5 border-t ${isDark ? 'border-slate-800/80 bg-[#0a0f1d]' : 'border-slate-200 bg-slate-50/70'} space-y-3`}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           DualOutputSwitch (Công tắc ngõ ra phụ SmartLoad)
                         </label>
                         <select
                           value={advConfig.DualOutputSwitch}
                           onChange={e => handleAdvChange('DualOutputSwitch', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="0">0: Tắt</option>
                           <option value="1">1: Bật</option>
@@ -1486,25 +1506,25 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           epsOnSOC (Ngưỡng SOC bật lại EPS %)
                         </label>
                         <input
                           type="number"
                           value={advConfig.epsOnSOC}
                           onChange={e => handleAdvChange('epsOnSOC', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs rounded-lg p-2 text-white font-mono"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs rounded-lg p-2 font-mono focus:outline-none focus:border-cyan-500`}
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           overloadAutoRestartStatusSetting (Tự khởi động khi quá tải)
                         </label>
                         <select
                           value={advConfig.overloadAutoRestartStatusSetting}
                           onChange={e => handleAdvChange('overloadAutoRestartStatusSetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="1">1: Bật</option>
                           <option value="0">0: Tắt</option>
@@ -1512,13 +1532,13 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           overTemperatureAutoRestartStatusSetting (Tự khởi động quá nhiệt)
                         </label>
                         <select
                           value={advConfig.overTemperatureAutoRestartStatusSetting}
                           onChange={e => handleAdvChange('overTemperatureAutoRestartStatusSetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="1">1: Bật</option>
                           <option value="0">0: Tắt</option>
@@ -1526,13 +1546,13 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           transferToBypassOverloadStatusSetting (Chuyển Bypass khi quá tải)
                         </label>
                         <select
                           value={advConfig.transferToBypassOverloadStatusSetting}
                           onChange={e => handleAdvChange('transferToBypassOverloadStatusSetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="1">1: Bật</option>
                           <option value="0">0: Tắt</option>
@@ -1540,13 +1560,13 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                        <label className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} block mb-1`}>
                           ledPatternLightSetting (Đèn LED trang trí)
                         </label>
                         <select
                           value={advConfig.ledPatternLightSetting}
                           onChange={e => handleAdvChange('ledPatternLightSetting', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-750 text-xs font-medium rounded-lg p-2 text-white"
+                          className={`w-full ${isDark ? 'bg-slate-900 border-slate-750 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border text-xs font-medium rounded-lg p-2 focus:outline-none focus:border-cyan-500`}
                         >
                           <option value="1">1: Bật RGB</option>
                           <option value="0">0: Tắt</option>
@@ -1561,11 +1581,13 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
         </form>
 
         {/* Footer Cố Định Ghim Đáy Tuyệt Đối - Không bao giờ bị khuyết hoặc che khuất */}
-        <div className="shrink-0 p-3 sm:p-4 bg-[#0d1424] border-t border-slate-800 flex space-x-3 z-30 shadow-2xl">
+        <div className={`shrink-0 p-3 sm:p-4 ${isDark ? 'bg-[#0d1424] border-slate-800' : 'bg-slate-50 border-slate-200'} border-t flex space-x-3 z-30 shadow-2xl`}>
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-3 px-4 rounded-xl border border-slate-750 text-slate-300 text-xs sm:text-sm font-bold hover:bg-slate-800 transition cursor-pointer"
+            className={`flex-1 py-3 px-4 rounded-xl border ${
+              isDark ? 'border-slate-750 text-slate-300 hover:bg-slate-800' : 'border-slate-300 text-slate-700 hover:bg-slate-200 bg-white shadow-sm'
+            } text-xs sm:text-sm font-bold transition cursor-pointer`}
           >
             Hủy
           </button>

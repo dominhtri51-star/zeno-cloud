@@ -6,6 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import CreateCustomerModal from '../components/CreateCustomerModal';
 import ResetPasswordModal from '../components/ResetPasswordModal';
 import AssignTechnicianCodeModal from '../components/AssignTechnicianCodeModal';
+import SafeDeleteModal from '../components/SafeDeleteModal';
 
 export default function Customers() {
   const { user } = useAuth();
@@ -25,6 +26,10 @@ export default function Customers() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isResetPwdOpen, setIsResetPwdOpen] = useState(false);
 
+  // 🔒 Modal Xóa Tài Khoản An Toàn (Master nhập mật khẩu sungo123)
+  const [isSafeDeleteOpen, setIsSafeDeleteOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState(null);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -41,22 +46,19 @@ export default function Customers() {
     }
   };
 
-  const handleDelete = async (customer) => {
+  const handleDeleteClick = (customer) => {
     if (!isMaster) {
       alert('Chỉ có Tổng Phân Phối (Master Admin) mới có quyền xóa tài khoản!');
       return;
     }
-    if (window.confirm(`Bạn có chắc chắn muốn hủy / xóa tài khoản ${customer.userName || customer.account}?`)) {
-      try {
-        const res = await customerService.deleteCustomer(customer.userId);
-        if (res.success) {
-          alert('Đã xóa tài khoản thành công!');
-          loadData();
-        }
-      } catch (e) {
-        alert(e.message || 'Lỗi khi xóa tài khoản');
-      }
-    }
+    setCustomerToDelete(customer);
+    setIsSafeDeleteOpen(true);
+  };
+
+  const handleExecuteSafeDelete = async ({ adminPassword }) => {
+    if (!customerToDelete) return;
+    await customerService.deleteCustomer(customerToDelete.userId || customerToDelete.account, adminPassword);
+    await loadData();
   };
 
   // Filter logic
@@ -288,8 +290,8 @@ export default function Customers() {
                         </button>
                         {isMaster && c.userType !== 1 && (
                           <button
-                            onClick={() => handleDelete(c)}
-                            title="Xóa tài khoản"
+                            onClick={() => handleDeleteClick(c)}
+                            title="Xóa tài khoản (yêu cầu mật khẩu sungo123)"
                             className={`p-1.5 rounded-lg ${isDark ? 'bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border-slate-700 hover:border-rose-500/30' : 'bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border-slate-200 hover:border-rose-200'} border transition cursor-pointer`}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -332,6 +334,19 @@ export default function Customers() {
           setSelectedTechForCode(null);
         }}
         onSuccess={loadData}
+      />
+
+      {/* 🔒 Modal Xóa Tài Khoản An Toàn (Yêu cầu mật khẩu sungo123) */}
+      <SafeDeleteModal
+        isOpen={isSafeDeleteOpen}
+        onClose={() => setIsSafeDeleteOpen(false)}
+        onConfirm={handleExecuteSafeDelete}
+        title="Xác Nhận Xóa Tài Khoản"
+        itemName={customerToDelete?.userName || customerToDelete?.account}
+        itemId={customerToDelete?.userId || customerToDelete?.account}
+        itemType="customer"
+        isMaster={true}
+        isDealer={false}
       />
     </div>
   );

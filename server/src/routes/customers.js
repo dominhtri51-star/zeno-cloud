@@ -385,29 +385,38 @@ router.post('/:id/reset-password', checkAuth, async (req, res) => {
   });
 });
 
-// 6. Xóa tài khoản khách hàng
+// 6. Xóa tài khoản khách hàng (Bảo Vệ An Toàn Yêu Cầu Nhập Mật Khẩu Quản Trị sungo123)
 router.delete('/:id', checkAuth, async (req, res) => {
   const customerId = req.params.id;
-  let deletedAcc = null;
+  const adminPassword = req.body?.adminPassword || req.headers['x-admin-password'] || req.query?.adminPassword;
 
-  if (deviceOwnership.data?.users) {
-    for (const [acc, u] of Object.entries(deviceOwnership.data.users)) {
-      if (String(u.userId) === String(customerId) || acc.toLowerCase() === String(customerId).toLowerCase()) {
-        deletedAcc = acc;
-        delete deviceOwnership.data.users[acc];
-        break;
-      }
-    }
-    if (deletedAcc) {
-      deviceOwnership.saveData();
-    }
+  const userAccount = liveCloud.getAccountFromToken(req.token);
+  const roleInfo = deviceOwnership.getUserRole(userAccount);
+
+  if (roleInfo.userType !== 1) {
+    return res.status(403).json({
+      success: false,
+      message: 'Chỉ có Tổng Phân Phối (Master Admin) mới có quyền xóa tài khoản!'
+    });
   }
 
   try {
-    await pool.query('DELETE FROM customers WHERE user_id::text = $1 OR account = $1', [customerId]);
-  } catch (err) {}
+    const result = deviceOwnership.deleteCustomerSafe({ customerId, adminPassword });
 
-  return res.json({ success: true, message: `Đã xóa tài khoản [${deletedAcc || customerId}] thành công!` });
+    try {
+      await pool.query('DELETE FROM customers WHERE user_id::text = $1 OR account = $1', [customerId]);
+    } catch (err) {}
+
+    return res.json({ 
+      success: true, 
+      message: `Đã xác nhận mật khẩu đúng! Đã xóa tài khoản [${result.deletedAccount || customerId}] thành công!` 
+    });
+  } catch (e) {
+    return res.status(400).json({
+      success: false,
+      message: e.message || 'Lỗi khi xóa tài khoản'
+    });
+  }
 });
 
 // 7. Cấp / Đổi Mã Kỹ Thuật Viên trực tiếp cho tài khoản KTV

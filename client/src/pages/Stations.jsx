@@ -4,7 +4,7 @@ import {
   CheckCircle, RefreshCw, Sliders, Radio, ArrowRight, Eye, 
   Cpu, Server, ChevronRight, ShieldCheck, Users, PlusCircle, Wifi,
   Trash2, AlertOctagon, Search, X, Filter, Hash, Tag, Check, Sparkles,
-  ArrowUpDown, Layers, Share2, UserCheck
+  ArrowUpDown, Layers, Share2, UserCheck, ArrowRightLeft
 } from 'lucide-react';
 import api, { monitoringService, authService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,6 +13,8 @@ import RemoteConfigModal from '../components/RemoteConfigModal';
 import ClaimDeviceModal from '../components/ClaimDeviceModal';
 import StationSettingsModal from '../components/StationSettingsModal';
 import ShareStationModal from '../components/ShareStationModal';
+import ReassignDealerModal from '../components/ReassignDealerModal';
+import SafeDeleteModal from '../components/SafeDeleteModal';
 import { Settings as SettingsIcon } from 'lucide-react';
 
 export default function Stations({ onNavigate, onSelectDevice }) {
@@ -27,6 +29,15 @@ export default function Stations({ onNavigate, onSelectDevice }) {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedStationForShare, setSelectedStationForShare] = useState(null);
 
+  // 👑 Modal Phân Bổ / Đổi Đại Lý Quản Lý (Dành Cho Tài Khoản Tổng Master)
+  const [isReassignOpen, setIsReassignOpen] = useState(false);
+  const [reassignStation, setReassignStation] = useState(null);
+  const [reassignDevice, setReassignDevice] = useState(null);
+
+  // 🔒 Modal Xóa An Toàn (Master nhập mật khẩu sungo123, Dealer nhập Serial Number)
+  const [isSafeDeleteOpen, setIsSafeDeleteOpen] = useState(false);
+  const [safeDeleteTarget, setSafeDeleteTarget] = useState(null);
+
   // Bộ lọc & Tìm kiếm nhanh
   const [searchQuery, setSearchQuery] = useState('');
   const [searchScope, setSearchScope] = useState('ALL'); // 'ALL' | 'NAME' | 'SN' | 'DTU'
@@ -39,12 +50,6 @@ export default function Stations({ onNavigate, onSelectDevice }) {
 
   // Modal Thêm Thiết Bị / Cấu hình WiFi
   const [isClaimOpen, setIsClaimOpen] = useState(false);
-
-  // Modal Xóa Trạm (Admin Master)
-  const [stationToDelete, setStationToDelete] = useState(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
 
   const isHomeowner = user?.userType === 3;
   const isDistributor = user?.userType === 1;
@@ -68,45 +73,70 @@ export default function Stations({ onNavigate, onSelectDevice }) {
   };
 
   const handleOpenConfig = (st, e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     if (isHomeowner) return; // Chủ nhà không thể mở
     setConfigStation(st);
     setIsConfigOpen(true);
   };
 
   const handleOpenProjectSettings = (st, e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     setSelectedStationForSettings(st);
     setIsProjectSettingsOpen(true);
   };
 
   const handleOpenShareModal = (st, e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     setSelectedStationForShare(st);
     setIsShareModalOpen(true);
   };
 
-  const handleDeleteStationClick = (st, e) => {
-    e.stopPropagation();
-    setStationToDelete(st);
-    setDeleteError('');
-    setIsDeleteModalOpen(true);
+  // Mở modal Đổi Đại Lý (Master)
+  const handleOpenReassign = (st, dev, e) => {
+    if (e) e.stopPropagation();
+    setReassignStation(st);
+    setReassignDevice(dev || null);
+    setIsReassignOpen(true);
   };
 
-  const handleConfirmDelete = async () => {
-    if (!stationToDelete) return;
-    try {
-      setIsDeleting(true);
-      setDeleteError('');
-      await monitoringService.deleteStation(stationToDelete.stationId);
-      setIsDeleteModalOpen(false);
-      setStationToDelete(null);
-      await loadStations();
-    } catch (err) {
-      setDeleteError(err.message || 'Lỗi khi xóa trạm');
-    } finally {
-      setIsDeleting(false);
+  // Mở modal Xóa Trạm An Toàn (Master)
+  const handleDeleteStationClick = (st, e) => {
+    if (e) e.stopPropagation();
+    setSafeDeleteTarget({
+      type: 'station',
+      id: st.stationId,
+      name: st.stationName,
+      title: 'Xác Nhận Xóa Trạm Năng Lượng'
+    });
+    setIsSafeDeleteOpen(true);
+  };
+
+  // Mở modal Xóa Thiết Bị An Toàn (Master hoặc Dealer)
+  const handleDeleteDeviceClick = (st, dev, e) => {
+    if (e) e.stopPropagation();
+    setSafeDeleteTarget({
+      type: 'device',
+      id: dev.deviceId || dev.serialNumber,
+      name: `Inverter ${dev.deviceName || ''} (${dev.serialNumber})`,
+      serialNumber: dev.serialNumber,
+      stationId: st?.stationId,
+      title: isDistributor ? 'Xác Nhận Xóa Thiết Bị Vĩnh Viễn' : 'Xác Nhận Xóa Thiết Bị Khỏi Đại Lý'
+    });
+    setIsSafeDeleteOpen(true);
+  };
+
+  const handleExecuteSafeDelete = async ({ adminPassword, confirmSn }) => {
+    if (!safeDeleteTarget) return;
+    if (safeDeleteTarget.type === 'station') {
+      await monitoringService.deleteStation(safeDeleteTarget.id, adminPassword);
+    } else if (safeDeleteTarget.type === 'device') {
+      await monitoringService.deleteDeviceSafe({
+        deviceId: safeDeleteTarget.id,
+        confirmSn,
+        adminPassword
+      });
     }
+    await loadStations();
   };
 
   const handleDeviceClick = async (st, dev) => {
@@ -503,7 +533,19 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                     <span className="font-extrabold text-amber-500 font-mono text-xs sm:text-sm">{st.installedCapacity || `${st.capacityKw} kWp`}</span>
                   </div>
 
-                  {/* Nút Chia Sẻ Cho Đại Lý */}
+                  {/* 👑 Nút Đổi Đại Lý (Dành Cho Master) */}
+                  {isDistributor && (
+                    <button
+                      onClick={(e) => handleOpenReassign(st, null, e)}
+                      className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-500 border border-cyan-500/30 hover:border-cyan-500/50 transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer shadow-sm"
+                      title="Chuyển giao hoặc gán lại Đại Lý quản lý trạm này"
+                    >
+                      <ArrowRightLeft className="w-3.5 h-3.5 text-cyan-500" />
+                      <span>Đổi Đại Lý</span>
+                    </button>
+                  )}
+
+                  {/* Nút Chia Sẻ Cho Đại Lý (Dành Cho Chủ Nhà) */}
                   {isHomeowner && (
                     <button
                       onClick={(e) => handleOpenShareModal(st, e)}
@@ -545,15 +587,15 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                     </button>
                   )}
 
-                  {/* Nút Xóa Trạm */}
+                  {/* Nút Xóa Trạm (Master - Bắt buộc nhập mật khẩu sungo123) */}
                   {isDistributor && (
                     <button
                       onClick={(e) => handleDeleteStationClick(st, e)}
                       className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 hover:border-rose-500/50 transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer"
-                      title="Xóa trạm tạo sai"
+                      title="Xóa trạm năng lượng (yêu cầu mật khẩu sungo123)"
                     >
                       <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                      <span>Xóa</span>
+                      <span>Xóa Trạm</span>
                     </button>
                   )}
                 </div>
@@ -668,7 +710,34 @@ export default function Stations({ onNavigate, onSelectDevice }) {
 
                         {/* Action trigger button */}
                         <div className={`mt-3 pt-2.5 border-t ${isDark ? 'border-slate-800/80 text-slate-400' : 'border-slate-200 text-slate-500'} flex items-center justify-between text-xs`}>
-                          <span className="text-[10px] sm:text-[11px] font-medium truncate">Viễn trắc realtime</span>
+                          <div className="flex items-center gap-1.5">
+                            {/* Nút Đổi Đại Lý Cho Riêng Máy Này (Master) */}
+                            {isDistributor && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleOpenReassign(st, dev, e)}
+                                className="px-2 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-500 border border-cyan-500/30 font-bold text-[10px] flex items-center gap-1 transition cursor-pointer"
+                                title="Đổi đại lý phụ trách máy này"
+                              >
+                                <ArrowRightLeft className="w-3 h-3" />
+                                <span>Đổi ĐL</span>
+                              </button>
+                            )}
+
+                            {/* Nút Xóa Thiết Bị (Dành Cho Master hoặc Đại Lý) */}
+                            {(isDistributor || isInstaller) && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeleteDeviceClick(st, dev, e)}
+                                className="px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 font-bold text-[10px] flex items-center gap-1 transition cursor-pointer"
+                                title={isDistributor ? 'Xóa vĩnh viễn thiết bị khỏi hệ thống' : 'Xóa thiết bị khỏi danh sách đại lý (nhập SN)'}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span>Xóa máy</span>
+                              </button>
+                            )}
+                          </div>
+
                           <div className="flex items-center gap-1 font-bold text-cyan-500 group-hover:text-cyan-600 text-[11px] sm:text-xs shrink-0">
                             <span>Mở Bảng Điều Khiển</span>
                             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />
@@ -716,76 +785,28 @@ export default function Stations({ onNavigate, onSelectDevice }) {
         onShared={loadStations}
       />
 
-      {/* Delete Station Confirmation Modal (Chỉ Admin / Master) */}
-      {isDeleteModalOpen && stationToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="bg-[#0f172a] border border-rose-500/40 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl shadow-rose-500/10 space-y-6 relative overflow-hidden">
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 shrink-0">
-                <AlertOctagon className="w-8 h-8" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-black text-white">Xác Nhận Xóa Trạm Năng Lượng</h3>
-                <p className="text-xs text-rose-300 font-medium">Quyền Quản Trị: Hành động không thể hoàn tác!</p>
-              </div>
-            </div>
+      {/* 👑 Reassign Dealer Modal (Dành Cho Master) */}
+      <ReassignDealerModal
+        isOpen={isReassignOpen}
+        station={reassignStation}
+        device={reassignDevice}
+        onClose={() => setIsReassignOpen(false)}
+        onSuccess={loadStations}
+      />
 
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Tên trạm:</span>
-                <span className="font-bold text-white">{stationToDelete.stationName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Mã ID Trạm:</span>
-                <span className="font-mono font-bold text-cyan-400">{stationToDelete.stationId}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Số Inverter liên kết:</span>
-                <span className="font-bold text-amber-400">{(stationToDelete.devices && stationToDelete.devices.length) || 0} Inverter</span>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Bạn đang thực hiện xóa vĩnh viễn trạm <strong className="text-white">{stationToDelete.stationName}</strong> khỏi hệ thống quản trị Zeno. Toàn bộ thiết bị Inverter liên kết sai hoặc tạo nhầm sẽ được gỡ bỏ ngay lập tức.
-            </p>
-
-            {deleteError && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-400 font-medium">
-                {deleteError}
-              </div>
-            )}
-
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsDeleteModalOpen(false)}
-                disabled={isDeleting}
-                className="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm border border-slate-700 transition cursor-pointer"
-              >
-                Hủy Bỏ
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={isDeleting}
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black text-sm shadow-lg shadow-rose-500/20 transition flex items-center justify-center gap-2 cursor-pointer"
-              >
-                {isDeleting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Đang xóa...</span>
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="w-4 h-4" />
-                    <span>Xác Nhận Xóa</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 🔒 Safe Delete Modal (Master nhập sungo123, Dealer nhập Serial Number) */}
+      <SafeDeleteModal
+        isOpen={isSafeDeleteOpen}
+        onClose={() => setIsSafeDeleteOpen(false)}
+        onConfirm={handleExecuteSafeDelete}
+        title={safeDeleteTarget?.title}
+        itemName={safeDeleteTarget?.name}
+        itemId={safeDeleteTarget?.id}
+        itemType={safeDeleteTarget?.type}
+        serialNumber={safeDeleteTarget?.serialNumber}
+        isMaster={isDistributor}
+        isDealer={isInstaller}
+      />
     </div>
   );
 }

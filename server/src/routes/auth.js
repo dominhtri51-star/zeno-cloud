@@ -259,7 +259,7 @@ router.post('/login', async (req, res) => {
       });
 
       // 3. Tự động đồng bộ khách hàng vào cơ sở dữ liệu PostgreSQL
-      await pool.query(`
+      const customerUpsertRes = await pool.query(`
         INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, siseli_user_id)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT (account) DO UPDATE 
@@ -267,7 +267,8 @@ router.post('/login', async (req, res) => {
             email = EXCLUDED.email,
             cellphone = EXCLUDED.cellphone,
             password_hash = COALESCE(EXCLUDED.password_hash, customers.password_hash),
-            updated_at = NOW();
+            updated_at = NOW()
+        RETURNING user_id;
       `, [
         userAccount,
         data.userName || data.nickname || userAccount,
@@ -279,7 +280,54 @@ router.post('/login', async (req, res) => {
         String(data.userId || data.iotUserId || '')
       ]);
 
-      console.log(`[Auto-Ingestion Success]: Đã tự động thu nạp tài khoản [${userAccount}] và ${userStations?.length || 0} trạm về quyền quản lý của [sungo.vn]`);
+      const dbCustId = customerUpsertRes?.rows?.[0]?.user_id;
+
+      // 4. Đồng bộ tất cả Trạm và Inverter SN / DTU vào bảng PostgreSQL stations và devices
+      if (userStations && Array.isArray(userStations)) {
+        for (const st of userStations) {
+          const stId = String(st.stationId || st.id);
+          const stName = st.stationName || st.name || `Trạm ${userAccount}`;
+          const cap = parseFloat(st.installedCapacity || st.capacityKw || 10.0);
+
+          await pool.query(`
+            INSERT INTO stations (station_id, station_name, customer_id, address, capacity_kw, updated_at)
+            VALUES ($1, $2, $3, $4, $5, NOW())
+            ON CONFLICT (station_id) DO UPDATE
+            SET station_name = EXCLUDED.station_name,
+                capacity_kw = EXCLUDED.capacity_kw,
+                updated_at = NOW();
+          `, [stId, stName, dbCustId, st.address || 'Việt Nam', cap]).catch(() => null);
+
+          if (st.devices && Array.isArray(st.devices)) {
+            for (const dev of st.devices) {
+              const devId = String(dev.deviceId || dev.id);
+              const sn = String(dev.serialNumber || dev.sn || '');
+              const dtu = String(dev.dtuCode || dev.dtuDtuid || '');
+
+              await pool.query(`
+                INSERT INTO devices (device_id, serial_number, dtu_code, station_name, customer, distributor, details)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                ON CONFLICT (device_id) DO UPDATE
+                SET serial_number = EXCLUDED.serial_number,
+                    dtu_code = EXCLUDED.dtu_code,
+                    station_name = EXCLUDED.station_name,
+                    customer = EXCLUDED.customer,
+                    distributor = EXCLUDED.distributor;
+              `, [
+                devId,
+                sn,
+                dtu,
+                stName,
+                userAccount,
+                'sungo.vn',
+                JSON.stringify(dev)
+              ]).catch(() => null);
+            }
+          }
+        }
+      }
+
+      console.log(`[Auto-Ingestion Success]: Đã tự động thu nạp toàn diện tài khoản [${userAccount}], ${userStations?.length || 0} trạm, SN và DTU vào PostgreSQL & hệ thống quản lý của sungo.vn!`);
     } catch (ingestErr) {
       console.warn('[Auto-Ingestion Warning]:', ingestErr.message);
     }

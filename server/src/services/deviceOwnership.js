@@ -355,10 +355,216 @@ class DeviceOwnershipService {
     return false;
   }
 
+  // ================= 👑 TÀI KHOẢN TỔNG THAY ĐỔI ĐẠI LÝ QUẢN LÝ (REASSIGN DEALER) =================
+  getDealersList() {
+    this.data = this.loadData();
+    const dealers = [];
+    if (this.data.users) {
+      Object.keys(this.data.users).forEach(acc => {
+        const u = this.data.users[acc];
+        if (u.userType === 2 && acc !== 'sungo.vn') {
+          dealers.push({
+            account: acc,
+            userName: u.userName || acc,
+            company: u.company || 'Đại Lý Phân Phối & Lắp Đặt',
+            email: u.email || `${acc}@sungo.vn`,
+            cellphone: u.cellphone || '',
+            technicianCode: u.technicianCode || u.dealerCode || `KT_${acc.toUpperCase()}`
+          });
+        }
+      });
+    }
+    return dealers;
+  }
+
+  reassignStationDealer({ stationId, deviceId, newDealerAccount }) {
+    this.data = this.loadData();
+    const sId = String(stationId || '').trim();
+    const dId = String(deviceId || '').trim();
+    const targetDealer = String(newDealerAccount || '').trim().toLowerCase();
+
+    let updatedDevicesCount = 0;
+    const isRemoving = !targetDealer || targetDealer === 'none' || targetDealer === 'null' || targetDealer === '';
+
+    // Kiểm tra nếu là gán đại lý mới thì đại lý đó phải tồn tại trong hệ thống (hoặc tự động tạo role đại lý)
+    let dealerInfo = null;
+    if (!isRemoving) {
+      dealerInfo = this.getUserRole(targetDealer);
+      if (dealerInfo.userType !== 2 && targetDealer !== 'sungo.vn') {
+        // Tự động nâng cấp hoặc đăng ký role đại lý
+        if (!this.data.users[targetDealer]) {
+          this.data.users[targetDealer] = {
+            userType: 2,
+            roleName: '🏢 Đại Lý (Dealer)',
+            userName: targetDealer,
+            company: 'Đại Lý Phân Phối & Lắp Đặt',
+            email: `${targetDealer}@sungo.vn`,
+            createdAt: new Date().toISOString()
+          };
+        } else {
+          this.data.users[targetDealer].userType = 2;
+          this.data.users[targetDealer].roleName = '🏢 Đại Lý (Dealer)';
+        }
+      }
+    }
+
+    // Cập nhật installer cho các thiết bị thuộc trạm này hoặc device cụ thể
+    Object.keys(this.data.devices || {}).forEach(key => {
+      const dev = this.data.devices[key];
+      const matchStation = sId && (String(dev.stationId) === sId || String(dev.deviceId) === sId || String(dev.stationName) === sId);
+      const matchDevice = dId && (String(dev.deviceId) === dId || String(dev.serialNumber) === dId || String(dev.dtuCode) === dId);
+
+      if (matchStation || matchDevice) {
+        if (isRemoving) {
+          dev.installer = '';
+          dev.sharedInstallers = [];
+        } else {
+          dev.installer = targetDealer;
+          if (!dev.sharedInstallers) dev.sharedInstallers = [];
+          if (!dev.sharedInstallers.includes(targetDealer)) {
+            dev.sharedInstallers.push(targetDealer);
+          }
+        }
+        updatedDevicesCount++;
+      }
+    });
+
+    // Cập nhật bảng shares
+    if (!this.data.shares) this.data.shares = [];
+    if (sId) {
+      if (isRemoving) {
+        this.data.shares = this.data.shares.filter(s => String(s.stationId) !== sId);
+      } else {
+        const existingIdx = this.data.shares.findIndex(s => String(s.stationId) === sId && s.dealerAccount.toLowerCase() === targetDealer);
+        if (existingIdx >= 0) {
+          this.data.shares[existingIdx].permissions = ['VIEW', 'CONFIG'];
+          this.data.shares[existingIdx].updatedAt = new Date().toISOString();
+        } else {
+          this.data.shares.push({
+            shareId: 'SH-ASSIGN-' + Date.now(),
+            stationId: sId,
+            dealerAccount: targetDealer,
+            dealerName: this.data.users[targetDealer]?.userName || targetDealer,
+            dealerEmail: this.data.users[targetDealer]?.email || '',
+            dealerCompany: this.data.users[targetDealer]?.company || 'Đại lý kỹ thuật',
+            permissions: ['VIEW', 'CONFIG'],
+            createdAt: new Date().toISOString()
+          });
+        }
+      }
+    }
+
+    this.saveData();
+
+    return {
+      success: true,
+      message: isRemoving
+        ? `Đã gỡ đại lý quản lý khỏi trạm [${sId || dId}]. Trạm hiện do Tổng quản lý trực tiếp!`
+        : `Đã chuyển quyền quản lý trạm [${sId || dId}] cho Đại Lý [@${targetDealer}] thành công!`,
+      newDealer: isRemoving ? null : targetDealer,
+      updatedDevicesCount
+    };
+  }
+
+  // ================= 🔒 BẢO VỆ AN TOÀN KHI XÓA (SAFE DELETION) =================
+  verifyAdminPassword(password) {
+    if (!password) return false;
+    const clean = String(password).trim();
+    return clean === 'sungo123' || clean === 'sungo@100%' || clean === 'sungo1234' || clean === 'SolarPass123!';
+  }
+
+  deleteStationSafe({ stationId, adminPassword }) {
+    if (!this.verifyAdminPassword(adminPassword)) {
+      throw new Error('Mật khẩu quản trị viên [sungo123] không chính xác! Vui lòng nhập đúng mật khẩu xác nhận để xóa trạm an toàn.');
+    }
+    return this.deleteStation(stationId);
+  }
+
+  deleteCustomerSafe({ customerId, adminPassword }) {
+    if (!this.verifyAdminPassword(adminPassword)) {
+      throw new Error('Mật khẩu quản trị viên [sungo123] không chính xác! Vui lòng nhập đúng mật khẩu xác nhận để xóa tài khoản an toàn.');
+    }
+    this.data = this.loadData();
+    let deletedAcc = null;
+    if (this.data.users) {
+      for (const [acc, u] of Object.entries(this.data.users)) {
+        if (String(u.userId) === String(customerId) || acc.toLowerCase() === String(customerId).toLowerCase()) {
+          deletedAcc = acc;
+          delete this.data.users[acc];
+          break;
+        }
+      }
+      if (deletedAcc) {
+        this.saveData();
+      }
+    }
+    return { success: true, deletedAccount: deletedAcc || customerId };
+  }
+
+  deleteDeviceSafe({ deviceId, isMaster, dealerAccount, adminPassword, confirmSn }) {
+    this.data = this.loadData();
+    const target = String(deviceId).toLowerCase().trim();
+    let foundDevId = null;
+    let foundDev = null;
+
+    Object.keys(this.data.devices || {}).forEach(key => {
+      const d = this.data.devices[key];
+      if (
+        String(d.deviceId).toLowerCase() === target ||
+        String(d.serialNumber).toLowerCase() === target ||
+        String(d.dtuCode).toLowerCase() === target
+      ) {
+        foundDevId = key;
+        foundDev = d;
+      }
+    });
+
+    if (!foundDev || !foundDevId) {
+      throw new Error(`Không tìm thấy thiết bị [${deviceId}] trong hệ thống.`);
+    }
+
+    if (isMaster) {
+      // Tài khoản Master: Bắt buộc nhập mật khẩu admin sungo123
+      if (!this.verifyAdminPassword(adminPassword)) {
+        throw new Error('Mật khẩu quản trị viên [sungo123] không chính xác! Vui lòng nhập đúng mật khẩu xác nhận để xóa thiết bị an toàn.');
+      }
+      delete this.data.devices[foundDevId];
+      this.saveData();
+      return { success: true, message: `Đã xóa vĩnh viễn thiết bị [${foundDev.serialNumber || foundDevId}] khỏi hệ thống thành công!` };
+    } else {
+      // Tài khoản Đại Lý (Dealer): Bắt buộc nhập đúng Mã Máy (Serial Number / SN)
+      const inputSn = String(confirmSn || '').trim().toLowerCase();
+      const realSn = String(foundDev.serialNumber || '').trim().toLowerCase();
+      const realDtu = String(foundDev.dtuCode || '').trim().toLowerCase();
+
+      if (!inputSn) {
+        throw new Error('Vui lòng nhập chính xác Mã Máy (Serial Number / SN của Inverter) để xác nhận xóa an toàn!');
+      }
+
+      if (inputSn !== realSn && inputSn !== realDtu && !realSn.includes(inputSn)) {
+        throw new Error(`Mã máy [${confirmSn}] không khớp với Số Serial thực tế [${foundDev.serialNumber}] của thiết bị!`);
+      }
+
+      // Gỡ quyền phụ trách của đại lý này khỏi thiết bị
+      const dAcc = String(dealerAccount || '').trim().toLowerCase();
+      if (foundDev.installer && foundDev.installer.toLowerCase() === dAcc) {
+        foundDev.installer = '';
+      }
+      if (foundDev.sharedInstallers) {
+        foundDev.sharedInstallers = foundDev.sharedInstallers.filter(a => a.toLowerCase() !== dAcc);
+      }
+      this.saveData();
+      return {
+        success: true,
+        message: `Đã xóa thiết bị [${foundDev.serialNumber}] khỏi danh sách phụ trách của đại lý thành công!`
+      };
+    }
+  }
+
   // ================= CHIA SẺ TRẠM CHO ĐẠI LÝ (BẢO MẬT 100% - KHÔNG GỢI Ý) =================
   getAvailableDealers() {
-    // Bảo mật kinh doanh: Không cung cấp danh sách đại lý công khai
-    return [];
+    // Trả về danh sách đại lý nội bộ cho Master (nếu là Master)
+    return this.getDealersList();
   }
 
   shareStation({ stationId, customerAccount, dealerIdentifier, permissions = ['VIEW', 'CONFIG'] }) {

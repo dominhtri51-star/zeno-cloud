@@ -72,7 +72,7 @@ export const customerService = {
   updateCustomer: (id, data) => api.put(`/customers/${id}`, data),
   setTechnicianCode: (id, data) => api.post(`/customers/${id}/technician-code`, data),
   resetPassword: (id, newPassword) => api.post(`/customers/${id}/reset-password`, { newPassword }),
-  deleteCustomer: (id) => api.delete(`/customers/${id}`)
+  deleteCustomer: (id, adminPassword) => api.delete(`/customers/${id}`, { data: { adminPassword } })
 };
 
 export const groupService = {
@@ -91,7 +91,7 @@ export const publicService = {
 export const monitoringService = {
   getStations: () => api.get('/stations'),
   getStation: (id) => api.get(`/stations/${id}`),
-  deleteStation: (id) => api.delete(`/stations/${id}`),
+  deleteStation: (id, adminPassword) => api.delete(`/stations/${id}`, { data: { adminPassword } }),
   getStationSettings: (stationId) => api.get(`/stations/settings?stationId=${stationId || 'ST-001'}`),
   updateStationSettings: (stationId, settings) => api.post('/stations/settings', { stationId, settings }),
   getAlarms: () => api.get('/alarms'),
@@ -99,7 +99,10 @@ export const monitoringService = {
   shareStation: (data) => api.post('/stations/share', data),
   unshareStation: (data) => api.post('/stations/unshare', data),
   getStationShares: (stationId) => api.get(`/stations/shares?stationId=${stationId}`),
-  getAvailableDealers: () => api.get('/stations/dealers-list')
+  getAvailableDealers: () => api.get('/stations/dealers-list'),
+  getDealersList: () => api.get('/stations/dealers-list'),
+  reassignDealer: (data) => api.post('/stations/reassign-dealer', data),
+  deleteDeviceSafe: (data) => api.post('/stations/delete-device', data)
 };
 
 export default api;

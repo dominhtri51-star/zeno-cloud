@@ -780,11 +780,12 @@ router.get('/history-24h', async (req, res) => {
   });
 });
 
-// 8. Xóa Trạm & Toàn Bộ Thiết Bị Liên Kết (Dành riêng cho Admin / Master sungo.vn)
+// 8. Xóa Trạm & Toàn Bộ Thiết Bị Liên Kết (Bảo Vệ An Toàn Yêu Cầu Nhập Mật Khẩu sungo123)
 router.delete('/:stationId', async (req, res) => {
   const { stationId } = req.params;
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.replace('Bearer ', '');
+  const adminPassword = req.body?.adminPassword || req.headers['x-admin-password'] || req.query?.adminPassword;
 
   const userAccount = liveCloud.getAccountFromToken(token);
   const roleInfo = deviceOwnership.getUserRole(userAccount);
@@ -797,8 +798,8 @@ router.delete('/:stationId', async (req, res) => {
   }
 
   try {
-    // 1. Xóa trong deviceOwnership
-    deviceOwnership.deleteStation(stationId);
+    // 1. Kiểm tra mật khẩu an toàn và xóa trong deviceOwnership
+    deviceOwnership.deleteStationSafe({ stationId, adminPassword });
 
     // 2. Xóa trong PostgreSQL nếu có
     const targetIdInt = parseInt(stationId, 10);
@@ -810,21 +811,109 @@ router.delete('/:stationId', async (req, res) => {
 
     return res.json({
       success: true,
-      message: `Đã xóa vĩnh viễn trạm [${stationId}] và các thiết bị liên kết thành công!`
+      message: `Đã xác nhận mật khẩu đúng! Đã xóa vĩnh viễn trạm [${stationId}] và các thiết bị liên kết thành công!`
     });
   } catch (e) {
     console.error('[Delete Station Error]:', e);
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
-      message: 'Lỗi khi xóa trạm: ' + e.message
+      message: e.message || 'Lỗi khi xóa trạm'
     });
   }
 });
 
-// 9. Danh sách đại lý / thợ kỹ thuật có sẵn để gợi ý chia sẻ (GET /api/stations/dealers-list)
+// 8.1. 👑 Tài Khoản Tổng Thay Đổi Đại Lý Quản Lý Trạm / Máy (POST /api/stations/reassign-dealer)
+router.post('/reassign-dealer', async (req, res) => {
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.replace('Bearer ', '');
+  const { stationId, deviceId, newDealerAccount } = req.body;
+
+  const userAccount = liveCloud.getAccountFromToken(token);
+  const roleInfo = deviceOwnership.getUserRole(userAccount);
+
+  if (roleInfo.userType !== 1) {
+    return res.status(403).json({
+      success: false,
+      message: 'Chỉ có Tài Khoản Tổng (Master Distributor) mới có quyền phân bổ hoặc thay đổi Đại lý quản lý!'
+    });
+  }
+
+  try {
+    const result = deviceOwnership.reassignStationDealer({
+      stationId,
+      deviceId,
+      newDealerAccount
+    });
+
+    // Đồng bộ vào PostgreSQL devices nếu có
+    if (newDealerAccount && (stationId || deviceId)) {
+      await pool.query(`
+        UPDATE devices 
+        SET installer = $1 
+        WHERE station_name = $2 OR device_id = $3 OR serial_number = $3
+      `, [
+        newDealerAccount === 'none' ? null : newDealerAccount, 
+        stationId || '', 
+        deviceId || ''
+      ]).catch(() => null);
+    }
+
+    return res.json(result);
+  } catch (e) {
+    console.error('[Reassign Dealer Error]:', e.message);
+    return res.status(400).json({
+      success: false,
+      message: e.message || 'Lỗi khi thay đổi đại lý quản lý'
+    });
+  }
+});
+
+// 8.2. Xóa Thiết Bị An Toàn (Dành Cho Cả Master và Đại Lý) (POST /api/stations/delete-device)
+router.post('/delete-device', async (req, res) => {
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.replace('Bearer ', '');
+  const { deviceId, confirmSn, adminPassword } = req.body;
+
+  const userAccount = liveCloud.getAccountFromToken(token);
+  const roleInfo = deviceOwnership.getUserRole(userAccount);
+  const isMaster = roleInfo.userType === 1;
+  const isDealer = roleInfo.userType === 2;
+
+  if (!isMaster && !isDealer) {
+    return res.status(403).json({
+      success: false,
+      message: 'Chỉ có Tổng Phân Phối hoặc Đại Lý phụ trách mới có quyền xóa thiết bị này!'
+    });
+  }
+
+  try {
+    const result = deviceOwnership.deleteDeviceSafe({
+      deviceId,
+      isMaster,
+      dealerAccount: userAccount,
+      adminPassword,
+      confirmSn
+    });
+
+    // Nếu là Master xóa vĩnh viễn, xóa khỏi DB PostgreSQL
+    if (isMaster && deviceId) {
+      await pool.query('DELETE FROM devices WHERE device_id = $1 OR serial_number = $1', [deviceId]).catch(() => null);
+    }
+
+    return res.json(result);
+  } catch (e) {
+    console.error('[Delete Device Error]:', e.message);
+    return res.status(400).json({
+      success: false,
+      message: e.message || 'Lỗi khi xóa thiết bị'
+    });
+  }
+});
+
+// 9. Danh sách đại lý / thợ kỹ thuật có sẵn cho Master & Gợi ý (GET /api/stations/dealers-list)
 router.get('/dealers-list', async (req, res) => {
   try {
-    const list = deviceOwnership.getAvailableDealers();
+    const list = deviceOwnership.getDealersList();
     return res.json({
       success: true,
       dealers: list

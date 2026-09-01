@@ -108,12 +108,12 @@ export default function InteractiveTopology({
           {isAggregated ? (
             <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-cyan-500/20 via-teal-500/20 to-emerald-500/20 border border-cyan-500/40 text-cyan-400 font-extrabold text-[10px] sm:text-xs shadow-sm">
               <Boxes className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-              <span>CỤM GỘP 3 BIẾN TẦN ({clusterType === '3PHASE' ? 'ĐIỆN 3 PHA' : '1 PHA SONG SONG'})</span>
+              <span>CỤM GỘP {inverters.length || 3} BIẾN TẦN ({clusterType === '3PHASE' ? 'ĐIỆN 3 PHA' : '1 PHA SONG SONG'})</span>
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold text-[10px] sm:text-xs">
               <Cpu className="w-3.5 h-3.5" />
-              <span>{fleetMode === 'INV_1' ? 'BIẾN TẦN #1 (MASTER / PHA A)' : fleetMode === 'INV_2' ? 'BIẾN TẦN #2 (SLAVE 1 / PHA B)' : 'BIẾN TẦN #3 (SLAVE 2 / PHA C)'}</span>
+              <span>{fleetMode === 'SINGLE' ? '● BIẾN TẦN ĐỘC LẬP (MẶC ĐỊNH)' : (inverters.find(i => i.id === fleetMode)?.name || 'BIẾN TẦN ĐƠN LẺ')}</span>
             </span>
           )}
         </div>
@@ -268,9 +268,13 @@ export default function InteractiveTopology({
 
         {/* ================= INVERTER TRUNG TÂM (Căn giữa 50%, 50%) ================= */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center justify-center scale-90 xs:scale-95 sm:scale-100 md:scale-105">
-          {isAggregated && (
+          {isAggregated ? (
             <div className="absolute -top-3 px-2 py-0.5 rounded-full bg-cyan-500 text-slate-950 text-[9px] font-black tracking-wider uppercase shadow-lg shadow-cyan-500/30 z-30 whitespace-nowrap">
-              3x PARALLEL CLUSTER
+              {clusterType === '3PHASE' ? '3-PHASE CLUSTER' : 'PARALLEL CLUSTER'}
+            </div>
+          ) : (
+            <div className="absolute -top-3 px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[9px] font-black tracking-wider uppercase shadow-lg shadow-emerald-500/30 z-30 whitespace-nowrap">
+              STANDALONE INVERTER
             </div>
           )}
           <InverterUnit

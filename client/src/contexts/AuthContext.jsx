@@ -61,6 +61,14 @@ export const AuthProvider = ({ children }) => {
     return login({ account: 'demo_dealer', password: 'demo_password' });
   };
 
+  const updateUser = (updatedFields) => {
+    setUser(prev => {
+      const next = { ...prev, ...updatedFields };
+      localStorage.setItem('zeno_user', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const logout = async () => {
     try {
       await authService.logout();
@@ -76,7 +84,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, mode, loading, login, register, loginDemo, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, token, mode, loading, login, register, loginDemo, logout, updateUser, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );

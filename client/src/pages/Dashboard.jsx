@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Sun, Zap, Battery, Shield, Gauge, Calendar,
   ChevronDown, ArrowLeft, RefreshCw, Activity, DollarSign, TrendingUp, Cpu, Settings,
-  Boxes, Layers, CheckCircle2, ArrowRight
+  Boxes, Layers, CheckCircle2, ArrowRight, Menu, CloudSun, Home, SlidersHorizontal, Sparkles
 } from 'lucide-react';
 import InteractiveTopology from '../components/InteractiveTopology';
 import api, { monitoringService, authService } from '../services/api';
@@ -14,6 +14,8 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
   const { user } = useAuth();
   const { isDark } = useTheme();
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
+  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
+  const settingsMenuRef = useRef(null);
   
   // Bộ lọc thời gian: DAY (Ngày) | MONTH (Tháng) | YEAR (Năm)
   const [timeScope, setTimeScope] = useState('DAY'); 
@@ -80,6 +82,17 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
 
   const [chartData, setChartData] = useState([]);
   const [loadingStats, setLoadingStats] = useState(false);
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target)) {
+        setIsSettingsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Tải danh sách trạm phục vụ chọn nhanh trạm
   useEffect(() => {
@@ -388,19 +401,70 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 text-xs">
-            <button
-              onClick={() => setIsProjectSettingsOpen(true)}
-              className={`px-3 py-1.5 rounded-xl border transition flex items-center gap-1.5 font-bold text-[11px] sm:text-xs cursor-pointer ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-cyan-300 border-slate-700 hover:border-cyan-500/40' : 'bg-slate-100 hover:bg-slate-200 text-cyan-700 border-slate-200 hover:border-cyan-400'}`}
-              title="Cài đặt dự án"
-            >
-              <Settings className="w-3.5 h-3.5 text-cyan-500" />
-              <span>Cài Đặt Dự Án</span>
-            </button>
-
-            <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium flex items-center gap-1 text-[10px] sm:text-xs`}>
+          <div className="flex items-center gap-2 text-xs">
+            <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium flex items-center gap-1 text-[10px] sm:text-xs mr-1`}>
               <span className="text-emerald-500 font-mono font-bold">🔴 {liveClock}</span>
             </span>
+
+            {/* NÚT 3 GẠCH NGANG (HAMBURGER / OPTIONS MENU) */}
+            <div className="relative" ref={settingsMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsSettingsMenuOpen(prev => !prev)}
+                className={`p-2 rounded-xl border transition flex items-center justify-center cursor-pointer shadow-sm ${
+                  isSettingsMenuOpen
+                    ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold'
+                    : isDark 
+                      ? 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700 hover:border-cyan-500/50' 
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200 hover:border-cyan-400'
+                }`}
+                title="Tùy chọn & Cài đặt dự án"
+              >
+                <Menu className="w-4 h-4" />
+              </button>
+
+              {/* POPUP DROPDOWN MENU */}
+              {isSettingsMenuOpen && (
+                <div className={`absolute right-0 mt-2 w-56 rounded-2xl border shadow-2xl p-2 z-50 animate-[fadeIn_0.15s_ease-out] font-['Plus_Jakarta_Sans',sans-serif] ${
+                  isDark ? 'bg-slate-900/95 border-slate-700 text-white backdrop-blur-xl' : 'bg-white border-slate-200 text-slate-900 shadow-xl'
+                }`}>
+                  <div className={`px-3 py-2 border-b text-[10px] font-black uppercase tracking-wider ${isDark ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-slate-500'}`}>
+                    Tùy Chọn Bảng Điều Khiển
+                  </div>
+
+                  <div className="py-1 space-y-0.5 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSettingsMenuOpen(false);
+                        setIsProjectSettingsOpen(true);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition cursor-pointer text-left ${
+                        isDark ? 'hover:bg-slate-800 text-cyan-400' : 'hover:bg-slate-100 text-cyan-700'
+                      }`}
+                    >
+                      <Settings className="w-4 h-4 text-cyan-500" />
+                      <span>Cài Đặt Dự Án & Đơn Giá</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSettingsMenuOpen(false);
+                        fetchEnergyStats();
+                        fetchTelemetryData();
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition cursor-pointer text-left ${
+                        isDark ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      <RefreshCw className="w-4 h-4 text-emerald-400" />
+                      <span>Làm Mới Dữ Liệu Viễn Trắc</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -575,32 +639,54 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
             </div>
           </div>
 
-          {/* 3 THẺ ĐO ĐẠC SENSOR THỜI GIAN THỰC */}
+          {/* 3 THẺ ĐO ĐẠC THỜI GIAN THỰC (PV PHÁT TRONG NGÀY, TẢI TIÊU THỤ TRONG NGÀY, THỜI TIẾT TẠI VỊ TRÍ) */}
           <div className="grid grid-cols-3 gap-2 sm:gap-4">
-            <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-emerald-500/40`}>
-              <span className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} block font-bold uppercase tracking-wider truncate`}>ĐIỆN ÁP PIN</span>
-              <span className="text-base sm:text-2xl font-black text-emerald-500 font-mono mt-1 block">
-                {activeFlowData.batteryVoltage} V
+            {/* THẺ 1: PV PHÁT SẢN LƯỢNG TRONG NGÀY */}
+            <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-amber-500/40`}>
+              <span className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} block font-bold uppercase tracking-wider truncate flex items-center justify-center gap-1`}>
+                <Sun className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="truncate">PV PHÁT HÔM NAY</span>
+              </span>
+              <span className="text-base sm:text-2xl font-black text-amber-500 font-mono mt-1 block">
+                {(fleetMode === 'AGGREGATED' 
+                  ? Number(energyStats.pvEnergy || 0) 
+                  : Number(energyStats.pvEnergy || 0) * (fleetMode === 'INV_1' ? 0.38 : fleetMode === 'INV_2' ? 0.33 : 0.29)
+                ).toFixed(2)} kWh
               </span>
               <span className={`text-[9px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono block truncate`}>
-                Dung lượng: {activeFlowData.batterySoc}%
+                Tức thời: {activeFlowData.pvPower} W
               </span>
             </div>
             
+            {/* THẺ 2: TẢI TIÊU THỤ TRONG NGÀY */}
             <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-cyan-500/40`}>
-              <span className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} block font-bold uppercase tracking-wider truncate`}>ĐIỆN ÁP LƯỚI</span>
-              <span className={`text-base sm:text-2xl font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-1 block`}>
-                {Math.round(activeFlowData.gridVoltage)} V
+              <span className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} block font-bold uppercase tracking-wider truncate flex items-center justify-center gap-1`}>
+                <Home className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span className="truncate">TIÊU THỤ HÔM NAY</span>
               </span>
-              <span className={`text-[9px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono block truncate`}>Tần số: 50.0 Hz</span>
+              <span className={`text-base sm:text-2xl font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-1 block`}>
+                {(fleetMode === 'AGGREGATED' 
+                  ? Number(energyStats.loadEnergy || 0) 
+                  : Number(energyStats.loadEnergy || 0) * (fleetMode === 'INV_1' ? 0.36 : fleetMode === 'INV_2' ? 0.33 : 0.31)
+                ).toFixed(2)} kWh
+              </span>
+              <span className={`text-[9px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono block truncate`}>
+                Tải tức thời: {activeFlowData.loadPower} W
+              </span>
             </div>
 
-            <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-amber-500/40`}>
-              <span className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} block font-bold uppercase tracking-wider truncate`}>NHIỆT ĐỘ MÁY</span>
-              <span className="text-base sm:text-2xl font-black text-amber-500 font-mono mt-1 block">
-                {activeFlowData.temperature}°C
+            {/* THẺ 3: THỜI TIẾT TẠI VỊ TRÍ LẮP ĐẶT */}
+            <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-emerald-500/40`}>
+              <span className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} block font-bold uppercase tracking-wider truncate flex items-center justify-center gap-1`}>
+                <CloudSun className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="truncate">THỜI TIẾT TẠI VỊ TRÍ</span>
               </span>
-              <span className={`text-[9px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono block truncate`}>Tản nhiệt tối ưu</span>
+              <span className="text-base sm:text-2xl font-black text-emerald-500 font-mono mt-1 block">
+                ☀️ 32°C
+              </span>
+              <span className={`text-[9px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono block truncate`}>
+                Bức xạ: ~950 W/m² • Nắng Ráo
+              </span>
             </div>
           </div>
         </div>

@@ -1,20 +1,58 @@
-import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
+import AvatarModal from './AvatarModal';
 import { 
   Sun, Moon, Shield, LogOut, Globe, UserCheck, Bell, Activity, Menu, X, 
-  LayoutDashboard, Zap, Users, Layers, AlertTriangle, UserPlus, Settings 
+  LayoutDashboard, Zap, Users, Layers, AlertTriangle, UserPlus, Settings,
+  Crown, BatteryCharging, Diamond, Feather, Rocket, Flame, Camera
 } from 'lucide-react';
+
+const PRESET_MAP = {
+  'solar-king': { icon: Crown, bg: 'from-amber-500 to-yellow-300', text: 'text-amber-950', border: 'border-yellow-400' },
+  'cyber-solar': { icon: Zap, bg: 'from-cyan-500 to-blue-600', text: 'text-slate-950', border: 'border-cyan-400' },
+  'sun-god': { icon: Sun, bg: 'from-orange-500 to-amber-400', text: 'text-orange-950', border: 'border-orange-400' },
+  'bms-master': { icon: BatteryCharging, bg: 'from-emerald-500 to-teal-400', text: 'text-emerald-950', border: 'border-emerald-400' },
+  'diamond-vip': { icon: Diamond, bg: 'from-purple-600 to-pink-500', text: 'text-white', border: 'border-pink-400' },
+  'falcon-eco': { icon: Feather, bg: 'from-sky-500 to-indigo-600', text: 'text-white', border: 'border-sky-400' },
+  'solar-future': { icon: Rocket, bg: 'from-indigo-600 via-purple-500 to-rose-500', text: 'text-white', border: 'border-purple-400' },
+  'fire-energy': { icon: Flame, bg: 'from-rose-600 to-amber-500', text: 'text-white', border: 'border-rose-400' }
+};
 
 export default function Navbar({ onNavigate, currentPage }) {
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const userType = Number(user?.userType || 3);
 
   const handleNavigate = (page) => {
     onNavigate(page);
     setMobileMenuOpen(false);
+  };
+
+  // Helper render Avatar
+  const renderAvatarContent = () => {
+    if (user?.avatarType === 'image' && (user?.avatarUrl || user?.avatar)) {
+      return (
+        <img 
+          src={user.avatarUrl || user.avatar} 
+          alt="Avatar" 
+          className="w-full h-full object-cover rounded-full" 
+        />
+      );
+    }
+    if (user?.avatarPreset && PRESET_MAP[user.avatarPreset]) {
+      const preset = PRESET_MAP[user.avatarPreset];
+      const Icon = preset.icon;
+      return (
+        <div className={`w-full h-full rounded-full bg-gradient-to-br ${preset.bg} flex items-center justify-center shadow-inner`}>
+          <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${preset.text}`} />
+        </div>
+      );
+    }
+    return (
+      <div className="w-full h-full rounded-full bg-gradient-to-br from-cyan-600 via-teal-600 to-slate-800 flex items-center justify-center font-bold text-xs sm:text-sm text-cyan-200">
+        {user?.avatarInitial || (user?.userName ? user.userName.charAt(0).toUpperCase() : 'Z')}
+      </div>
+    );
   };
 
   // Mobile menu filtered by role
@@ -108,11 +146,26 @@ export default function Navbar({ onNavigate, currentPage }) {
           </button>
 
           <div className={`flex items-center gap-2 sm:gap-3 pl-2 sm:pl-3 border-l ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-cyan-600 to-slate-800 flex items-center justify-center font-bold text-xs sm:text-sm text-cyan-200 border border-cyan-500/30">
-              {user?.userName ? user.userName.charAt(0).toUpperCase() : 'Z'}
-            </div>
-            <div className="hidden sm:block text-right">
-              <div className={`text-xs sm:text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'} leading-tight`}>
+            <button
+              type="button"
+              onClick={() => setIsAvatarModalOpen(true)}
+              className="relative group p-0.5 rounded-full transition cursor-pointer hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              title="Nhấp để đổi Avatar siêu ngầu"
+            >
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 border-cyan-400/80 shadow-md shadow-cyan-500/20 group-hover:border-amber-400 transition duration-300">
+                {renderAvatarContent()}
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-cyan-500 group-hover:bg-amber-400 border border-slate-900 flex items-center justify-center text-[8px] text-slate-950 font-bold transition">
+                <Camera className="w-2.5 h-2.5" />
+              </span>
+            </button>
+
+            <div 
+              className="hidden sm:block text-right cursor-pointer group"
+              onClick={() => setIsAvatarModalOpen(true)}
+              title="Nhấp để đổi Avatar siêu ngầu"
+            >
+              <div className={`text-xs sm:text-sm font-semibold ${isDark ? 'text-slate-200 group-hover:text-cyan-400' : 'text-slate-800 group-hover:text-cyan-600'} leading-tight transition`}>
                 {user?.userName || 'Người dùng'}
               </div>
               <div className="text-[10px] text-cyan-500 flex items-center justify-end gap-1 font-medium">
@@ -177,6 +230,12 @@ export default function Navbar({ onNavigate, currentPage }) {
           </div>
         </div>
       )}
+
+      {/* Modal Đổi Avatar Siêu Ngầu */}
+      <AvatarModal 
+        isOpen={isAvatarModalOpen} 
+        onClose={() => setIsAvatarModalOpen(false)} 
+      />
     </>
   );
 }

@@ -59,8 +59,8 @@ async function initDatabase() {
           if (!deviceOwnership.data.users[accKey]) {
             deviceOwnership.data.users[accKey] = {
               userId: r.user_id,
-              userType: (accKey === 'sungo.vn' || accKey === 'sungo123') ? 1 : r.user_type,
-              roleName: (accKey === 'sungo.vn' || accKey === 'sungo123') ? '👑 Tổng Phân Phối' : r.role_name,
+              userType: (accKey === 'sungo.vn' || accKey === 'admin' || accKey === 'zeno_admin') ? 1 : Number(r.user_type || 3),
+              roleName: (accKey === 'sungo.vn' || accKey === 'admin' || accKey === 'zeno_admin') ? '👑 Tổng Phân Phối' : (r.role_name || '🏠 Người Tiêu Dùng Cuối'),
               userName: r.user_name,
               email: r.email,
               cellphone: r.cellphone,

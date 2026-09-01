@@ -28,7 +28,7 @@ class DeviceOwnershipService {
       dealerDeletedDevices: {},
       users: {
         'sungo.vn': { userType: 1, roleName: '👑 Tổng Phân Phối (Distributor)', userName: 'SUNGO SOLAR VIỆT NAM (Master)', company: 'SUNGO Clean Energy Corp', cloudPassword: 'sungo@100%', zenoPassword: 'sungo123' },
-        'sungo123': { userType: 1, roleName: '👑 Tổng Phân Phối (Distributor)', userName: 'SUNGO SOLAR VIỆT NAM (Master)', company: 'SUNGO Clean Energy Corp', cloudPassword: 'sungo123', zenoPassword: 'sungo123' },
+        'sungo123': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Khách Hàng sungo123', company: 'Hộ Gia Đình', cloudPassword: 'sungo123', zenoPassword: 'sungo123' },
         'zeno_admin': { userType: 1, roleName: '👑 Tổng Phân Phối (Distributor)', userName: 'Zeno System Admin', company: 'Zeno Clean Energy Corp', cloudPassword: 'admin123', zenoPassword: 'sungo123' },
         'newtech.sg': { userType: 2, roleName: '🏢 Đại Lý (Dealer)', userName: 'Đại Lý Newtech Solar (Nguyễn Hồng Sơn)', company: 'Newtech Solar Sài Gòn', cloudPassword: '123456', zenoPassword: 'sungo123' },
         'tuan_solar': { userType: 2, roleName: '🏢 Đại Lý (Dealer)', userName: 'Phạm Minh Tuấn (Kỹ thuật)', company: 'Tuấn Solar Miền Nam', cloudPassword: '123456', zenoPassword: 'sungo123' },
@@ -137,10 +137,9 @@ class DeviceOwnershipService {
   getUserRole(account) {
     const acc = String(account || '').toLowerCase().trim();
 
-    // 1. CẤP 1: 👑 TỔNG PHÂN PHỐI / MASTER ADMIN (sungo.vn, sungo123, admin, zeno_admin)
+    // 1. CẤP 1: 👑 TỔNG PHÂN PHỐI / MASTER ADMIN (sungo.vn, admin, zeno_admin)
     if (
       acc === 'sungo.vn' || 
-      acc === 'sungo123' || 
       acc === 'admin@sungo.vn' || 
       acc === 'zeno_admin' || 
       acc === 'admin'

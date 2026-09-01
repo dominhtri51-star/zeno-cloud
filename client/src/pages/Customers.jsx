@@ -17,7 +17,7 @@ export default function Customers() {
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [revealedPasswords, setRevealedPasswords] = useState({});
 
-  const isMaster = user?.userType === 1 || user?.account === 'sungo.vn' || user?.account === 'sungo123';
+  const isMaster = user?.userType === 1 || user?.account === 'sungo.vn' || user?.account === 'admin' || user?.account === 'zeno_admin';
   const isInstaller = user?.userType === 2 && !isMaster;
 
   // Modals

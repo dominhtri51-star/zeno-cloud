@@ -89,10 +89,12 @@
     },
     "sungo123": {
       "userType": 3,
-      "roleName": "Chủ Nhà / Người Dùng Cuối (View-Only)",
-      "userName": "sungo123",
-      "company": "Hộ gia đình",
-      "password": "",
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "userName": "Khách Hàng sungo123",
+      "company": "Hộ Gia Đình",
+      "password": "sungo123",
+      "cloudPassword": "sungo123",
+      "zenoPassword": "sungo123",
       "cellphone": "",
       "email": "sungo123@sungo.vn",
       "createdAt": "2026-08-31T11:50:34.601Z"

@@ -41,7 +41,7 @@ router.get('/', checkAuth, async (req, res) => {
         const userKey = String(acc || '').toLowerCase();
         if (!userKey || deviceOwnership.isUserDeleted(userKey) || deviceOwnership.isUserDeleted(u.userId)) return;
         uIdx++;
-        const isAccMaster = (userKey === 'sungo.vn' || userKey === 'sungo123' || userKey === 'zeno_admin' || userKey === 'admin');
+        const isAccMaster = (userKey === 'sungo.vn' || userKey === 'zeno_admin' || userKey === 'admin');
         const uType = isAccMaster ? 1 : Number(u.userType || 3);
         const cPass = u.cloudPassword || (isAccMaster ? 'sungo@100%' : '123456');
         const zPass = u.zenoPassword || u.password || 'sungo123';
@@ -91,7 +91,7 @@ router.get('/', checkAuth, async (req, res) => {
         result.rows.forEach(r => {
           const userKey = String(r.account || '').toLowerCase();
           if (userKey && !deviceOwnership.isUserDeleted(userKey) && !deviceOwnership.isUserDeleted(r.userId)) {
-            const isAccMaster = (userKey === 'sungo.vn' || userKey === 'sungo123' || userKey === 'zeno_admin' || userKey === 'admin');
+            const isAccMaster = (userKey === 'sungo.vn' || userKey === 'zeno_admin' || userKey === 'admin');
             const uType = isAccMaster ? 1 : Number(r.userType || registeredUsersMap[userKey]?.userType || 3);
             const dbCPass = r.cloudPassword || registeredUsersMap[userKey]?.cloudPassword || (isAccMaster ? 'sungo@100%' : '123456');
             const dbZPass = r.zenoPassword || r.passwordHash || registeredUsersMap[userKey]?.zenoPassword || 'sungo123';

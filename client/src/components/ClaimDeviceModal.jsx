@@ -670,7 +670,7 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
                     Mở trình duyệt truy cập: <a href="http://10.10.100.254" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline font-bold font-mono">http://10.10.100.254</a> (Tài khoản/Mật khẩu: <strong className="text-slate-900 dark:text-white">admin / admin</strong>).
                   </li>
                   <li>
-                    Vào menu <strong>Wireless Setup</strong> $\rightarrow$ Chọn Wi-Fi nhà khách $\rightarrow$ Nhập mật khẩu $\rightarrow$ Nhấn <strong>Save & Reboot</strong>.
+                    Vào menu <strong>Wireless Setup</strong> → Chọn Wi-Fi nhà khách → Nhập mật khẩu → Nhấn <strong>Save & Reboot</strong>.
                   </li>
                   <li>
                     Đèn LED <strong className="text-emerald-500">NET</strong> trên Datalogger sáng xanh cố định = Thiết bị đã kết nối Cloud thành công.

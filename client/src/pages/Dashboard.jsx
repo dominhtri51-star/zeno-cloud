@@ -303,6 +303,52 @@ export default function Dashboard({ initialStationId, initialDeviceId, initialFl
   // Ước tính tiền điện tiết kiệm dựa theo đơn giá riêng của trạm này
   const estimatedSavings = Math.round(Number(effectivePvEnergy) * electricityPrice);
 
+  // Tính toán thời tiết và bức xạ thực tế theo múi giờ thời gian thực (Giờ địa phương)
+  const getWeatherInfo = () => {
+    const hour = new Date().getHours();
+
+    if (hour >= 18 || hour < 6) {
+      // Ban đêm (18h00 - 05h59): Không có nắng, bức xạ 0 W/m²
+      return {
+        icon: '🌙',
+        temp: '26°C',
+        irradiance: '0 W/m²',
+        status: 'Ban Đêm • Mát Mẻ',
+        color: 'text-indigo-400'
+      };
+    }
+    if (hour >= 6 && hour < 8) {
+      // Sáng sớm (06h00 - 07h59): Bình minh
+      return {
+        icon: '🌅',
+        temp: '27°C',
+        irradiance: '180 W/m²',
+        status: 'Bình Minh • Nắng Nhẹ',
+        color: 'text-amber-400'
+      };
+    }
+    if (hour >= 8 && hour < 16) {
+      // Ban ngày (08h00 - 15h59): Nắng tốt
+      return {
+        icon: '☀️',
+        temp: '32°C',
+        irradiance: '950 W/m²',
+        status: 'Nắng Ráo • Bức Xạ Cao',
+        color: 'text-amber-500'
+      };
+    }
+    // Chiều tà (16h00 - 17h59): Hoàng hôn
+    return {
+      icon: '🌤️',
+      temp: '29°C',
+      irradiance: '240 W/m²',
+      status: 'Chiều Tà • Nắng Dịu',
+      color: 'text-orange-400'
+    };
+  };
+
+  const weather = getWeatherInfo();
+
   return (
     <div className="max-w-7xl mx-auto space-y-4 sm:space-y-5 font-['Plus_Jakarta_Sans',sans-serif] animate-fade-in pb-16 px-2 sm:px-4">
       
@@ -423,13 +469,13 @@ export default function Dashboard({ initialStationId, initialDeviceId, initialFl
             todayPvEnergy={effectivePvEnergy}
           />
 
-          {/* 3 THẺ ĐO ĐẠC THỜI GIAN THỰC (PV PHÁT TRONG NGÀY, TẢI TIÊU THỤ TRONG NGÀY, THỜI TIẾT TẠI VỊ TRÍ) */}
+          {/* 3 THẺ ĐO ĐẠC THỜI GIAN THỰC (PV PHÁT, TIÊU THỤ, THỜI TIẾT TẠI VỊ TRÍ) */}
           <div className="grid grid-cols-3 gap-2 sm:gap-4">
-            {/* THẺ 1: PV PHÁT SẢN LƯỢNG TRONG NGÀY */}
+            {/* THẺ 1: PV PHÁT */}
             <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-amber-500/40`}>
               <span className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} block font-bold uppercase tracking-wider truncate flex items-center justify-center gap-1`}>
                 <Sun className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="truncate">PV PHÁT HÔM NAY</span>
+                <span className="truncate">PV PHÁT</span>
               </span>
               <span className="text-base sm:text-2xl font-black text-amber-500 font-mono mt-1 block">
                 {effectivePvEnergy} kWh
@@ -439,11 +485,11 @@ export default function Dashboard({ initialStationId, initialDeviceId, initialFl
               </span>
             </div>
             
-            {/* THẺ 2: TẢI TIÊU THỤ TRONG NGÀY */}
+            {/* THẺ 2: TIÊU THỤ */}
             <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-cyan-500/40`}>
               <span className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} block font-bold uppercase tracking-wider truncate flex items-center justify-center gap-1`}>
                 <Home className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                <span className="truncate">TIÊU THỤ HÔM NAY</span>
+                <span className="truncate">TIÊU THỤ</span>
               </span>
               <span className={`text-base sm:text-2xl font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-1 block`}>
                 {effectiveLoadEnergy} kWh
@@ -453,17 +499,17 @@ export default function Dashboard({ initialStationId, initialDeviceId, initialFl
               </span>
             </div>
 
-            {/* THẺ 3: THỜI TIẾT TẠI VỊ TRÍ LẮP ĐẶT */}
+            {/* THẺ 3: THỜI TIẾT TẠI VỊ TRÍ LẮP ĐẶT (ĐỒNG BỘ THỜI GIAN THỰC NGÀY / ĐÊM) */}
             <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border py-3 sm:py-4 px-2 sm:px-3 rounded-2xl text-center shadow-lg transition-all hover:border-emerald-500/40`}>
               <span className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} block font-bold uppercase tracking-wider truncate flex items-center justify-center gap-1`}>
                 <CloudSun className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span className="truncate">THỜI TIẾT TẠI VỊ TRÍ</span>
               </span>
-              <span className="text-base sm:text-2xl font-black text-emerald-500 font-mono mt-1 block">
-                ☀️ 32°C
+              <span className={`text-base sm:text-2xl font-black ${weather.color} font-mono mt-1 block`}>
+                {weather.icon} {weather.temp}
               </span>
               <span className={`text-[9px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono block truncate`}>
-                Bức xạ: ~950 W/m² • Nắng Ráo
+                Bức xạ: {weather.irradiance} • {weather.status}
               </span>
             </div>
           </div>

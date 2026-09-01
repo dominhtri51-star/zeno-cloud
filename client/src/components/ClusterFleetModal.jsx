@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, Cpu, Layers, CheckCircle2, Zap, Globe, Share2, 
-  ArrowRight, ShieldCheck, Check, Radio, Sparkles
+  ArrowRight, ShieldCheck, Check, Radio, Sparkles, ChevronDown
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -11,17 +11,42 @@ export default function ClusterFleetModal({ isOpen, onClose, station, onConfirmF
   // Kiểu cụm: '3PHASE' (Điện 3 Pha L1-L2-L3) | 'PARALLEL' (1 Pha Song Song Đa Biến Tần)
   const [clusterType, setClusterType] = useState('3PHASE');
 
-  // Danh sách thiết bị của trạm
-  const devices = Array.isArray(station?.devices) && station.devices.length > 0 
-    ? station.devices 
-    : [
-        {
-          deviceId: 'dev-1',
-          serialNumber: station?.serialNumber || '3528214760-1',
-          dtuCode: station?.dtuCode || '35282147608648059097',
-          deviceName: 'Inverter #1 (Master)'
-        }
-      ];
+  // Lấy danh sách toàn bộ các SN khả dụng trong trạm
+  const availableOptions = useMemo(() => {
+    const opts = [];
+    const devs = Array.isArray(station?.devices) ? station.devices : [];
+    
+    // 1. Thêm tất cả thiết bị thực tế của trạm
+    devs.forEach((d, idx) => {
+      if (d.serialNumber) {
+        opts.push({
+          sn: d.serialNumber,
+          label: `${d.serialNumber} (${d.deviceName || `Biến Tần #${idx + 1}`})`
+        });
+      }
+    });
+
+    // 2. Nếu trạm có base SN, thêm các nhánh con của cụm nếu chưa có
+    const baseDev = devs[0] || {};
+    const baseSn = baseDev.serialNumber || station?.serialNumber || '3528214760-1';
+    const cleanBase = baseSn.includes('-') ? baseSn.split('-')[0] : baseSn;
+
+    const sub1 = `${cleanBase}-1`;
+    const sub2 = `${cleanBase}-2`;
+    const sub3 = `${cleanBase}-3`;
+
+    [
+      { sn: sub1, label: `${sub1} (Inverter #1 - Cụm Master)` },
+      { sn: sub2, label: `${sub2} (Inverter #2 - Cụm Slave 1)` },
+      { sn: sub3, label: `${sub3} (Inverter #3 - Cụm Slave 2)` },
+    ].forEach(preset => {
+      if (!opts.find(o => o.sn === preset.sn)) {
+        opts.push(preset);
+      }
+    });
+
+    return opts;
+  }, [station]);
 
   // Gán pha cho chế độ 3 Pha
   const [phase1Sn, setPhase1Sn] = useState('');
@@ -34,7 +59,7 @@ export default function ClusterFleetModal({ isOpen, onClose, station, onConfirmF
   useEffect(() => {
     if (isOpen && station) {
       const devs = Array.isArray(station.devices) && station.devices.length > 0 ? station.devices : [];
-      const baseSn = devs[0]?.serialNumber || '3528214760-1';
+      const baseSn = devs[0]?.serialNumber || station.serialNumber || '3528214760-1';
       const cleanBase = baseSn.includes('-') ? baseSn.split('-')[0] : baseSn;
 
       const sn1 = devs[0]?.serialNumber || `${cleanBase}-1`;
@@ -181,12 +206,15 @@ export default function ClusterFleetModal({ isOpen, onClose, station, onConfirmF
             </div>
           </div>
 
-          {/* 2. Cấu hình gán Mã SN theo Pha (nếu chọn 3 Pha) */}
+          {/* 2. Cấu hình gán Mã SN theo Pha (DANH SÁCH SỔ XUỐNG CHUẨN XÁC) */}
           {clusterType === '3PHASE' && (
             <div className="space-y-3 animate-fade-in">
-              <label className={`text-xs font-extrabold uppercase tracking-wider block ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                2. Tích Chọn Mã SN Cho Từng Pha (L1 - L2 - L3):
-              </label>
+              <div className="flex items-center justify-between">
+                <label className={`text-xs font-extrabold uppercase tracking-wider block ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  2. Chọn Mã SN Cho Từng Pha (Menu Sổ Xuống):
+                </label>
+                <span className="text-[10px] text-cyan-400 font-bold">• Chọn nhanh từ danh sách</span>
+              </div>
 
               {/* Pha 1 (L1 / Master) */}
               <div className={`p-3 rounded-2xl border space-y-1.5 ${
@@ -201,15 +229,22 @@ export default function ClusterFleetModal({ isOpen, onClose, station, onConfirmF
                   </div>
                   <span className="text-[10px] text-slate-500">220V Phase A</span>
                 </div>
-                <input
-                  type="text"
-                  value={phase1Sn}
-                  onChange={(e) => setPhase1Sn(e.target.value)}
-                  placeholder="Nhập mã SN Pha 1 (VD: 3528214760-1)"
-                  className={`w-full py-2 px-3 rounded-xl text-xs font-mono font-bold transition focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                    isDark ? 'bg-slate-950 border border-slate-700 text-white' : 'bg-white border border-slate-300 text-slate-900'
-                  }`}
-                />
+                <div className="relative">
+                  <select
+                    value={phase1Sn}
+                    onChange={(e) => setPhase1Sn(e.target.value)}
+                    className={`w-full py-2.5 px-3 rounded-xl text-xs font-mono font-bold transition focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer appearance-none ${
+                      isDark ? 'bg-slate-950 border border-slate-700 text-amber-400' : 'bg-white border border-slate-300 text-amber-600'
+                    }`}
+                  >
+                    {availableOptions.map((opt) => (
+                      <option key={opt.sn} value={opt.sn} className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                </div>
               </div>
 
               {/* Pha 2 (L2 / Slave 1) */}
@@ -225,15 +260,22 @@ export default function ClusterFleetModal({ isOpen, onClose, station, onConfirmF
                   </div>
                   <span className="text-[10px] text-slate-500">220V Phase B</span>
                 </div>
-                <input
-                  type="text"
-                  value={phase2Sn}
-                  onChange={(e) => setPhase2Sn(e.target.value)}
-                  placeholder="Nhập mã SN Pha 2 (VD: 3528214760-2)"
-                  className={`w-full py-2 px-3 rounded-xl text-xs font-mono font-bold transition focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-                    isDark ? 'bg-slate-950 border border-slate-700 text-white' : 'bg-white border border-slate-300 text-slate-900'
-                  }`}
-                />
+                <div className="relative">
+                  <select
+                    value={phase2Sn}
+                    onChange={(e) => setPhase2Sn(e.target.value)}
+                    className={`w-full py-2.5 px-3 rounded-xl text-xs font-mono font-bold transition focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer appearance-none ${
+                      isDark ? 'bg-slate-950 border border-slate-700 text-cyan-400' : 'bg-white border border-slate-300 text-cyan-600'
+                    }`}
+                  >
+                    {availableOptions.map((opt) => (
+                      <option key={opt.sn} value={opt.sn} className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                </div>
               </div>
 
               {/* Pha 3 (L3 / Slave 2) */}
@@ -249,15 +291,22 @@ export default function ClusterFleetModal({ isOpen, onClose, station, onConfirmF
                   </div>
                   <span className="text-[10px] text-slate-500">220V Phase C</span>
                 </div>
-                <input
-                  type="text"
-                  value={phase3Sn}
-                  onChange={(e) => setPhase3Sn(e.target.value)}
-                  placeholder="Nhập mã SN Pha 3 (VD: 3528214760-3)"
-                  className={`w-full py-2 px-3 rounded-xl text-xs font-mono font-bold transition focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                    isDark ? 'bg-slate-950 border border-slate-700 text-white' : 'bg-white border border-slate-300 text-slate-900'
-                  }`}
-                />
+                <div className="relative">
+                  <select
+                    value={phase3Sn}
+                    onChange={(e) => setPhase3Sn(e.target.value)}
+                    className={`w-full py-2.5 px-3 rounded-xl text-xs font-mono font-bold transition focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer appearance-none ${
+                      isDark ? 'bg-slate-950 border border-slate-700 text-purple-400' : 'bg-white border border-slate-300 text-purple-600'
+                    }`}
+                  >
+                    {availableOptions.map((opt) => (
+                      <option key={opt.sn} value={opt.sn} className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                </div>
               </div>
             </div>
           )}
@@ -270,16 +319,12 @@ export default function ClusterFleetModal({ isOpen, onClose, station, onConfirmF
               </label>
 
               <div className="space-y-2">
-                {[
-                  { sn: phase1Sn || '3528214760-1', role: 'Máy #1 (Master)', tag: 'Master' },
-                  { sn: phase2Sn || '3528214760-2', role: 'Máy #2 (Slave 1)', tag: 'Slave 1' },
-                  { sn: phase3Sn || '3528214760-3', role: 'Máy #3 (Slave 2)', tag: 'Slave 2' }
-                ].map((item, idx) => {
-                  const isChecked = parallelSns.includes(item.sn);
+                {availableOptions.map((opt, idx) => {
+                  const isChecked = parallelSns.includes(opt.sn);
                   return (
                     <div
-                      key={item.sn}
-                      onClick={() => toggleParallelSn(item.sn)}
+                      key={opt.sn}
+                      onClick={() => toggleParallelSn(opt.sn)}
                       className={`p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition ${
                         isChecked
                           ? isDark ? 'bg-emerald-950/30 border-emerald-500/50' : 'bg-emerald-50 border-emerald-300'
@@ -296,13 +341,13 @@ export default function ClusterFleetModal({ isOpen, onClose, station, onConfirmF
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <strong className="text-xs font-bold">{item.role}</strong>
+                            <strong className="text-xs font-bold">{opt.label}</strong>
                             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-cyan-400 border border-slate-700">
-                              {item.tag}
+                              {idx === 0 ? 'Master' : `Slave ${idx}`}
                             </span>
                           </div>
                           <span className="text-[11px] font-mono text-slate-400 block mt-0.5">
-                            SN: {item.sn}
+                            SN: {opt.sn}
                           </span>
                         </div>
                       </div>

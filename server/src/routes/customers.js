@@ -583,32 +583,61 @@ router.post('/:id/sync-cloud', checkAuth, async (req, res) => {
     const accKey = String(targetAccount).toLowerCase().trim();
     const passwords = deviceOwnership.getUserPasswords(accKey);
     const cloudPass = passwords.cloudPassword || '123456';
+    const storedUser = deviceOwnership.data?.users?.[accKey] || {};
 
-    console.log(`[Master Sync Cloud] Đang quét toàn diện trạm & thiết bị của [${accKey}] từ Cloud Hãng...`);
+    console.log(`[Master Sync Cloud] Đang quét toàn diện trạm & thiết bị của chủ máy [${accKey}] từ Cloud Hãng...`);
 
-    // 1. Thử đăng nhập vào Cloud Hãng bằng cloudPassword của khách
+    // 1. Thử đăng nhập vào Cloud Hãng bằng TÀI KHOẢN & MẬT KHẨU CỦA CHÍNH KHÁCH HÀNG ĐÓ
     let userCloudToken = null;
     let rawUserData = {};
-    try {
-      const loginRes = await siseliClient.post('/login/account', {
-        account: accKey,
-        password: cloudPass
-      });
-      if (loginRes.success && loginRes.data && (loginRes.data.code === 0 || loginRes.data.accessToken)) {
-        const bgData = loginRes.data.data || loginRes.data;
-        userCloudToken = bgData.accessToken || bgData.token || bgData.iotToken;
-        rawUserData = bgData;
+    const tryLogins = [accKey, storedUser.email, storedUser.cellphone].filter(Boolean);
+
+    for (const loginId of tryLogins) {
+      try {
+        const loginRes = await siseliClient.post('/login/account', {
+          account: loginId,
+          password: cloudPass
+        });
+        if (loginRes.success && loginRes.data && (loginRes.data.code === 0 || loginRes.data.accessToken)) {
+          const bgData = loginRes.data.data || loginRes.data;
+          userCloudToken = bgData.accessToken || bgData.token || bgData.iotToken;
+          rawUserData = bgData;
+          console.log(`[Master Sync Cloud] Đăng nhập Cloud Hãng thành công cho tài khoản [${loginId}]! Token: ${userCloudToken?.substring(0, 10)}...`);
+          break;
+        }
+      } catch (e) {
+        console.warn(`[Master Sync Cloud Login Warn for ${loginId}]:`, e.message);
       }
-    } catch (e) {
-      console.warn('[Master Sync Cloud Login Warn]:', e.message);
     }
 
-    if (!userCloudToken) {
+    // Nếu tài khoản không tồn tại trên Cloud Hãng hoặc sai mật khẩu Cloud Hãng:
+    // TUYỆT ĐỐI KHÔNG dùng token Master để gán nhầm sungoPlant!
+    if (!userCloudToken && accKey !== 'sungo.vn') {
+      return res.json({
+        success: true,
+        message: `Đã kết nối kiểm tra tài khoản @${accKey}: Tài khoản này chưa có dữ liệu trạm/thiết bị trên Cloud hãng hoặc sai mật khẩu Cloud hãng. Giữ nguyên 0 Inverter.`,
+        stationCount: 0,
+        deviceCount: 0,
+        devices: []
+      });
+    }
+
+    if (!userCloudToken && accKey === 'sungo.vn') {
       userCloudToken = await liveCloud.getValidToken();
     }
 
-    // 2. Lấy danh sách trạm & thiết bị từ Cloud Hãng
+    // 2. Lấy danh sách trạm & thiết bị THỰC TẾ từ Cloud Hãng của chính tài khoản này
     const userStations = await liveCloud.getUserStationsAndDevices(userCloudToken);
+
+    if (!userStations || userStations.length === 0) {
+      return res.json({
+        success: true,
+        message: `Đã kiểm tra Cloud Hãng: Tài khoản @${accKey} chưa kích hoạt trạm/Inverter nào trên máy chủ hãng (0 Inverter).`,
+        stationCount: 0,
+        deviceCount: 0,
+        devices: []
+      });
+    }
 
     // 3. Tự động Ingest vào deviceOwnership và gán quyền sở hữu Master sungo.vn
     deviceOwnership.ingestUserAndStationsFromCloud({
@@ -617,11 +646,11 @@ router.post('/:id/sync-cloud', checkAuth, async (req, res) => {
       userName: rawUserData.userName || rawUserData.nickname || accKey,
       email: rawUserData.email || `${accKey}@sungo.vn`,
       cellphone: rawUserData.cellphone || '',
-      userType: 3,
+      userType: storedUser.userType || 3,
       stations: userStations || []
     });
 
-    // 4. Đồng bộ PostgreSQL
+    // 4. Đồng bộ PostgreSQL - Đảm bảo gán toàn quyền Master cho sungo.vn
     if (userStations && Array.isArray(userStations) && userStations.length > 0) {
       for (const st of userStations) {
         const stId = String(st.stationId || st.id);
@@ -650,7 +679,7 @@ router.post('/:id/sync-cloud', checkAuth, async (req, res) => {
                   dtu_code = EXCLUDED.dtu_code,
                   station_name = EXCLUDED.station_name,
                   customer = EXCLUDED.customer,
-                  distributor = EXCLUDED.distributor;
+                  distributor = 'sungo.vn';
             `, [
               devId,
               dev.serialNumber || '',
@@ -671,7 +700,7 @@ router.post('/:id/sync-cloud', checkAuth, async (req, res) => {
 
     return res.json({
       success: true,
-      message: `Đã đồng bộ thành công ${userStations.length} trạm và ${updatedDevices.length} Inverter từ Cloud Hãng về cho tài khoản @${accKey}! Toàn quyền gán về Tổng sungo.vn!`,
+      message: `Đã quét và đồng bộ thành công ${userStations.length} trạm và ${updatedDevices.length} Inverter từ Cloud Hãng về cho tài khoản @${accKey}! Toàn quyền quản trị thuộc về Master sungo.vn!`,
       stationCount: userStations.length,
       deviceCount: updatedDevices.length,
       devices: updatedDevices

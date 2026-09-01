@@ -217,14 +217,9 @@ router.post('/register', async (req, res) => {
       console.warn('[Cloud Auto-Login Warn]:', loginErr.message);
     }
 
-    // Nếu không có token cá nhân từ cloud, cấp token từ Master Gateway để đảm bảo luôn kết nối Live
-    if (!cloudAccessToken) {
-      cloudAccessToken = await liveCloud.getValidToken();
-    }
-
     const appToken = `zeno_token_${account}_${Date.now()}`;
 
-    // Ánh xạ token và account vào LiveCloud để tất cả API Telemetry / Inverter hoạt động trơn tru
+    // Ánh xạ token và account vào LiveCloud nếu đăng ký thành công trên Cloud
     if (cloudAccessToken) {
       liveCloud.setUserCloudToken(account, cloudAccessToken);
       liveCloud.setUserCloudToken(appToken, cloudAccessToken);

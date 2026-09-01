@@ -275,7 +275,20 @@ class LiveCloudService {
   // Wrapper gọi Cloud API với khả năng tự động Retry, Auto-Failover & Auto-Refresh khi token hết hạn sau 2 tiếng
   async callWithAutoRetry(apiFn, explicitToken = null) {
     const userCloudToken = this.getUserCloudToken(explicitToken);
-    let token = userCloudToken || await this.getValidToken();
+    let token = userCloudToken || (explicitToken && this.isRawCloudToken(explicitToken) ? explicitToken : null);
+
+    if (!token && explicitToken) {
+      const acc = this.getAccountFromToken(explicitToken);
+      const isMaster = acc === 'sungo.vn' || acc === 'admin' || acc === 'zeno_admin';
+      if (!isMaster) {
+        // Tài khoản người dùng cuối/đại lý không có token Cloud hãng: không dùng token Master
+        return null;
+      }
+    }
+
+    if (!token) {
+      token = await this.getValidToken();
+    }
 
     for (let attempt = 0; attempt < this.endpoints.length; attempt++) {
       try {
@@ -334,7 +347,17 @@ class LiveCloudService {
 
   // 1. Tự động lấy danh sách trạm & thiết bị ĐỘNG theo Token của từng User
   async getUserStationsAndDevices(userToken) {
+    if (!userToken) return [];
+    const acc = this.getAccountFromToken(userToken);
+    const isMaster = acc === 'sungo.vn' || acc === 'admin' || acc === 'zeno_admin';
+    const userCloudToken = this.getUserCloudToken(userToken) || (this.isRawCloudToken(userToken) ? userToken : null);
+
+    if (!userCloudToken && !isMaster) {
+      return [];
+    }
+
     return this.callWithAutoRetry(async (token) => {
+      if (!token) return [];
       const headers = this.getHeaders(token);
       
       // Query đồng thời danh sách trạm và danh sách thiết bị trực tiếp của tài khoản

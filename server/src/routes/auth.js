@@ -376,7 +376,7 @@ router.post('/login', async (req, res) => {
       console.warn('[Zeno Cloud Background Cloud Warn]:', bgErr.message);
     }
 
-    if (!userCloudToken) {
+    if (!userCloudToken && (acc === 'sungo.vn' || acc === 'admin' || acc === 'zeno_admin')) {
       userCloudToken = await liveCloud.getValidToken();
     }
 

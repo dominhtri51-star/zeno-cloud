@@ -1,11 +1,17 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const { pool } = require('../db');
 const siseliClient = require('../siseliClient');
 const mockData = require('../mockData');
 const deviceOwnership = require('../services/deviceOwnership');
 const liveCloud = require('../services/liveCloud');
 const security = require('../utils/security');
+
+const toMd5 = (str) => {
+  if (!str) return '';
+  return crypto.createHash('md5').update(String(str)).digest('hex');
+};
 
 // Middleware xác thực token
 const checkAuth = (req, res, next) => {
@@ -592,22 +598,27 @@ router.post('/:id/sync-cloud', checkAuth, async (req, res) => {
     let rawUserData = {};
     const tryLogins = [accKey, storedUser.email, storedUser.cellphone].filter(Boolean);
 
+    const tryPasses = [cloudPass, toMd5(cloudPass)].filter(Boolean);
+
     for (const loginId of tryLogins) {
-      try {
-        const loginRes = await siseliClient.post('/login/account', {
-          account: loginId,
-          password: cloudPass
-        });
-        if (loginRes.success && loginRes.data && (loginRes.data.code === 0 || loginRes.data.accessToken)) {
-          const bgData = loginRes.data.data || loginRes.data;
-          userCloudToken = bgData.accessToken || bgData.token || bgData.iotToken;
-          rawUserData = bgData;
-          console.log(`[Master Sync Cloud] Đăng nhập Cloud Hãng thành công cho tài khoản [${loginId}]! Token: ${userCloudToken?.substring(0, 10)}...`);
-          break;
+      for (const p of tryPasses) {
+        try {
+          const loginRes = await siseliClient.post('/login/account', {
+            account: loginId,
+            password: p
+          });
+          if (loginRes.success && loginRes.data && (loginRes.data.code === 0 || loginRes.data.accessToken)) {
+            const bgData = loginRes.data.data || loginRes.data;
+            userCloudToken = bgData.accessToken || bgData.token || bgData.iotToken;
+            rawUserData = bgData;
+            console.log(`[Master Sync Cloud] Đăng nhập Cloud Hãng thành công cho tài khoản [${loginId}]! Token: ${userCloudToken?.substring(0, 10)}...`);
+            break;
+          }
+        } catch (e) {
+          console.warn(`[Master Sync Cloud Login Warn for ${loginId}]:`, e.message);
         }
-      } catch (e) {
-        console.warn(`[Master Sync Cloud Login Warn for ${loginId}]:`, e.message);
       }
+      if (userCloudToken) break;
     }
 
     // 2. Lấy danh sách trạm & thiết bị THỰC TẾ từ Cloud Hãng của chính tài khoản này

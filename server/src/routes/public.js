@@ -1,9 +1,15 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const { pool } = require('../db');
 const siseliClient = require('../siseliClient');
 const deviceOwnership = require('../services/deviceOwnership');
 const liveCloud = require('../services/liveCloud');
+
+const toMd5 = (str) => {
+  if (!str) return '';
+  return crypto.createHash('md5').update(String(str)).digest('hex');
+};
 
 // Bộ nhớ đệm lưu Captcha ID từ Cloud Hãng (Thời hạn 10 phút)
 const captchaCache = new Map();
@@ -154,16 +160,28 @@ router.post('/register', async (req, res) => {
     let siseliUserId = `SIS-USER-${Date.now()}`;
     let cloudRawUser = null;
 
+    const md5Pass = toMd5(cleanPass);
+
     // 1. GỌI API ĐĂNG KÝ TRỰC TIẾP TRÊN CLOUD HÃNG SUN WISE / SISELI
     if (cleanEmail && effectiveCaptchaId) {
       console.log(`[Cloud Register Email] Đang đăng ký tài khoản [${account}] trên Cloud Hãng...`);
-      const regRes = await siseliClient.post('/user/register/email', {
+      let regRes = await siseliClient.post('/user/register/email', {
         account: account,
-        password: cleanPass,
+        password: md5Pass,
         email: cleanEmail,
         captchaId: effectiveCaptchaId,
         verifyCode: cleanCode
       });
+
+      if (!regRes.success || (regRes.data && regRes.data.code !== 0 && regRes.data.code !== 20002)) {
+        regRes = await siseliClient.post('/user/register/email', {
+          account: account,
+          password: cleanPass,
+          email: cleanEmail,
+          captchaId: effectiveCaptchaId,
+          verifyCode: cleanCode
+        });
+      }
 
       if (regRes.success && regRes.data && (regRes.data.code === 0 || regRes.data.accessToken)) {
         console.log(`[Cloud Register Success]: Đăng ký thành công tài khoản [${account}] trên Cloud Hãng!`);
@@ -180,14 +198,25 @@ router.post('/register', async (req, res) => {
       }
     } else if (cleanPhone && effectiveCaptchaId) {
       console.log(`[Cloud Register Phone] Đang đăng ký số điện thoại [${cleanPhone}] trên Cloud Hãng...`);
-      const regRes = await siseliClient.post('/user/register/cellphone', {
+      let regRes = await siseliClient.post('/user/register/cellphone', {
         account: account,
-        password: cleanPass,
+        password: md5Pass,
         cellphone: cleanPhone,
         countryTelephoneCode: areaCode.replace('+', ''),
         captchaId: effectiveCaptchaId,
         verifyCode: cleanCode
       });
+
+      if (!regRes.success || (regRes.data && regRes.data.code !== 0 && regRes.data.code !== 20002)) {
+        regRes = await siseliClient.post('/user/register/cellphone', {
+          account: account,
+          password: cleanPass,
+          cellphone: cleanPhone,
+          countryTelephoneCode: areaCode.replace('+', ''),
+          captchaId: effectiveCaptchaId,
+          verifyCode: cleanCode
+        });
+      }
 
       if (regRes.data && regRes.data.code !== 0 && regRes.data.code !== 20002) {
         const errMsg = regRes.data.localMessage || regRes.data.message || 'Đăng ký số điện thoại trên Cloud thất bại';
@@ -201,10 +230,17 @@ router.post('/register', async (req, res) => {
 
     // 2. TỰ ĐỘNG ĐĂNG NHẬP VÀO CLOUD ĐỂ LẤY TOKEN THỰC TẾ
     try {
-      const loginRes = await siseliClient.post('/login/account', {
+      let loginRes = await siseliClient.post('/login/account', {
         account: account,
-        password: cleanPass
+        password: md5Pass
       });
+
+      if (!loginRes.success || !loginRes.data || (loginRes.data.code !== 0 && !loginRes.data.accessToken)) {
+        loginRes = await siseliClient.post('/login/account', {
+          account: account,
+          password: cleanPass
+        });
+      }
 
       if (loginRes.success && loginRes.data && (loginRes.data.code === 0 || loginRes.data.accessToken)) {
         const data = loginRes.data.data || loginRes.data;

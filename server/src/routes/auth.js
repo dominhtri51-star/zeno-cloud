@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const axios = require('axios');
 const { pool } = require('../db');
 const siseliClient = require('../siseliClient');
@@ -9,6 +10,12 @@ const deviceOwnership = require('../services/deviceOwnership');
 const liveCloud = require('../services/liveCloud');
 const config = require('../config');
 const security = require('../utils/security');
+
+// Helper băm MD5 chuẩn SUN WISE Mobile App
+const toMd5 = (str) => {
+  if (!str) return '';
+  return crypto.createHash('md5').update(String(str)).digest('hex');
+};
 
 // 1. Đăng ký tài khoản người dùng mới (Lưu vào PostgreSQL + DeviceOwnership + Auto-Link Inverter)
 router.post('/register', async (req, res) => {
@@ -362,20 +369,24 @@ router.post('/login', async (req, res) => {
 
   if (matchesZenoPassword) {
     console.log(`[Zeno Cloud Login] Khách hàng [${acc}] đăng nhập thành công bằng Mật Khẩu Zeno Cloud! Đang đồng bộ Máy Chủ Hãng bằng Cloud Password đã lưu trữ...`);
-    // Thử đăng nhập vào Cloud Hãng bằng cloudPassword đã lưu trữ
-    try {
-      const bgCloudRes = await siseliClient.post('/login/account', {
-        account: acc,
-        password: cloudPass
-      });
-      if (bgCloudRes.success && bgCloudRes.data && (bgCloudRes.data.code === 0 || bgCloudRes.data.accessToken)) {
-        const bgData = bgCloudRes.data.data || bgCloudRes.data;
-        userCloudToken = bgData.accessToken || bgData.token || bgData.iotToken;
-        rawUserData = bgData;
-        console.log(`[Zeno Cloud Background Cloud Sync]: Đã liên kết trực tiếp phiên Cloud Hãng cho [${acc}] thành công!`);
+    // Thử đăng nhập vào Cloud Hãng bằng cloudPassword đã lưu trữ (thử MD5 và plaintext)
+    const tryCloudPasses = [cloudPass, toMd5(cloudPass)].filter(Boolean);
+    for (const p of tryCloudPasses) {
+      try {
+        const bgCloudRes = await siseliClient.post('/login/account', {
+          account: acc,
+          password: p
+        });
+        if (bgCloudRes.success && bgCloudRes.data && (bgCloudRes.data.code === 0 || bgCloudRes.data.accessToken)) {
+          const bgData = bgCloudRes.data.data || bgCloudRes.data;
+          userCloudToken = bgData.accessToken || bgData.token || bgData.iotToken;
+          rawUserData = bgData;
+          console.log(`[Zeno Cloud Background Cloud Sync]: Đã liên kết trực tiếp phiên Cloud Hãng cho [${acc}] thành công!`);
+          break;
+        }
+      } catch (bgErr) {
+        console.warn('[Zeno Cloud Background Cloud Warn]:', bgErr.message);
       }
-    } catch (bgErr) {
-      console.warn('[Zeno Cloud Background Cloud Warn]:', bgErr.message);
     }
 
     if (!userCloudToken && (acc === 'sungo.vn' || acc === 'admin' || acc === 'zeno_admin')) {
@@ -427,7 +438,17 @@ router.post('/login', async (req, res) => {
     payload = { cellphone: acc, code };
   }
 
-  const result = await siseliClient.post(endpoint, payload);
+  let result = await siseliClient.post(endpoint, payload);
+
+  // Nếu đăng nhập thất bại với plaintext, thử lại với MD5 password (chuẩn SUN WISE app)
+  if (!result.success || !result.data || (result.data.code !== 0 && !result.data.accessToken)) {
+    if (endpoint === '/login/account') {
+      const md5Result = await siseliClient.post(endpoint, { account: acc, password: toMd5(inputPass) });
+      if (md5Result.success && md5Result.data && (md5Result.data.code === 0 || md5Result.data.accessToken)) {
+        result = md5Result;
+      }
+    }
+  }
 
   if (result.success && result.data && (result.data.code === 0 || result.data.accessToken)) {
     const data = result.data.data || result.data;
@@ -760,12 +781,22 @@ router.post('/verify-recovery-otp', async (req, res) => {
 
     let cloudResetOk = false;
     try {
-      const resetRes = await axios.post(`${config.siseli.baseUrl}/user/reset/password`, {
+      const md5Pass = toMd5(cleanPass);
+      let resetRes = await axios.post(`${config.siseli.baseUrl}/user/reset/password`, {
         account: targetAccount,
-        newPassword: cleanPass,
+        newPassword: md5Pass,
         captchaId: finalCaptchaId,
         verifyCode: cleanOtp
       }, { headers, timeout: 10000 });
+
+      if (!resetRes.data || resetRes.data.code !== 0) {
+        resetRes = await axios.post(`${config.siseli.baseUrl}/user/reset/password`, {
+          account: targetAccount,
+          newPassword: cleanPass,
+          captchaId: finalCaptchaId,
+          verifyCode: cleanOtp
+        }, { headers, timeout: 8000 }).catch(() => null) || resetRes;
+      }
 
       if (resetRes.data && resetRes.data.code === 0) {
         cloudResetOk = true;
@@ -1114,27 +1145,42 @@ router.post('/register-sunwise', async (req, res) => {
       });
     }
 
+    const md5Pass = toMd5(cleanPass);
     const regPayload = {
       account: acc,
-      password: cleanPass,
+      password: md5Pass,
       email: cleanEmail,
       verifyCode: cleanOtp,
       captchaId: targetCaptchaId
     };
 
-    console.log(`[Sunwise Cloud Register] Đang đăng ký tài khoản [${acc}] lên Server Hãng... email=${cleanEmail}, captchaId=${targetCaptchaId}`);
+    console.log(`[Sunwise Cloud Register] Đang đăng ký tài khoản [${acc}] lên Server Hãng (MD5 Pass: ${md5Pass.substring(0, 8)}...)... email=${cleanEmail}, captchaId=${targetCaptchaId}`);
 
     let cloudToken = null;
+    let cloudResData = null;
     try {
-      const cloudRes = await axios.post(`${config.siseli.baseUrl}/user/register/email`, regPayload, { headers, timeout: 15000 });
+      let cloudRes = await axios.post(`${config.siseli.baseUrl}/user/register/email`, regPayload, { headers, timeout: 15000 });
+      cloudResData = cloudRes.data;
 
-      console.log('[Sunwise Cloud Register Response]:', cloudRes.data);
+      // Nếu lỗi, thử thêm 1 lần với plaintext để phòng ngừa trường hợp server hãng thay đổi
+      if (cloudResData && cloudResData.code !== 0 && cloudResData.code !== 20002) {
+        console.warn('[Sunwise Cloud Register MD5 Warn]: Thử lại với plaintext...');
+        const plainRes = await axios.post(`${config.siseli.baseUrl}/user/register/email`, {
+          ...regPayload,
+          password: cleanPass
+        }, { headers, timeout: 12000 }).catch(() => null);
+        if (plainRes?.data && (plainRes.data.code === 0 || plainRes.data.code === 20002)) {
+          cloudResData = plainRes.data;
+        }
+      }
 
-      if (cloudRes.data && cloudRes.data.code !== 0 && cloudRes.data.code !== 20002) {
-        const errorMsg = cloudRes.data?.localMessage || cloudRes.data?.message || 'Mã xác thực OTP không đúng hoặc đã hết hạn từ Server Hãng!';
+      console.log('[Sunwise Cloud Register Response]:', cloudResData);
+
+      if (cloudResData && cloudResData.code !== 0 && cloudResData.code !== 20002) {
+        const errorMsg = cloudResData?.localMessage || cloudResData?.message || 'Mã xác thực OTP không đúng hoặc đã hết hạn từ Server Hãng!';
         return res.status(400).json({
           success: false,
-          code: cloudRes.data.code,
+          code: cloudResData.code,
           message: `Lỗi từ Server Hãng: ${errorMsg}`
         });
       }
@@ -1152,12 +1198,19 @@ router.post('/register-sunwise', async (req, res) => {
       }
     }
 
-    // Tự động đăng nhập vào Server Hãng với tài khoản vừa tạo để lấy Token Hãng thật
+    // Tự động đăng nhập vào Server Hãng với tài khoản vừa tạo để lấy Token Hãng thật (thử MD5 trước, rồi plaintext)
     try {
-      const loginRes = await axios.post(`${config.siseli.baseUrl}/login/account`, {
+      let loginRes = await axios.post(`${config.siseli.baseUrl}/login/account`, {
         account: acc,
-        password: cleanPass
+        password: md5Pass
       }, { headers, timeout: 10000 });
+
+      if (!loginRes.data || loginRes.data.code !== 0) {
+        loginRes = await axios.post(`${config.siseli.baseUrl}/login/account`, {
+          account: acc,
+          password: cleanPass
+        }, { headers, timeout: 8000 });
+      }
 
       console.log('[Sunwise Cloud Verify Login Response]:', loginRes.data);
 

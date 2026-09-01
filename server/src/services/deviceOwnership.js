@@ -960,6 +960,11 @@ class DeviceOwnershipService {
     return cleanCode;
   }
 
+  getTechnicianCodeForUser(account) {
+    const acc = String(account).toLowerCase().trim();
+    return this.data.users[acc]?.technicianCode || null;
+  }
+
   setUserPasswords(account, { cloudPassword, zenoPassword }) {
     const acc = String(account).toLowerCase().trim();
     if (!this.data.users[acc]) {

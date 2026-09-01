@@ -606,44 +606,62 @@ class DeviceOwnershipService {
     return { success: true, message: `Đã xóa vĩnh viễn trạm [${stationId}] khỏi hệ thống thành công!` };
   }
 
-  deleteCustomerSafe({ customerId, adminPassword }) {
+  deleteCustomerSafe({ customerId, account, adminPassword }) {
     if (!this.verifyAdminPassword(adminPassword)) {
       throw new Error('Mật khẩu quản trị viên [sungo123] không chính xác! Vui lòng nhập đúng mật khẩu xác nhận để xóa tài khoản an toàn.');
     }
     this.data = this.loadData();
     if (!this.data.deletedUsers) this.data.deletedUsers = [];
 
-    const cleanCustId = String(customerId).trim().toLowerCase();
-    if (!this.data.deletedUsers.includes(cleanCustId)) {
-      this.data.deletedUsers.push(cleanCustId);
-    }
+    const rawId = String(customerId || '').trim().toLowerCase();
+    const rawAcc = String(account || '').trim().toLowerCase();
 
+    // Tìm user trong this.data.users
     let deletedAcc = null;
     if (this.data.users) {
       for (const [acc, u] of Object.entries(this.data.users)) {
-        if (String(u.userId) === String(customerId) || acc.toLowerCase() === cleanCustId) {
+        const aLower = acc.toLowerCase();
+        if (
+          (rawAcc && aLower === rawAcc) || 
+          (rawId && aLower === rawId) || 
+          (rawId && String(u.userId) === rawId) || 
+          (rawAcc && String(u.account || '').toLowerCase() === rawAcc) ||
+          (rawId && String(u.account || '').toLowerCase() === rawId)
+        ) {
           deletedAcc = acc;
           delete this.data.users[acc];
-          if (!this.data.deletedUsers.includes(acc.toLowerCase())) {
-            this.data.deletedUsers.push(acc.toLowerCase());
+          if (!this.data.deletedUsers.includes(aLower)) {
+            this.data.deletedUsers.push(aLower);
           }
           break;
         }
       }
     }
 
-    // Gỡ liên kết customer của các thiết bị thuộc khách này
-    if (deletedAcc || cleanCustId) {
-      const targetAcc = (deletedAcc || cleanCustId).toLowerCase();
+    if (rawAcc && !this.data.deletedUsers.includes(rawAcc)) {
+      this.data.deletedUsers.push(rawAcc);
+    }
+    if (rawId && !this.data.deletedUsers.includes(rawId)) {
+      this.data.deletedUsers.push(rawId);
+    }
+
+    const finalAcc = deletedAcc || rawAcc || rawId;
+
+    // Gỡ liên kết customer / installer của các thiết bị thuộc tài khoản này
+    if (finalAcc) {
+      const targetAccLower = finalAcc.toLowerCase();
       Object.values(this.data.devices || {}).forEach(d => {
-        if (d.customer && d.customer.toLowerCase() === targetAcc) {
+        if (d.customer && String(d.customer).toLowerCase() === targetAccLower) {
           d.customer = '';
+        }
+        if (d.installer && String(d.installer).toLowerCase() === targetAccLower) {
+          d.installer = '';
         }
       });
     }
 
     this.saveData();
-    return { success: true, deletedAccount: deletedAcc || customerId };
+    return { success: true, deletedAccount: finalAcc };
   }
 
   deleteDeviceSafe({ deviceId, isMaster, dealerAccount, adminPassword, confirmSn }) {

@@ -73,7 +73,7 @@ export const customerService = {
   setTechnicianCode: (id, data) => api.post(`/customers/${id}/technician-code`, data),
   resetPassword: (id, newPassword, targetPassword = 'zeno', account) => api.post(`/customers/${id}/reset-password`, { newPassword, targetPassword, account }),
   syncCloudCustomer: (id, data) => api.post(`/customers/${id}/sync-cloud`, data),
-  deleteCustomer: (id, adminPassword) => api.delete(`/customers/${id}`, { data: { adminPassword } })
+  deleteCustomer: (id, adminPassword, account) => api.delete(`/customers/${id}`, { data: { adminPassword, account } })
 };
 
 export const groupService = {

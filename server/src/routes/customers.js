@@ -442,6 +442,7 @@ router.post('/:id/reset-password', checkAuth, async (req, res) => {
 router.delete('/:id', checkAuth, async (req, res) => {
   const customerId = req.params.id;
   const adminPassword = req.body?.adminPassword || req.headers['x-admin-password'] || req.query?.adminPassword;
+  const accountParam = req.body?.account || req.query?.account;
 
   const userAccount = liveCloud.getAccountFromToken(req.token);
   const roleInfo = deviceOwnership.getUserRole(userAccount);
@@ -454,15 +455,30 @@ router.delete('/:id', checkAuth, async (req, res) => {
   }
 
   try {
-    const result = deviceOwnership.deleteCustomerSafe({ customerId, adminPassword });
+    let resolvedAccount = accountParam;
+    try {
+      const dbCheck = await pool.query('SELECT account FROM customers WHERE user_id::text = $1 OR LOWER(account) = LOWER($1)', [customerId]);
+      if (dbCheck.rows.length > 0) {
+        resolvedAccount = dbCheck.rows[0].account;
+      }
+    } catch (err) {}
+
+    const result = deviceOwnership.deleteCustomerSafe({ 
+      customerId, 
+      account: resolvedAccount || accountParam, 
+      adminPassword 
+    });
 
     try {
-      await pool.query('DELETE FROM customers WHERE user_id::text = $1 OR LOWER(account) = LOWER($1)', [customerId]);
+      await pool.query(
+        'DELETE FROM customers WHERE user_id::text = $1 OR LOWER(account) = LOWER($1) OR LOWER(account) = LOWER($2)', 
+        [customerId, resolvedAccount || '']
+      );
     } catch (err) {}
 
     return res.json({ 
       success: true, 
-      message: `Đã xác nhận mật khẩu đúng! Đã xóa tài khoản [${result.deletedAccount || customerId}] thành công!` 
+      message: `Đã xác nhận mật khẩu đúng! Đã xóa vĩnh viễn tài khoản [${result.deletedAccount || resolvedAccount || customerId}] khỏi hệ thống thành công!` 
     });
   } catch (e) {
     return res.status(400).json({

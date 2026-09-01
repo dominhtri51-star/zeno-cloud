@@ -85,7 +85,11 @@ export default function Customers() {
 
   const handleExecuteSafeDelete = async ({ adminPassword }) => {
     if (!customerToDelete) return;
-    await customerService.deleteCustomer(customerToDelete.userId || customerToDelete.account, adminPassword);
+    const targetAcc = customerToDelete.account || customerToDelete.userId;
+    const res = await customerService.deleteCustomer(targetAcc, adminPassword, customerToDelete.account);
+    alert(res?.message || `Đã xóa vĩnh viễn tài khoản [${targetAcc}] thành công!`);
+    setIsSafeDeleteOpen(false);
+    setCustomerToDelete(null);
     await loadData();
   };
 

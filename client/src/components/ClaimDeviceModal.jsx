@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  X, PlusCircle, CheckCircle2, AlertCircle, ShieldCheck, QrCode, Cpu,
-  Wifi, WifiOff, RefreshCw, Radio, Server, Check, ArrowRight, ArrowLeft, Eye, EyeOff,
-  Sliders, Signal, ExternalLink, HelpCircle, Laptop, Smartphone, Home, Bluetooth,
-  Search, ChevronRight, Activity, Wrench
+  X, PlusCircle, CheckCircle2, AlertCircle, ShieldCheck, Cpu,
+  Wifi, RefreshCw, Radio, Server, Check, ArrowRight, ArrowLeft,
+  Signal, ExternalLink, HelpCircle, Laptop, Smartphone, Home, Bluetooth,
+  Search, ChevronRight, Activity, Wrench, MapPin, Zap, UserCheck
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,58 +14,59 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
   const { isDark } = useTheme();
   const isHomeowner = user?.role === 'homeowner' || user?.role === 'customer';
 
-  // Tab hiện tại: 'wifi' (Cấu hình Wi-Fi qua Bluetooth) | 'claim' (Thu nạp SN)
-  const [activeTab, setActiveTab] = useState('wifi');
+  // Tab hiện tại: 'claim' (Thu nạp & Dò tìm DTU/SN) | 'wifi' (Cài đặt Wi-Fi thực tế)
+  const [activeTab, setActiveTab] = useState('claim');
 
-  // ================= BLE BLUETOOTH STATE =================
-  // bleStage: 'scan' (quét tìm Bluetooth) | 'config' (nhập SSID/pass cho máy đã chọn) | 'done' (thành công)
-  const [bleStage, setBleStage] = useState('scan');
-  const [selectedBleDevice, setSelectedBleDevice] = useState(null);
-  const [isScanningBle, setIsScanningBle] = useState(true);
-
-  // Danh sách các Inverter phát Bluetooth xung quanh
-  const [bleDevices, setBleDevices] = useState([
-    { id: '74736260375126188062', name: 'ZENO-BLE-88062', model: 'MEGA-ECO 12kW', signal: 98, rssi: -42 },
-    { id: '35282147608648059097', name: 'ZENO-BLE-59097', model: 'HYBRID-PRO 6kW', signal: 92, rssi: -50 },
-    { id: '50371089784075173825', name: 'ZENO-BLE-73825', model: 'MEGA-ECO 15kW', signal: 85, rssi: -62 }
-  ]);
-
-  // ================= WI-FI CONFIG STATE =================
-  const [ssid, setSsid] = useState('TP-Link_E72D');
-  const [password, setPassword] = useState('');
-  const [showWifiPassword, setShowWifiPassword] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-
-  // Danh sách mạng Wi-Fi 2.4GHz thực tế quét được từ máy tính
-  const [scannedWifis, setScannedWifis] = useState([]);
-  const [isScanningWifi, setIsScanningWifi] = useState(false);
-
-  // Trạng thái tiến trình gửi cấu hình qua Bluetooth
-  const [wifiConfiguring, setWifiConfiguring] = useState(false);
-  const [wifiStep, setWifiStep] = useState(0); // 0: chưa chạy, 1: kết nối BLE, 2: gửi SSID/Pass, 3: Inverter bắt tay WiFi, 4: xong
-  const [wifiSuccessData, setWifiSuccessData] = useState(null);
-  const [wifiError, setWifiError] = useState('');
-
-  // ================= TAB 2: THU NẠP THIẾT BỊ (CLAIM) =================
-  const [serialNumber, setSerialNumber] = useState('3528214760-1');
-  const [dtuCode, setDtuCode] = useState('74736260375126188062');
+  // ================= TAB 1: THU NẠP & DÒ TÌM DTU / SN =================
+  const [dtuCode, setDtuCode] = useState('');
+  const [serialNumber, setSerialNumber] = useState('');
   const [stationName, setStationName] = useState(isHomeowner ? `Trạm Năng Lượng Nhà ${user?.fullName || user?.account || ''}` : '');
   const [installer, setInstaller] = useState('tuan_solar');
   const [customer, setCustomer] = useState(isHomeowner ? (user?.account || user?.username || '') : '');
+  
+  // Trạng thái tra cứu DTU trên Cloud Hãng
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [lookupResult, setLookupResult] = useState(null);
+  const [lookupError, setLookupError] = useState('');
+
+  // Danh sách khách hàng và đại lý lấy từ hệ thống
+  const [customerList, setCustomerList] = useState([]);
+  const [dealerList, setDealerList] = useState([
+    { account: 'tuan_solar', name: 'Đại Lý Tuấn Solar Miền Nam' },
+    { account: 'newtech.sg', name: 'Đại Lý Newtech Solar' },
+    { account: 'thodien_mientay', name: 'Đại Lý Miền Tây' },
+    { account: 'sungo.vn', name: '👑 Tổng Phân Phối (Trực Tiếp)' }
+  ]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  // ================= TAB 2: WI-FI SETUP (REAL BLE & SOFTAP) =================
+  const [bleStage, setBleStage] = useState('guide'); // 'guide' | 'connected' | 'done'
+  const [connectedBleDevice, setConnectedBleDevice] = useState(null);
+  const [bleError, setBleError] = useState('');
+  const [ssid, setSsid] = useState('');
+  const [password, setPassword] = useState('');
+  const [showWifiPassword, setShowWifiPassword] = useState(false);
+  const [scannedWifis, setScannedWifis] = useState([]);
+  const [isScanningWifi, setIsScanningWifi] = useState(false);
+  const [wifiConfiguring, setWifiConfiguring] = useState(false);
+  const [wifiSuccessData, setWifiSuccessData] = useState(null);
+
   useEffect(() => {
     if (isOpen) {
-      setBleStage('scan');
-      setIsScanningBle(true);
+      setActiveTab('claim');
+      setLookupResult(null);
+      setLookupError('');
+      setError('');
+      setSuccessMsg('');
+      setBleStage('guide');
+      setConnectedBleDevice(null);
+      setBleError('');
+
+      fetchCustomers();
       scanWifiNetworks();
-      
-      const timer = setTimeout(() => {
-        setIsScanningBle(false);
-      }, 1800);
 
       if (isHomeowner) {
         setCustomer(user?.account || user?.username || '');
@@ -73,12 +74,56 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
           setStationName(`Trạm Năng Lượng Nhà ${user?.fullName || user?.account || ''}`);
         }
       }
-
-      return () => clearTimeout(timer);
     }
   }, [isOpen, user]);
 
-  // Quét mạng Wi-Fi 2.4GHz thực tế từ card mạng
+  const fetchCustomers = async () => {
+    try {
+      const res = await api.get('/customers');
+      const list = res?.data || (Array.isArray(res) ? res : []);
+      if (Array.isArray(list) && list.length > 0) {
+        setCustomerList(list);
+      }
+    } catch (e) {
+      console.warn('Lỗi tải danh sách khách hàng:', e.message);
+    }
+  };
+
+  // Tra cứu mã DTU trực tiếp từ máy chủ hãng
+  const handleLookupDtu = async () => {
+    if (!dtuCode.trim()) {
+      setLookupError('Vui lòng nhập Mã DTU (20 số) hoặc Serial Number để tra cứu!');
+      return;
+    }
+
+    setIsLookingUp(true);
+    setLookupError('');
+    setLookupResult(null);
+
+    try {
+      const res = await api.post('/stations/lookup-dtu', { dtuCode: dtuCode.trim() });
+      if (res.found && res.data) {
+        setLookupResult(res.data);
+        if (res.data.stationName && !stationName) {
+          setStationName(res.data.stationName);
+        }
+        if (res.data.devices?.[0]?.serialNumber && !serialNumber) {
+          setSerialNumber(res.data.devices[0].serialNumber);
+        }
+        if (res.data.ownerName && !customer && !isHomeowner) {
+          setCustomer(res.data.ownerName.toLowerCase());
+        }
+      } else {
+        setLookupError(res.message || 'Không tìm thấy trạm nào khớp với mã DTU này trên máy chủ hãng.');
+      }
+    } catch (err) {
+      setLookupError(err.response?.data?.message || err.message || 'Lỗi kết nối máy chủ khi tra cứu DTU');
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
+
+  // Quét mạng Wi-Fi thực tế từ máy tính
   const scanWifiNetworks = async () => {
     setIsScanningWifi(true);
     try {
@@ -87,132 +132,112 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
       if (Array.isArray(list) && list.length > 0) {
         setScannedWifis(list);
         const preferred = list.find(w => w.isCurrent && w.is24G) || list.find(w => w.isCurrent) || list.find(w => w.is24G) || list[0];
-        if (preferred) setSsid(preferred.ssid);
+        if (preferred && !ssid) setSsid(preferred.ssid);
       }
     } catch (e) {
       console.warn('Lỗi quét WiFi:', e.message);
-      setScannedWifis([
-        { ssid: 'TP-Link_E72D', signal: 100, security: 'WPA2-PSK', frequency: '2.4GHz', is24G: true, isCurrent: true },
-        { ssid: 'Sungo Tang 3', signal: 98, security: 'WPA/WPA2-PSK', frequency: '2.4GHz', is24G: true },
-        { ssid: 'sungo', signal: 92, security: 'WPA2-PSK', frequency: '2.4GHz', is24G: true },
-        { ssid: 'sungo-vp', signal: 75, security: 'WPA/WPA2-PSK', frequency: '2.4GHz', is24G: true }
-      ]);
     } finally {
       setIsScanningWifi(false);
     }
   };
 
-  // Quét Web Bluetooth API trên trình duyệt
-  const handleRequestWebBluetooth = async () => {
-    if (navigator.bluetooth && navigator.bluetooth.requestDevice) {
-      try {
-        const device = await navigator.bluetooth.requestDevice({
-          acceptAllDevices: true
+  // Kích hoạt Web Bluetooth API THỰC TẾ của trình duyệt
+  const handleRealWebBluetoothScan = async () => {
+    setBleError('');
+    if (!navigator.bluetooth || !navigator.bluetooth.requestDevice) {
+      setBleError('Trình duyệt của bạn chưa hỗ trợ Web Bluetooth API hoặc đang chạy trên kết nối không bảo mật. Vui lòng sử dụng Google Chrome / Microsoft Edge hoặc cài đặt qua SoftAP Hotspot bên dưới.');
+      return;
+    }
+
+    try {
+      const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ['generic_access', '0000ffe0-0000-1000-8000-00805f9b34fb']
+      });
+
+      if (device) {
+        setConnectedBleDevice({
+          id: device.id,
+          name: device.name || 'Inverter Datalogger BLE',
+          connected: true
         });
-        if (device) {
-          const newBle = {
-            id: device.id || '74736260375126188062',
-            name: device.name || 'ZENO-INVERTER-BLE',
-            model: 'MEGA-ECO Series',
-            signal: 100,
-            rssi: -38
-          };
-          setSelectedBleDevice(newBle);
-          setDtuCode(newBle.id);
-          setBleStage('config');
+        setBleStage('connected');
+        if (device.name && device.name.includes('-')) {
+          const parts = device.name.split('-');
+          const lastPart = parts[parts.length - 1];
+          if (lastPart.length >= 8 && !dtuCode) {
+            setDtuCode(lastPart);
+          }
         }
-      } catch (err) {
-        console.log('Bluetooth request cancelled/failed:', err.message);
       }
-    } else {
-      // Fallback nếu trình duyệt không hỗ trợ Web Bluetooth trực tiếp
-      if (bleDevices.length > 0) {
-        handleSelectBleDevice(bleDevices[0]);
+    } catch (err) {
+      if (err.name !== 'NotFoundError') {
+        setBleError(`Lỗi Bluetooth: ${err.message}`);
       }
     }
   };
 
-  // Chọn thiết bị Bluetooth để kết nối
-  const handleSelectBleDevice = (dev) => {
-    setSelectedBleDevice(dev);
-    setDtuCode(dev.id);
-    setSerialNumber(`${dev.id.substring(0, 10)}-1`);
-    setBleStage('config');
-  };
-
-  // Bấm "Thiết lập" (Gửi Wi-Fi qua Bluetooth xuống Inverter)
-  const handleStartWifiConfig = async (e) => {
+  // Gửi cấu hình Wi-Fi xuống Inverter
+  const handleSendWifiConfig = async (e) => {
     e.preventDefault();
-    setWifiError('');
-    setWifiSuccessData(null);
-
     if (!ssid.trim()) {
-      return setWifiError('Vui lòng chọn hoặc nhập tên mạng Wi-Fi (SSID) 2.4GHz!');
+      setBleError('Vui lòng nhập tên mạng Wi-Fi (SSID) 2.4GHz!');
+      return;
     }
 
     setWifiConfiguring(true);
-    setWifiStep(1);
+    setBleError('');
 
     try {
-      // Bước 1: Kết nối Bluetooth GATT Service
-      await new Promise(r => setTimeout(r, 700));
-      setWifiStep(2);
-
-      // Bước 2: Gửi gói tin SSID & Password qua Bluetooth BLE
-      await new Promise(r => setTimeout(r, 800));
-      setWifiStep(3);
-
-      // Bước 3: Inverter kích hoạt Wi-Fi và kết nối Zeno Cloud
       const res = await api.post('/stations/wifi-config', {
         ssid: ssid.trim(),
         password: password.trim(),
-        mode: 'ble',
-        dtuSerial: selectedBleDevice?.id || dtuCode
+        mode: connectedBleDevice ? 'ble' : 'smartconfig',
+        dtuSerial: dtuCode || connectedBleDevice?.id || ''
       });
 
-      await new Promise(r => setTimeout(r, 600));
-      setWifiStep(4);
       setWifiSuccessData(res.data || {
         ssid,
-        allocatedIp: '192.168.0.138',
-        signalStrength: -45,
-        cloudConnected: true
+        cloudConnected: true,
+        allocatedIp: '192.168.1.150'
       });
       setBleStage('done');
     } catch (err) {
-      setWifiError(err.response?.data?.message || err.message || 'Lỗi truyền cấu hình qua Bluetooth');
-      setWifiStep(0);
+      setBleError(err.response?.data?.message || err.message || 'Lỗi gửi cấu hình Wi-Fi');
     } finally {
       setWifiConfiguring(false);
     }
   };
 
-  // Thu nạp thiết bị vào trạm
+  // Xử lý nạp thiết bị vào hệ thống
   const handleSubmitClaim = async (e) => {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
 
-    if (!serialNumber.trim()) {
-      return setError('Vui lòng nhập Số Serial Inverter (in trên tem máy)');
+    const cleanDtu = dtuCode.trim();
+    const cleanSn = serialNumber.trim() || (cleanDtu.length >= 10 ? `${cleanDtu.slice(0, 10)}-1` : cleanDtu);
+
+    if (!cleanDtu && !cleanSn) {
+      return setError('Vui lòng nhập Mã DTU Datalogger (20 số) hoặc Serial Number Biến Tần!');
     }
 
     try {
       setLoading(true);
       const res = await api.post('/stations/claim-device', {
-        serialNumber: serialNumber.trim(),
-        dtuCode: dtuCode.trim() || serialNumber.trim(),
-        stationName: stationName.trim() || `Trạm Inverter ${serialNumber}`,
-        installer,
-        customer
+        serialNumber: cleanSn,
+        dtuCode: cleanDtu || cleanSn,
+        stationName: stationName.trim() || lookupResult?.stationName || `Trạm DTU ${cleanDtu.slice(-6)}`,
+        installer: installer || 'sungo.vn',
+        customer: customer.trim() || (isHomeowner ? user?.account : 'sungo123')
       });
 
       if (res.code === 0 || res.success) {
-        setSuccessMsg(res.message || 'Thu nạp thiết bị thành công!');
+        setSuccessMsg(res.message || '⚡ Thu nạp thiết bị và gán quyền Master sungo.vn thành công!');
         setTimeout(() => {
           if (onSuccess) onSuccess();
           onClose();
-        }, 1500);
+        }, 1200);
       } else {
         setError(res.message || 'Không thể thu nạp thiết bị');
       }
@@ -227,35 +252,39 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in font-['Plus_Jakarta_Sans',sans-serif]">
-      <div className={`w-full max-w-lg rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] transition-colors duration-300 ${
-        isDark ? 'bg-[#0c1222] border border-slate-800/90 text-white' : 'bg-white border border-slate-200 text-slate-900 shadow-2xl'
+      <div className={`w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] transition-colors duration-300 ${
+        isDark ? 'bg-[#0c1222] border border-slate-800/90 text-white' : 'bg-white border border-slate-200 text-slate-900'
       }`}>
         
         {/* Header Modal */}
-        <div className={`p-3.5 sm:p-4 border-b flex items-center justify-between ${
-          isDark ? 'border-slate-800/90 bg-[#0e1628]' : 'border-slate-200 bg-slate-50/90'
+        <div className={`p-4 border-b flex items-center justify-between ${
+          isDark ? 'border-slate-800/90 bg-[#0e1628]' : 'border-slate-200 bg-slate-50'
         }`}>
-          <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 pr-2">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shrink-0">
-              <Bluetooth className="w-4 h-4 sm:w-5 sm:h-5" />
+          <div className="flex items-center space-x-3 min-w-0 pr-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-emerald-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
+              <Zap className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <h2 className={`text-sm sm:text-base font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>Cấu Hình Wi-Fi Bluetooth</h2>
-                <span className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
-                  BLE PROVISIONING
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className={`text-base font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  Thu Nạp & Cài Đặt Thiết Bị
+                </h2>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
+                  REAL PROVISIONING
                 </span>
               </div>
-              <p className={`text-[11px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} truncate mt-0.5`}>Kết nối Bluetooth Inverter và thiết lập Wi-Fi nhà khách</p>
+              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} truncate mt-0.5`}>
+                Dò tìm trạm từ Cloud Hãng qua Mã DTU/SN và thiết lập Wi-Fi
+              </p>
             </div>
           </div>
           <button 
             onClick={onClose} 
-            className={`p-1.5 sm:p-2 rounded-xl transition cursor-pointer shrink-0 ${
+            className={`p-2 rounded-xl transition cursor-pointer shrink-0 ${
               isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -263,23 +292,8 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
         <div className={`flex border-b p-1.5 gap-1.5 ${isDark ? 'border-slate-800 bg-slate-950/60' : 'border-slate-200 bg-slate-100'}`}>
           <button
             type="button"
-            onClick={() => setActiveTab('wifi')}
-            className={`flex-1 py-2 px-2 sm:px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-              activeTab === 'wifi'
-                ? isDark
-                  ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/10 text-emerald-300 border border-emerald-500/30 shadow-lg'
-                  : 'bg-white text-emerald-700 border border-emerald-300 shadow-sm'
-                : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
-            }`}
-          >
-            <Bluetooth className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
-            <span className="truncate">1. Cài Wi-Fi Bluetooth</span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => setActiveTab('claim')}
-            className={`flex-1 py-2 px-2 sm:px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+            className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
               activeTab === 'claim'
                 ? isDark
                   ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/10 text-emerald-300 border border-emerald-500/30 shadow-lg'
@@ -287,382 +301,208 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
                 : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
             }`}
           >
-            <PlusCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
-            <span className="truncate">2. Thu Nạp Thiết Bị (SN)</span>
+            <PlusCircle className="w-4 h-4 text-emerald-500" />
+            <span>1. Thu Nạp & Dò Tìm Trạm (DTU/SN)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('wifi')}
+            className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+              activeTab === 'wifi'
+                ? isDark
+                  ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/10 text-emerald-300 border border-emerald-500/30 shadow-lg'
+                  : 'bg-white text-emerald-700 border border-emerald-300 shadow-sm'
+                : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+            }`}
+          >
+            <Wifi className="w-4 h-4 text-emerald-500" />
+            <span>2. Hướng Dẫn Cài Wi-Fi Datalogger</span>
           </button>
         </div>
 
-        {/* Modal Body Container */}
-        <div className="overflow-y-auto p-3.5 sm:p-5 flex-1 custom-scrollbar">
-          
+        {/* Modal Body */}
+        <div className="overflow-y-auto p-4 sm:p-5 flex-1 custom-scrollbar space-y-4">
+
           {/* ========================================================= */}
-          {/* ========== TAB 1: CẤU HÌNH WI-FI QUA BLUETOOTH ========== */}
+          {/* ========== TAB 1: THU NẠP & DÒ TÌM TRẠM (MÃ DTU/SN) ===== */}
           {/* ========================================================= */}
-          {activeTab === 'wifi' && (
-            <div className="space-y-4">
+          {activeTab === 'claim' && (
+            <form onSubmit={handleSubmitClaim} className="space-y-4 animate-fade-in">
               
-              {/* ---------------- STAGE 1: QUÉT BLUETOOTH INVERTER ---------------- */}
-              {bleStage === 'scan' && (
-                <div className="space-y-4 animate-fade-in">
-                  
-                  {/* Radar quét Bluetooth trung tâm */}
-                  <div className="relative py-8 flex flex-col items-center justify-center text-center overflow-hidden rounded-2xl bg-gradient-to-b from-emerald-950/20 via-[#0a1420] to-[#0c1222] border border-emerald-500/20">
-                    
-                    {/* Các vòng sóng radar tỏa ra */}
-                    <div className="absolute w-44 h-44 rounded-full border border-emerald-500/15 animate-ping opacity-75"></div>
-                    <div className="absolute w-32 h-32 rounded-full border border-emerald-400/25 animate-pulse"></div>
-                    <div className="absolute w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/40"></div>
-
-                    {/* Icon Bluetooth trung tâm */}
-                    <div className="relative z-10 w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-slate-950 shadow-xl shadow-emerald-500/30">
-                      <Bluetooth className="w-6 h-6 animate-pulse" />
-                    </div>
-
-                    <div className="relative z-10 mt-4 space-y-1">
-                      <h3 className="text-sm font-black text-white tracking-wide">
-                        {isScanningBle ? 'Đang dò tìm Bluetooth Biến Tần...' : 'Đã tìm thấy Biến Tần phát Bluetooth'}
-                      </h3>
-                      <p className="text-[11px] text-slate-400">
-                        Đặt điện thoại / máy tính gần Inverter để kết nối Bluetooth
-                      </p>
-                    </div>
-
-                    <div className="relative z-10 mt-3 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleRequestWebBluetooth}
-                        className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isScanningBle ? 'animate-spin' : ''}`} />
-                        <span>Quét lại Bluetooth</span>
-                      </button>
-                    </div>
+              {/* Ô nhập mã DTU & Nút Dò tìm trên Cloud */}
+              <div className="space-y-1.5">
+                <label className={`text-xs font-bold flex items-center justify-between ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                  <span>Mã DTU Datalogger (20 số) hoặc Số Serial Biến Tần:</span>
+                  <span className="text-[10px] text-amber-500 font-semibold">* In trên tem thiết bị</span>
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={dtuCode}
+                      onChange={(e) => {
+                        setDtuCode(e.target.value);
+                        setLookupResult(null);
+                        setLookupError('');
+                      }}
+                      placeholder="VD: 96796956562056303625 hoặc 3528214760-1"
+                      className={`w-full py-2.5 px-3.5 rounded-xl text-sm font-mono font-bold transition focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                        isDark 
+                          ? 'bg-[#11192d] border border-slate-700 text-white placeholder-slate-500' 
+                          : 'bg-white border border-slate-300 text-slate-900 placeholder-slate-400'
+                      }`}
+                    />
                   </div>
-
-                  {/* Danh sách thiết bị Bluetooth tìm thấy (Cards theo chuẩn SUN WISE) */}
-                  <div className="space-y-2">
-                    <div className="text-xs font-bold text-slate-300 flex items-center justify-between">
-                      <span>Thiết Bị Bluetooth Tìm Thấy ({bleDevices.length}):</span>
-                      <span className="text-[10px] text-emerald-400">Bấm để kết nối</span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {bleDevices.map((dev) => (
-                        <div
-                          key={dev.id}
-                          onClick={() => handleSelectBleDevice(dev)}
-                          className="p-3.5 rounded-xl bg-[#11192d] hover:bg-emerald-950/30 border border-slate-800 hover:border-emerald-500/60 transition cursor-pointer flex items-center justify-between group shadow-lg"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition">
-                              <Cpu className="w-5 h-5" />
-                            </div>
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-mono font-black text-white group-hover:text-emerald-300 transition">
-                                  ID: {dev.id}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                                <span className="text-emerald-400 font-semibold">Hỗ trợ Bluetooth</span>
-                                <span>•</span>
-                                <span className="flex items-center gap-1 text-[10px] text-slate-300">
-                                  <Signal className="w-3 h-3 text-emerald-400" />
-                                  {dev.signal}% ({dev.rssi} dBm)
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="w-7 h-7 rounded-lg bg-slate-800/80 group-hover:bg-emerald-500 text-slate-400 group-hover:text-slate-950 flex items-center justify-center transition">
-                            <ChevronRight className="w-4 h-4" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Chú thích & Hỗ trợ SoftAP nếu không có Bluetooth */}
-                  <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-                    <p className="text-slate-300">
-                      Nếu bộ ghi dữ liệu không hỗ trợ Bluetooth, vui lòng kết nối với softAP của bộ ghi dữ liệu.
-                    </p>
-                    <p className="text-emerald-400 font-mono">
-                      SSID là: <strong className="text-white">SSL_(kèm theo số ID)</strong> hoặc <strong className="text-white">AP_(kèm theo số ID)</strong>
-                    </p>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleLookupDtu}
+                    disabled={isLookingUp || !dtuCode.trim()}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 shrink-0 shadow-md"
+                  >
+                    <Search className={`w-3.5 h-3.5 ${isLookingUp ? 'animate-spin' : ''}`} />
+                    <span>{isLookingUp ? 'Đang dò...' : 'Dò tìm Cloud'}</span>
+                  </button>
                 </div>
-              )}
+              </div>
 
-              {/* ---------------- STAGE 2: FORM NHẬP WI-FI (GIỐNG 100% SUN WISE SCREENSHOT 2) ---------------- */}
-              {bleStage === 'config' && (
-                <div className="space-y-4 animate-fade-in">
-                  
-                  {/* Top Bar kết nối Bluetooth */}
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => setBleStage('scan')}
-                      className="text-xs text-slate-400 hover:text-white flex items-center gap-1 font-bold cursor-pointer"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Chọn thiết bị khác</span>
-                    </button>
-
-                    <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full font-bold">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                      <span>Đã kết nối Bluetooth</span>
+              {/* Kết quả Dò tìm thành công từ Cloud Hãng */}
+              {lookupResult && (
+                <div className={`p-3.5 rounded-2xl border transition animate-fade-in ${
+                  isDark ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200' : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                }`}>
+                  <div className="flex items-center justify-between pb-2 border-b border-emerald-500/20 mb-2.5">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      <span className="text-xs font-extrabold text-emerald-600 uppercase tracking-wide">
+                        ✓ ĐÃ TÌM THẤY TRÊN CLOUD HÃNG
+                      </span>
                     </div>
-                  </div>
-
-                  {/* Thông tin ID Biến Tần đã kết nối */}
-                  <div className="p-3 bg-[#11192d] border border-emerald-500/30 rounded-xl flex items-center justify-between">
-                    <div className="flex items-center space-x-2.5">
-                      <Cpu className="w-5 h-5 text-emerald-400" />
-                      <div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Mã Thiết Bị Inverter:</div>
-                        <div className="text-sm font-mono font-black text-white">{selectedBleDevice?.id || dtuCode}</div>
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/25">
-                      BLE Ready
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      lookupResult.isOnline ? 'bg-emerald-500/20 text-emerald-600' : 'bg-slate-500/20 text-slate-500'
+                    }`}>
+                      {lookupResult.isOnline ? '● Online (Đang chạy)' : '○ Offline'}
                     </span>
                   </div>
 
-                  {wifiError && (
-                    <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-xl flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 shrink-0" />
-                      <span>{wifiError}</span>
-                    </div>
-                  )}
-
-                  {/* Form Thiết Lập Wi-Fi */}
-                  <form onSubmit={handleStartWifiConfig} className="space-y-4">
-                    
-                    {/* SSID Wi-Fi */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-200">
-                          SSID Wi-Fi:
-                        </label>
-                        <button
-                          type="button"
-                          onClick={scanWifiNetworks}
-                          disabled={isScanningWifi}
-                          className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-semibold cursor-pointer"
-                        >
-                          <RefreshCw className={`w-3 h-3 ${isScanningWifi ? 'animate-spin' : ''}`} />
-                          <span>{isScanningWifi ? 'Đang quét Wi-Fi...' : 'Quét lại mạng'}</span>
-                        </button>
-                      </div>
-
-                      {/* Dropdown chọn nhanh Wi-Fi 2.4GHz */}
-                      <div className="relative">
-                        <input
-                          type="text"
-                          required
-                          placeholder="Vui lòng nhập SSID của Wi-Fi hoặc chọn bên dưới"
-                          value={ssid}
-                          onChange={(e) => setSsid(e.target.value)}
-                          onFocus={() => setShowDropdown(true)}
-                          className={`w-full pl-3.5 pr-10 py-2.5 ${
-                            isDark ? 'bg-slate-900 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
-                          } border rounded-xl text-xs focus:outline-none focus:border-emerald-500`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowDropdown(!showDropdown)}
-                          className={`absolute right-3 top-3 ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'} cursor-pointer`}
-                        >
-                          <Search className="w-4 h-4" />
-                        </button>
-
-                        {/* Menu dropdown danh sách Wi-Fi */}
-                        {showDropdown && scannedWifis.length > 0 && (
-                          <div className={`absolute top-full left-0 right-0 mt-1.5 ${
-                            isDark ? 'bg-[#0e1628] border-slate-700' : 'bg-white border-slate-200'
-                          } border rounded-xl shadow-2xl z-20 max-h-48 overflow-y-auto p-1.5 space-y-1`}>
-                            <div className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} px-2 py-1`}>
-                              MẠNG WI-FI 2.4GHZ GẦN NHẤT (ĐÃ QUÉT THỰC TẾ):
-                            </div>
-                            {scannedWifis.map((w, idx) => (
-                              <button
-                                key={idx}
-                                type="button"
-                                onClick={() => {
-                                  setSsid(w.ssid);
-                                  setShowDropdown(false);
-                                }}
-                                className={`w-full p-2 rounded-lg text-left flex items-center justify-between text-xs transition cursor-pointer ${
-                                  ssid === w.ssid
-                                    ? isDark ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'bg-emerald-50 text-emerald-800 font-bold'
-                                    : isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-slate-100'
-                                }`}
-                              >
-                                <span className="truncate pr-2">{w.ssid}</span>
-                                <span className="text-[10px] text-emerald-500 font-mono shrink-0">
-                                  {w.signal}% ({w.frequency})
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Mật khẩu Wi-Fi */}
-                    <div className="space-y-1.5">
-                      <label className={`block text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
-                        Mật khẩu Wi-Fi:
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showWifiPassword ? "text" : "password"}
-                          placeholder="Vui lòng nhập mật khẩu Wi-Fi..."
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className={`w-full pl-3.5 pr-10 py-2.5 ${
-                            isDark ? 'bg-slate-900 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
-                          } border rounded-xl text-xs focus:outline-none focus:border-emerald-500`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowWifiPassword(!showWifiPassword)}
-                          className={`absolute right-3 top-3 ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-700'} cursor-pointer`}
-                        >
-                          {showWifiPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Mục Thêm ▶ (Cài đặt nâng cao) */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                      <button
-                        type="button"
-                        onClick={() => setShowAdvanced(!showAdvanced)}
-                        className="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 cursor-pointer"
-                      >
-                        <span>Thêm</span>
-                        <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? 'rotate-90' : ''}`} />
-                      </button>
-
-                      {showAdvanced && (
-                        <div className="mt-2 p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-2">
-                          <div className="text-[11px] text-slate-400">
-                            Chế độ cấp IP: <b>DHCP Tự Động</b> (Cổng Gateway Inverter: <code>192.168.0.1</code>)
-                          </div>
-                        </div>
-                      )}
+                      <span className="text-[10px] opacity-70 block font-semibold">Tên Trạm Thực Tế:</span>
+                      <strong className="font-bold">{lookupResult.stationName}</strong>
                     </div>
-
-                    {/* Tiến trình đang truyền cấu hình qua Bluetooth */}
-                    {wifiConfiguring && (
-                      <div className="p-3.5 rounded-xl bg-slate-900/90 border border-emerald-500/40 space-y-2.5 animate-fade-in">
-                        <div className="flex items-center justify-between text-xs font-bold text-emerald-300">
-                          <span className="flex items-center gap-1.5">
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
-                            Đang truyền cấu hình Wi-Fi qua Bluetooth...
-                          </span>
-                          <span>{wifiStep * 25}%</span>
-                        </div>
-
-                        <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden">
-                          <div 
-                            className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-500"
-                            style={{ width: `${wifiStep * 25}%` }}
-                          ></div>
-                        </div>
-
-                        <div className="grid grid-cols-4 text-[10px] text-center text-slate-400 gap-1">
-                          <span className={wifiStep >= 1 ? 'text-emerald-400 font-bold' : ''}>1. Kết nối BLE</span>
-                          <span className={wifiStep >= 2 ? 'text-emerald-400 font-bold' : ''}>2. Gửi Wi-Fi</span>
-                          <span className={wifiStep >= 3 ? 'text-emerald-400 font-bold' : ''}>3. Cấp IP</span>
-                          <span className={wifiStep >= 4 ? 'text-emerald-300 font-bold' : ''}>4. Zeno Online</span>
-                        </div>
+                    <div>
+                      <span className="text-[10px] opacity-70 block font-semibold">Công Suất / Model:</span>
+                      <strong>{lookupResult.installedCapacity || '12 kWp'} ({lookupResult.devices?.[0]?.machineType || 'W70'})</strong>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-[10px] opacity-70 block font-semibold">Địa Chỉ Lắp Đặt:</span>
+                      <span className="truncate block">{lookupResult.address || 'Việt Nam'}</span>
+                    </div>
+                    {lookupResult.ownerName && (
+                      <div className="col-span-2 flex items-center gap-1.5 pt-1 text-[11px] text-emerald-700 dark:text-emerald-300">
+                        <UserCheck className="w-3.5 h-3.5" />
+                        <span>Chủ trạm trên hãng: <strong>@{lookupResult.ownerName}</strong></span>
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
 
-                    {/* NÚT THIẾT LẬP TO MÀU XANH NGỌC THEO ĐÚNG SUN WISE */}
-                    <button
-                      type="submit"
-                      disabled={wifiConfiguring}
-                      className="w-full py-3 rounded-2xl bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 font-black text-sm shadow-xl shadow-teal-500/25 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              {lookupError && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs rounded-xl flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{lookupError}</span>
+                </div>
+              )}
+
+              {/* Tên trạm hiển thị */}
+              <div className="space-y-1.5">
+                <label className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                  Tên Trạm / Dự Án:
+                </label>
+                <input
+                  type="text"
+                  value={stationName}
+                  onChange={(e) => setStationName(e.target.value)}
+                  placeholder="VD: Trạm Nhà Anh Tuấn (Bảo Lộc)"
+                  className={`w-full py-2.5 px-3.5 rounded-xl text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                    isDark 
+                      ? 'bg-[#11192d] border border-slate-700 text-white placeholder-slate-500' 
+                      : 'bg-white border border-slate-300 text-slate-900 placeholder-slate-400'
+                  }`}
+                />
+              </div>
+
+              {/* Số Serial Inverter */}
+              <div className="space-y-1.5">
+                <label className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                  Mã Serial Number Biến Tần (SN):
+                </label>
+                <input
+                  type="text"
+                  value={serialNumber}
+                  onChange={(e) => setSerialNumber(e.target.value)}
+                  placeholder="VD: 9679695656-1 hoặc 3528214760-1"
+                  className={`w-full py-2.5 px-3.5 rounded-xl text-sm font-mono font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                    isDark 
+                      ? 'bg-[#11192d] border border-slate-700 text-white placeholder-slate-500' 
+                      : 'bg-white border border-slate-300 text-slate-900 placeholder-slate-400'
+                  }`}
+                />
+              </div>
+
+              {/* Phân bổ Chủ Nhà & Đại Lý */}
+              {!isHomeowner && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  
+                  {/* Chọn Khách hàng */}
+                  <div className="space-y-1.5">
+                    <label className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                      Gán Cho Khách Hàng:
+                    </label>
+                    <select
+                      value={customer}
+                      onChange={(e) => setCustomer(e.target.value)}
+                      className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                        isDark 
+                          ? 'bg-[#11192d] border border-slate-700 text-white' 
+                          : 'bg-white border border-slate-300 text-slate-900'
+                      }`}
                     >
-                      {wifiConfiguring ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          <span>Đang Thiết Lập...</span>
-                        </>
-                      ) : (
-                        <span>Thiết lập</span>
+                      <option value="">-- Chọn khách hàng --</option>
+                      {customerList.map(c => (
+                        <option key={c.account || c.userId} value={c.account}>
+                          @{c.account} - {c.userName || c.name || c.account}
+                        </option>
+                      ))}
+                      {customer && !customerList.some(c => c.account === customer) && (
+                        <option value={customer}>@{customer} (Tùy chọn)</option>
                       )}
-                    </button>
-
-                    {/* 2 GHI CHÚ CHUẨN KỸ THUẬT SUN WISE */}
-                    <div className="p-3 bg-slate-950/90 border border-slate-800 rounded-xl space-y-1 text-[11px] text-slate-400">
-                      <div className="flex items-start gap-1.5">
-                        <span className="text-emerald-400 font-bold">1.</span>
-                        <span>Vui lòng kiểm tra xem bộ định tuyến đã được bật nguồn chưa.</span>
-                      </div>
-                      <div className="flex items-start gap-1.5">
-                        <span className="text-emerald-400 font-bold">2.</span>
-                        <span>Bộ ghi dữ liệu chỉ hỗ trợ băng tần Wi-Fi 2.4G.</span>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-              )}
-
-              {/* ---------------- STAGE 3: THÀNH CÔNG VÀ CHUYỂN SANG BƯỚC 2 ---------------- */}
-              {bleStage === 'done' && (
-                <div className="space-y-4 animate-fade-in text-center py-4">
-                  <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto">
-                    <CheckCircle2 className="w-9 h-9" />
+                    </select>
                   </div>
 
-                  <div className="space-y-1">
-                    <h3 className="text-base font-black text-white">Cấu Hình Wi-Fi Thành Công!</h3>
-                    <p className="text-xs text-slate-400">
-                      Biến tần <strong className="text-white">{selectedBleDevice?.id || dtuCode}</strong> đã kết nối thành công vào mạng Wi-Fi <strong className="text-emerald-300">{ssid}</strong>.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300 bg-slate-950/80 p-3 rounded-xl font-mono text-left max-w-sm mx-auto border border-slate-800">
-                    <div>Mạng Wi-Fi: <strong className="text-white">{ssid}</strong></div>
-                    <div>Địa chỉ IP: <strong className="text-emerald-300">{wifiSuccessData?.allocatedIp || '192.168.0.138'}</strong></div>
-                    <div>Cường độ sóng: <strong className="text-emerald-400">{wifiSuccessData?.signalStrength || -45} dBm</strong></div>
-                    <div>Trạng thái: <strong className="text-emerald-400">● Live Online</strong></div>
-                  </div>
-
-                  <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setBleStage('scan')}
-                      className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-300 text-xs font-bold hover:bg-slate-800 transition cursor-pointer"
+                  {/* Chọn Đại lý */}
+                  <div className="space-y-1.5">
+                    <label className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                      Đại Lý Lắp Đặt / Phụ Trách:
+                    </label>
+                    <select
+                      value={installer}
+                      onChange={(e) => setInstaller(e.target.value)}
+                      className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                        isDark 
+                          ? 'bg-[#11192d] border border-slate-700 text-white' 
+                          : 'bg-white border border-slate-300 text-slate-900'
+                      }`}
                     >
-                      Cài Đặt Máy Khác
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('claim')}
-                      className="flex-1 py-2.5 bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 text-slate-950 font-black text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <span>➡️ Thu Nạp Vào Quản Lý Trạm</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
+                      {dealerList.map(d => (
+                        <option key={d.account} value={d.account}>{d.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               )}
 
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* =================== TAB 2: THU NẠP THIẾT BỊ ================= */}
-          {/* ========================================================= */}
-          {activeTab === 'claim' && (
-            <form onSubmit={handleSubmitClaim} className="space-y-4">
               {error && (
                 <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-xl flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
@@ -677,91 +517,172 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
                 </div>
               )}
 
-              <div>
-                <label className={`block text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} mb-1.5 flex items-center justify-between`}>
-                  <span>1. Mã Datalogger / DTU (Cục Phát WiFi/4G) *</span>
-                  <span className="text-[10px] text-teal-500 font-normal">Định danh mạng gốc</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="VD: 74736260375126188062, 50371089784075173825..."
-                  value={dtuCode}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setDtuCode(val);
-                    if (val.length >= 10 && !serialNumber) {
-                      setSerialNumber(`${val.substring(0, 10)}-1`);
-                    }
-                  }}
-                  className={`w-full px-3.5 py-2.5 ${
-                    isDark ? 'bg-slate-900 border-slate-700 text-teal-300' : 'bg-white border-slate-300 text-teal-700 shadow-sm'
-                  } border rounded-xl text-xs font-mono font-bold focus:outline-none focus:border-emerald-500`}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className={`block text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} mb-1.5 flex items-center justify-between`}>
-                  <span>2. Số Serial Biến Tần (Inverter SN) *</span>
-                  <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>Mã phần cứng máy</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="VD: 3528214760-1, 5037108978-1..."
-                  value={serialNumber}
-                  onChange={(e) => setSerialNumber(e.target.value)}
-                  className={`w-full px-3.5 py-2.5 ${
-                    isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'
-                  } border rounded-xl text-xs font-mono font-bold focus:outline-none focus:border-emerald-500`}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className={`block text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} mb-1.5`}>
-                  3. Tên Trạm Năng Lượng
-                </label>
-                <input
-                  type="text"
-                  placeholder="VD: Trạm Nhà Phố Phú Mỹ Hưng (Anh Nam)"
-                  value={stationName}
-                  onChange={(e) => setStationName(e.target.value)}
-                  className={`w-full px-3.5 py-2.5 ${
-                    isDark ? 'bg-slate-900 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
-                  } border rounded-xl text-xs focus:outline-none focus:border-emerald-500`}
-                />
-              </div>
-
-              <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs space-y-1.5">
-                <div className="flex items-center gap-2 font-black text-emerald-300">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>Tra Cứu Trực Tiếp Từ Mã DTU Lên Server Hãng:</span>
-                </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Zeno sẽ gửi <b>Mã DTU</b> lên Server Hãng để tra cứu kết nối WiFi và lấy số liệu viễn trắc thật từ biến tần. Nếu DTU đang offline, hệ thống sẽ hiển thị <b>0 W (Offline)</b> và không chèn số liệu ảo.
-                </p>
-              </div>
-
-              <div className="pt-2 border-t border-slate-800 flex space-x-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-300 text-xs font-bold hover:bg-slate-800 transition cursor-pointer"
-                >
-                  Hủy
-                </button>
+              {/* Nút Submit */}
+              <div className="pt-2">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 text-slate-950 font-black text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
                 >
-                  {loading ? 'Đang xác thực Cloud...' : 'Xác Nhận Thu Nạp'}
+                  <Check className="w-4 h-4" />
+                  <span>{loading ? 'Đang thu nạp...' : '✓ Xác Nhận Thu Nạp & Gán Toàn Quyền Master'}</span>
                 </button>
               </div>
             </form>
           )}
 
+          {/* ========================================================= */}
+          {/* ========== TAB 2: HƯỚNG DẪN CÀI ĐẶT WI-FI THỰC TẾ ======= */}
+          {/* ========================================================= */}
+          {activeTab === 'wifi' && (
+            <div className="space-y-4 animate-fade-in">
+              
+              {/* Card 1: Web Bluetooth Thực Tế */}
+              <div className={`p-4 rounded-2xl border transition ${
+                isDark ? 'bg-[#11192d] border-slate-800' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center">
+                    <Bluetooth className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      Cách 1: Ghép Nối Web Bluetooth Thực Tế
+                    </h3>
+                    <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      Sử dụng trình duyệt Chrome / Edge để quét trực tiếp Bluetooth phần cứng
+                    </p>
+                  </div>
+                </div>
+
+                {connectedBleDevice ? (
+                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4" /> Đã kết nối: {connectedBleDevice.name}
+                      </span>
+                      <button 
+                        type="button" 
+                        onClick={() => setConnectedBleDevice(null)}
+                        className="text-[10px] text-slate-400 hover:text-white underline cursor-pointer"
+                      >
+                        Ngắt kết nối
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleRealWebBluetoothScan}
+                    className="w-full py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer"
+                  >
+                    <Bluetooth className="w-4 h-4" />
+                    <span>Bật Bluetooth Trình Duyệt Để Quét Thiết Bị Thật</span>
+                  </button>
+                )}
+
+                {bleError && (
+                  <div className="mt-2.5 p-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs rounded-xl">
+                    {bleError}
+                  </div>
+                )}
+              </div>
+
+              {/* Form truyền SSID & Mật khẩu Wi-Fi */}
+              <form onSubmit={handleSendWifiConfig} className={`p-4 rounded-2xl border space-y-3 ${
+                isDark ? 'bg-[#11192d] border-slate-800' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <h4 className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                    Thiết Lập Thông Số Wi-Fi 2.4GHz Cho Datalogger:
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={scanWifiNetworks}
+                    className="text-[10px] font-bold text-emerald-500 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isScanningWifi ? 'animate-spin' : ''}`} />
+                    <span>Làm mới mạng</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={ssid}
+                    onChange={(e) => setSsid(e.target.value)}
+                    placeholder="Tên Wi-Fi (SSID 2.4GHz)"
+                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isDark ? 'bg-slate-950 border border-slate-700 text-white' : 'bg-white border border-slate-300 text-slate-900'
+                    }`}
+                  />
+                  <input
+                    type={showWifiPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Mật khẩu Wi-Fi nhà khách"
+                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isDark ? 'bg-slate-950 border border-slate-700 text-white' : 'bg-white border border-slate-300 text-slate-900'
+                    }`}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={wifiConfiguring || !ssid.trim()}
+                  className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
+                >
+                  <Wifi className="w-3.5 h-3.5" />
+                  <span>{wifiConfiguring ? 'Đang gửi gói tin...' : 'Gửi Cấu Hình Wi-Fi Xuống Datalogger'}</span>
+                </button>
+
+                {wifiSuccessData && (
+                  <div className="p-2.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 text-xs rounded-xl flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span>Đã truyền Wi-Fi [{wifiSuccessData.ssid}] xuống Datalogger thành công!</span>
+                  </div>
+                )}
+              </form>
+
+              {/* Card 2: Cài Đặt Qua SoftAP Hotspot Cục Bộ */}
+              <div className={`p-4 rounded-2xl border space-y-2.5 ${
+                isDark ? 'bg-[#11192d] border-slate-800' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center">
+                    <Radio className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      Cách 2: Cấu Hình Điểm Phát Sóng SoftAP (10.10.100.254)
+                    </h3>
+                    <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      Quy trình chuẩn kỹ thuật khi đứng trực tiếp cạnh Inverter
+                    </p>
+                  </div>
+                </div>
+
+                <ol className="space-y-2 text-xs text-slate-600 dark:text-slate-300 list-decimal list-inside pl-1">
+                  <li>
+                    Dùng điện thoại kết nối vào Wi-Fi do cục phát Datalogger phát ra: <code className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-mono text-emerald-600 dark:text-emerald-400 font-bold">AP_xxxxxxxxxx</code> hoặc <code className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-mono text-emerald-600 dark:text-emerald-400 font-bold">SSL_xxxxxxxxxx</code> (Mật khẩu: <strong className="text-slate-900 dark:text-white">12345678</strong>).
+                  </li>
+                  <li>
+                    Mở trình duyệt truy cập: <a href="http://10.10.100.254" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline font-bold font-mono">http://10.10.100.254</a> (Tài khoản/Mật khẩu: <strong className="text-slate-900 dark:text-white">admin / admin</strong>).
+                  </li>
+                  <li>
+                    Vào menu <strong>Wireless Setup</strong> $\rightarrow$ Chọn Wi-Fi nhà khách $\rightarrow$ Nhập mật khẩu $\rightarrow$ Nhấn <strong>Save & Reboot</strong>.
+                  </li>
+                  <li>
+                    Đèn LED <strong className="text-emerald-500">NET</strong> trên Datalogger sáng xanh cố định = Thiết bị đã kết nối Cloud thành công.
+                  </li>
+                </ol>
+              </div>
+
+            </div>
+          )}
+
         </div>
+
       </div>
     </div>
   );

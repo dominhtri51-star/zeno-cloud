@@ -550,6 +550,34 @@ router.post('/claim-device', async (req, res) => {
 
 const realWifiService = require('../services/realWifiService');
 
+// 5.6.0. Tra cứu thông tin trạm và thiết bị từ Cloud Hãng bằng Mã DTU
+router.post('/lookup-dtu', async (req, res) => {
+  try {
+    const { dtuCode } = req.body;
+    if (!dtuCode) {
+      return res.status(400).json({ success: false, message: 'Vui lòng nhập Mã DTU hoặc SN' });
+    }
+
+    const cleanDtu = String(dtuCode).trim();
+    const station = await liveCloud.getStationByDtu(cleanDtu);
+    if (station) {
+      return res.json({
+        success: true,
+        found: true,
+        data: station
+      });
+    }
+
+    return res.json({
+      success: true,
+      found: false,
+      message: 'Không tìm thấy trạm nào khớp với mã DTU này trên máy chủ hãng.'
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // 5.6.1. Cấu Hình Mạng WiFi Cho Cục Phát Datalogger DTU / Inverter Mới (SmartConfig / SoftAP / BLE)
 router.post('/wifi-config', async (req, res) => {
   const { ssid, password, mode = 'smartconfig', dtuSerial = '', ipGateway = '10.10.100.254' } = req.body;

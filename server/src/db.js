@@ -134,42 +134,40 @@ async function seedInitialData(client, deviceOwnership) {
       'sungo123'
     ]);
 
-    // 2. Chỉ seed tài khoản ban đầu nếu bảng customers hoàn toàn mới (<= 1 row) VÀ tài khoản đó CHƯA TỪNG BỊ XÓA
+    // 2. Chỉ seed tài khoản ban đầu nếu bảng customers hoàn toàn mới (<= 1 row)
     const custCountRes = await client.query('SELECT count(*) as cnt FROM customers');
     const custCount = parseInt(custCountRes.rows[0]?.cnt || '0');
 
-    if (custCount <= 1) {
-      const ownershipPath = path.join(__dirname, '../data/device_ownership.json');
-      if (fs.existsSync(ownershipPath)) {
-        const raw = fs.readFileSync(ownershipPath, 'utf8');
-        const data = JSON.parse(raw);
-        if (data.users) {
-          for (const [account, u] of Object.entries(data.users)) {
-            const accKey = String(account).toLowerCase().trim();
-            if (accKey === 'sungo.vn' || deviceOwnership?.isUserDeleted(accKey)) {
-              continue; // Bỏ qua nếu đã xóa hoặc là sungo.vn
-            }
-            await client.query(
-              `INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, cloud_password, zeno_password, created_at)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-               ON CONFLICT (account) DO NOTHING`,
-              [
-                account,
-                u.userName || account,
-                u.email || `${account}@sungo.vn`,
-                u.cellphone || '',
-                u.userType || 3,
-                u.roleName || '🏠 Người Tiêu Dùng Cuối',
-                u.password || 'sungo123',
-                u.cloudPassword || '123456',
-                u.zenoPassword || u.password || 'sungo123',
-                u.createdAt ? new Date(u.createdAt) : new Date()
-              ]
-            );
+    const ownershipPath = path.join(__dirname, '../data/device_ownership.json');
+    if (fs.existsSync(ownershipPath)) {
+      const raw = fs.readFileSync(ownershipPath, 'utf8');
+      const data = JSON.parse(raw);
+
+      if (custCount <= 1 && data.users) {
+        for (const [account, u] of Object.entries(data.users)) {
+          const accKey = String(account).toLowerCase().trim();
+          if (accKey === 'sungo.vn' || deviceOwnership?.isUserDeleted(accKey)) {
+            continue; // Bỏ qua nếu đã xóa hoặc là sungo.vn
           }
+          await client.query(
+            `INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, cloud_password, zeno_password, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+             ON CONFLICT (account) DO NOTHING`,
+            [
+              account,
+              u.userName || account,
+              u.email || `${account}@sungo.vn`,
+              u.cellphone || '',
+              u.userType || 3,
+              u.roleName || '🏠 Người Tiêu Dùng Cuối',
+              u.password || 'sungo123',
+              u.cloudPassword || '123456',
+              u.zenoPassword || u.password || 'sungo123',
+              u.createdAt ? new Date(u.createdAt) : new Date()
+            ]
+          );
         }
       }
-    }
 
       if (data.technicianCodes) {
         for (const [code, info] of Object.entries(data.technicianCodes)) {
@@ -215,7 +213,7 @@ async function seedInitialData(client, deviceOwnership) {
       }
     }
 
-    // 2. Seed Station Settings
+    // 3. Seed Station Settings
     const settingsPath = path.join(__dirname, '../data/station_settings.json');
     if (fs.existsSync(settingsPath)) {
       const raw = fs.readFileSync(settingsPath, 'utf8');

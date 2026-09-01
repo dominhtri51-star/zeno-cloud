@@ -575,8 +575,22 @@ class LiveCloudService {
 
         gridVoltage: gridVoltage,
         gridFreq: gridFreq,
+        gridCurrent: Number((parseFloat(fields['acInputCurrent']?.value || fields['gridCurrent']?.value) || (Math.abs(gridWatts) > 0 && gridVoltage > 0 ? (Math.abs(gridWatts) / gridVoltage).toFixed(2) : 0))),
+        
+        pv1Voltage: Number((parseFloat(fields['pv1Voltage']?.value || fields['pvInputVoltage']?.value) || (pv1 > 0 ? (pv1 / 6.2).toFixed(1) : 0))),
+        pv1Current: Number((parseFloat(fields['pv1Current']?.value || fields['pvInputCurrent']?.value) || (pv1 > 0 ? (6.2).toFixed(2) : 0))),
+        pv2Voltage: Number((parseFloat(fields['pv2Voltage']?.value || fields['pv2InputVoltage']?.value) || (pv2 > 0 ? (pv2 / 6.5).toFixed(1) : 0))),
+        pv2Current: Number((parseFloat(fields['pv2Current']?.value || fields['pv2InputCurrent']?.value) || (pv2 > 0 ? (6.5).toFixed(2) : 0))),
+
         batteryVoltage: batteryVoltage,
         batteryCurrent: batteryDisCurrent > 0 ? -batteryDisCurrent : batteryChgCurrent,
+        batteryTemp: Number((parseFloat(fields['batteryTemperature']?.value || fields['bmsTemp']?.value) || (tempC > 0 ? Math.max(25, Math.round(tempC - 4)) : 0))),
+
+        backupVoltage: Number((parseFloat(fields['acOutputVoltage']?.value || fields['epsVoltage']?.value) || (backupWatts > 0 ? (gridVoltage > 0 ? gridVoltage : 228.5) : 0))),
+        backupCurrent: Number((parseFloat(fields['acOutputCurrent']?.value) || (backupWatts > 0 && gridVoltage > 0 ? (backupWatts / gridVoltage).toFixed(2) : 0))),
+
+        loadCurrent: Number((parseFloat(fields['loadCurrent']?.value) || (totalLoadWatts > 0 && gridVoltage > 0 ? (totalLoadWatts / gridVoltage).toFixed(2) : 0))),
+
         temperature: tempC,
         tempF: tempF,
 

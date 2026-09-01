@@ -49,13 +49,24 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
     pvPower: 0,
     pv1Power: 0,
     pv2Power: 0,
+    pv1Voltage: 0,
+    pv1Current: 0,
+    pv2Voltage: 0,
+    pv2Current: 0,
     gridPower: 0,
+    gridVoltage: 229.0,
+    gridFreq: 50.0,
+    gridCurrent: 0,
     batteryPower: 0,
     batterySoc: 100,
-    backupPower: 0,
-    loadPower: 0,
-    gridVoltage: 229.0,
     batteryVoltage: 51.8,
+    batteryCurrent: 0,
+    batteryTemp: 35,
+    backupPower: 0,
+    backupVoltage: 228.5,
+    backupCurrent: 0,
+    loadPower: 0,
+    loadCurrent: 0,
     temperature: 38.9,
     tempF: 102
   });
@@ -116,13 +127,24 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
           pvPower: d.pvPower !== undefined ? d.pvPower : 0,
           pv1Power: d.pv1Power !== undefined ? d.pv1Power : 0,
           pv2Power: d.pv2Power !== undefined ? d.pv2Power : 0,
+          pv1Voltage: d.pv1Voltage !== undefined ? d.pv1Voltage : 0,
+          pv1Current: d.pv1Current !== undefined ? d.pv1Current : 0,
+          pv2Voltage: d.pv2Voltage !== undefined ? d.pv2Voltage : 0,
+          pv2Current: d.pv2Current !== undefined ? d.pv2Current : 0,
           gridPower: d.gridPower !== undefined ? d.gridPower : 0,
+          gridVoltage: d.gridVoltage || 229.0,
+          gridFreq: d.gridFreq || 50.0,
+          gridCurrent: d.gridCurrent !== undefined ? d.gridCurrent : 0,
           batteryPower: d.batteryPower !== undefined ? d.batteryPower : 0,
           batterySoc: d.batterySoc !== undefined ? d.batterySoc : 100,
-          backupPower: d.backupPower !== undefined ? d.backupPower : 0,
-          loadPower: d.loadPower !== undefined ? d.loadPower : 0,
-          gridVoltage: d.gridVoltage || 229.0,
           batteryVoltage: d.batteryVoltage || 51.9,
+          batteryCurrent: d.batteryCurrent !== undefined ? d.batteryCurrent : 0,
+          batteryTemp: d.batteryTemp || 35,
+          backupPower: d.backupPower !== undefined ? d.backupPower : 0,
+          backupVoltage: d.backupVoltage || 228.5,
+          backupCurrent: d.backupCurrent !== undefined ? d.backupCurrent : 0,
+          loadPower: d.loadPower !== undefined ? d.loadPower : 0,
+          loadCurrent: d.loadCurrent !== undefined ? d.loadCurrent : 0,
           temperature: d.temperature || 38.9,
           tempF: d.tempF || 102
         });
@@ -272,20 +294,32 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
         {/* ================= CỘT TRÁI (COL-7): SƠ ĐỒ TOPOLOGY & CẢM BIẾN REALTIME ================= */}
         <div className="lg:col-span-7 space-y-3.5 sm:space-y-5">
           
-          {/* SƠ ĐỒ NĂNG LƯỢNG VỚI INVERTER VÀ 5 THẺ KÍNH MỜ */}
+          {/* SƠ ĐỒ NĂNG LƯỢNG VỚI INVERTER VÀ 5 THẺ KÍNH MỜ TƯƠNG TÁC POPUP */}
           <InteractiveTopology
             pvPower={flowData.pvPower}
             pv1Power={flowData.pv1Power}
             pv2Power={flowData.pv2Power}
+            pv1Voltage={flowData.pv1Voltage}
+            pv1Current={flowData.pv1Current}
+            pv2Voltage={flowData.pv2Voltage}
+            pv2Current={flowData.pv2Current}
             gridPower={flowData.gridPower}
-            batteryPower={flowData.batteryPower}
-            batterySoc={flowData.batterySoc}
-            backupPower={flowData.backupPower}
-            loadPower={flowData.loadPower}
             gridVoltage={flowData.gridVoltage}
+            gridFreq={flowData.gridFreq}
+            gridCurrent={flowData.gridCurrent}
+            batteryPower={flowData.batteryPower}
             batteryVoltage={flowData.batteryVoltage}
+            batteryCurrent={flowData.batteryCurrent}
+            batterySoc={flowData.batterySoc}
+            batteryTemp={flowData.batteryTemp}
+            backupPower={flowData.backupPower}
+            backupVoltage={flowData.backupVoltage}
+            backupCurrent={flowData.backupCurrent}
+            loadPower={flowData.loadPower}
+            loadCurrent={flowData.loadCurrent}
             temperature={flowData.temperature}
             tempF={flowData.tempF}
+            todayPvEnergy={energyStats.pvEnergy.toFixed(2)}
           />
 
           {/* 3 THẺ ĐO ĐẠC SENSOR THỜI GIAN THỰC */}

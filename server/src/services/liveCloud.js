@@ -68,8 +68,9 @@ function normalizeRecordToKw(p) {
 
 class LiveCloudService {
   constructor() {
-    // Kết nối trực tiếp máy chủ Cloud Hãng Siseli / SUN WISE
+    // Gateway ký số & Kết nối trực tiếp máy chủ Cloud Hãng Siseli / SUN WISE
     this.endpoints = [
+      'https://bha-solar.pages.dev/api',
       'https://solar.siseli.com/apis'
     ];
     this.activeEndpointIndex = 0;

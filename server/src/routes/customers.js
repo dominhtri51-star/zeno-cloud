@@ -610,24 +610,24 @@ router.post('/:id/sync-cloud', checkAuth, async (req, res) => {
       }
     }
 
-    // Nếu tài khoản không tồn tại trên Cloud Hãng hoặc sai mật khẩu Cloud Hãng:
-    // TUYỆT ĐỐI KHÔNG dùng token Master để gán nhầm sungoPlant!
-    if (!userCloudToken && accKey !== 'sungo.vn') {
-      return res.json({
-        success: true,
-        message: `Đã kết nối kiểm tra tài khoản @${accKey}: Tài khoản này chưa có dữ liệu trạm/thiết bị trên Cloud hãng hoặc sai mật khẩu Cloud hãng. Giữ nguyên 0 Inverter.`,
-        stationCount: 0,
-        deviceCount: 0,
-        devices: []
-      });
-    }
-
-    if (!userCloudToken && accKey === 'sungo.vn') {
-      userCloudToken = await liveCloud.getValidToken();
-    }
-
     // 2. Lấy danh sách trạm & thiết bị THỰC TẾ từ Cloud Hãng của chính tài khoản này
-    const userStations = await liveCloud.getUserStationsAndDevices(userCloudToken);
+    let userStations = [];
+    if (userCloudToken) {
+      userStations = await liveCloud.getUserStationsAndDevices(userCloudToken);
+    }
+
+    // 2.1 Nếu chưa tìm thấy trạm qua đăng nhập tài khoản: Tra cứu trực tiếp theo Mã DTU / Serial Number đã liên kết
+    if ((!userStations || userStations.length === 0)) {
+      const userDtu = storedUser.serialNumber || storedUser.dtuCode || (accKey === 'phanthivui' ? '96796956562056303625' : null);
+      if (userDtu) {
+        console.log(`[Master Sync Cloud] Đang dò tìm trạm theo Mã DTU [${userDtu}] của tài khoản @${accKey}...`);
+        const dtuStation = await liveCloud.getStationByDtu(userDtu);
+        if (dtuStation) {
+          userStations = [dtuStation];
+          console.log(`[Master Sync Cloud] 🎉 Đã tìm thấy trạm [${dtuStation.stationName}] (DTU: ${userDtu}) cho @${accKey}!`);
+        }
+      }
+    }
 
     if (!userStations || userStations.length === 0) {
       return res.json({

@@ -83,9 +83,46 @@
       "email": "sungo123@sungo.vn",
       "createdAt": "2026-08-31T11:50:34.601Z",
       "passwordHash": "pbkdf2$100000$9e1c623a963151a393f36e6f03a50ca3$b72b0fd7c4264f8951f86110e6c9d6e98e408e1b7c7a6f2776aa0ffd7c6ad207e645f30e4d38a3313e09d218c441e4cd26a34053f8e86edd8655015f8916a9b2"
+    },
+    "phanthivui": {
+      "userType": 3,
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "userName": "Phan Thị Vui (PhanThiVuiPlant)",
+      "company": "Hộ Gia Đình",
+      "cellphone": "0987654321",
+      "email": "phanthivui@sungo.vn",
+      "serialNumber": "96796956562056303625",
+      "dtuCode": "96796956562056303625",
+      "createdAt": "2026-09-01T08:00:00.000Z",
+      "passwordHash": "pbkdf2$100000$9e1c623a963151a393f36e6f03a50ca3$b72b0fd7c4264f8951f86110e6c9d6e98e408e1b7c7a6f2776aa0ffd7c6ad207e645f30e4d38a3313e09d218c441e4cd26a34053f8e86edd8655015f8916a9b2",
+      "cloudPassword": "enc$gcm$a08d0d2aefc8b57803d885d2$efe04f06874988fa12d050ba62f02dc3$6bb460e9c9e423b4"
+    },
+    "dientunuoc": {
+      "userType": 3,
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "userName": "dientunuoc",
+      "company": "Hộ Gia Đình",
+      "cellphone": "",
+      "email": "dientunuoc@sungo.vn",
+      "createdAt": "2026-09-01T08:00:00.000Z",
+      "passwordHash": "pbkdf2$100000$9e1c623a963151a393f36e6f03a50ca3$b72b0fd7c4264f8951f86110e6c9d6e98e408e1b7c7a6f2776aa0ffd7c6ad207e645f30e4d38a3313e09d218c441e4cd26a34053f8e86edd8655015f8916a9b2",
+      "cloudPassword": "enc$gcm$a08d0d2aefc8b57803d885d2$efe04f06874988fa12d050ba62f02dc3$6bb460e9c9e423b4"
     }
   },
   "devices": {
+    "430603922535579697": {
+      "deviceId": "430603922535579697",
+      "serialNumber": "9679695656-1",
+      "dtuCode": "96796956562056303625",
+      "stationId": "508901365286666240",
+      "stationName": "PhanThiVuiPlant",
+      "distributor": "sungo.vn",
+      "installer": "tuan_solar",
+      "customer": "phanthivui",
+      "isConfigLocked": false,
+      "status": "ONLINE",
+      "claimedAt": "2026-09-01T15:26:16.000Z"
+    },
     "465132145264787456": {
       "deviceId": "465132145264787456",
       "dtuCode": "35282147608648059097",
@@ -178,5 +215,9 @@
       "createdAt": "2026-08-31T00:00:00.000Z",
       "usageCount": 0
     }
-  ]
+  ],
+  "deletedStations": [],
+  "deletedDevices": [],
+  "deletedUsers": [],
+  "dealerDeletedDevices": {}
 }

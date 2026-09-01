@@ -471,6 +471,63 @@ class LiveCloudService {
     });
   }
 
+  // Tra cứu trạm và thiết bị trực tiếp từ máy chủ hãng bằng Mã DTU (Collector DtuID)
+  async getStationByDtu(dtuId) {
+    if (!dtuId) return null;
+    const cleanDtu = String(dtuId).trim();
+    try {
+      const token = await this.getValidToken();
+      const headers = this.getHeaders(token);
+      
+      const dtuRes = await axios.post(`${this.baseUrl}/dtu/select/dtu/withDtuID?DtuID=${cleanDtu}`, {}, { headers, timeout: 8000 });
+      if (dtuRes.data?.code === 0 && dtuRes.data?.data) {
+        const d = dtuRes.data.data;
+        const sId = String(d.stationId || '');
+        let stationDetails = null;
+
+        if (sId) {
+          try {
+            const stRes = await axios.get(`${this.baseUrl}/station/details?stationId=${sId}`, { headers, timeout: 8000 });
+            if (stRes.data?.code === 0 && stRes.data?.data) {
+              stationDetails = stRes.data.data;
+            }
+          } catch (e) {}
+        }
+
+        const cap = stationDetails ? parseFloat(stationDetails.installedCapacity || d.capacity || 2.4) : parseFloat(d.capacity || 2.4);
+        const sName = stationDetails?.name || d.stationName || `Trạm DTU ${cleanDtu.slice(-6)}`;
+        const ownerAcc = stationDetails?.ownerUserName || d.ownerUserName || '';
+        const sn = cleanDtu.length >= 10 ? `${cleanDtu.slice(0, 10)}-1` : `SN-${cleanDtu}`;
+
+        return {
+          stationId: sId || `ST-${cleanDtu}`,
+          stationName: sName,
+          installedCapacity: `${cap} kWp`,
+          capacityKw: cap,
+          ownerName: ownerAcc,
+          ownerUserId: d.ownerUserId || stationDetails?.ownerUserId,
+          address: stationDetails?.address ? `${stationDetails.address}, ${stationDetails.area || ''}, ${stationDetails.city || ''}, ${stationDetails.province || ''}` : 'Việt Nam',
+          city: stationDetails?.city || stationDetails?.province || '',
+          country: stationDetails?.country || 'Vietnam',
+          isOnline: d.isOnline !== false,
+          devices: [{
+            deviceId: String(d.id || `DEV-${cleanDtu}`),
+            deviceName: `Inverter ${sName}`,
+            serialNumber: sn,
+            dtuCode: cleanDtu,
+            ratedPower: `${cap} kW`,
+            ratedPowerKw: cap,
+            isOnline: d.isOnline !== false,
+            machineType: d.model || 'W70(2M)'
+          }]
+        };
+      }
+    } catch (err) {
+      console.warn(`[getStationByDtu Error for ${cleanDtu}]:`, err.message);
+    }
+    return null;
+  }
+
   // 2. Lấy dữ liệu Realtime 100% THẬT TỪ SERVER HÃNG
   async getLiveEnergyFlowForUser(userToken, requestedStationId = null) {
     return this.callWithAutoRetry(async (token) => {

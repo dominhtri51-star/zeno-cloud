@@ -5,79 +5,84 @@
       "roleName": "👑 Tổng Phân Phối (Distributor)",
       "userName": "SUNGO SOLAR VIỆT NAM (Master)",
       "company": "SUNGO Clean Energy Corp",
-      "password": "sungo@100%",
       "cellphone": "0901234567",
       "email": "admin@sungo.vn",
-      "createdAt": "2026-08-31T06:54:00.000Z"
+      "createdAt": "2026-08-31T06:54:00.000Z",
+      "passwordHash": "pbkdf2$100000$c3d3f1ffd2be60c762043f1f1646e65c$6fa8bdd16f0b4bbf0cbaffd65d2a6ef83ab49fcbd6c944366445ab7d577bd2cd9e7aef3a63a89d770e00b6656f18e956e0063bdb48a6279180f023103c052387",
+      "cloudPassword": "enc$gcm$4d02fef7c62db0be52480cef$9ec10408f71e0ddc02c730b4eeb2438e$7c60d4b564af22ade2ae"
     },
     "newtech.sg": {
       "userType": 2,
       "roleName": "🏢 Đại Lý (Dealer)",
       "userName": "Đại Lý Newtech Solar (Nguyễn Hồng Sơn)",
       "company": "Newtech Solar Solutions Co., Ltd",
-      "password": "newtech.sg123",
       "cellphone": "0938123456",
       "email": "newtech.sg@gmail.com",
       "dealerCode": "DL_NEWTECH",
       "technicianCode": "DL_NEWTECH",
-      "createdAt": "2026-08-31T09:25:43.095Z"
+      "createdAt": "2026-08-31T09:25:43.095Z",
+      "passwordHash": "pbkdf2$100000$53c92231ef8fabccaf87e1c11ddb5878$c294341222ade543bdbde6b5373a05645383602f1fcef97c374e908513123a8e3ea5b080a1742e3181519a22a0d36165360b5f1a7a60750a9623b55585c9d26f",
+      "cloudPassword": "enc$gcm$9b0b635483ca5a09b44e0d64$6fe564c785178669b60bae582fb4207a$2ddd0f432374830ec39050090d"
     },
     "tuan_solar": {
       "userType": 2,
       "roleName": "🏢 Đại Lý (Dealer)",
       "userName": "Đại Lý Tuấn Solar Miền Nam",
       "company": "Tuấn Solar Energy",
-      "password": "123456",
       "cellphone": "0918765432",
       "email": "tuan@sungo.vn",
       "dealerCode": "DL_TUANSOLAR",
       "technicianCode": "DL_TUANSOLAR",
-      "createdAt": "2026-08-31T08:00:00.000Z"
+      "createdAt": "2026-08-31T08:00:00.000Z",
+      "passwordHash": "pbkdf2$100000$06e5c36286cab87c890e95c02c4dbdac$6e938656a9f690209c44780146117909a865795a4238efa2a7916c69e0029ade68e04343bc66acccbd14cdbbd0154bca4b76381431622aa6f54dc404f8d719c3",
+      "cloudPassword": "enc$gcm$6245b90ca2618642b7c55b69$a0ed6de379f938a64b3779357544d912$774e9766d121"
     },
     "thodien_mientay": {
       "userType": 2,
       "roleName": "🏢 Đại Lý (Dealer)",
       "userName": "Đại Lý Trần Văn Hưng (Miền Tây)",
       "company": "Điện Mặt Trời Miền Tây",
-      "password": "123456",
       "cellphone": "0933445566",
       "email": "hung.solar@gmail.com",
       "dealerCode": "DL_MIENTAY",
       "technicianCode": "DL_MIENTAY",
-      "createdAt": "2026-08-31T09:42:26.474Z"
+      "createdAt": "2026-08-31T09:42:26.474Z",
+      "passwordHash": "pbkdf2$100000$e7a402f8d545ff85d32c6de471fcec7d$de0e8e644b1d9f65cde1c3676f4f203e686d9536625100d97cf68ae21f38a9cb39e648887627c51a61450168d1ac108effaca578501122d337fc79dc87831936",
+      "cloudPassword": "enc$gcm$58dfd71486a126ab3c7f60a3$5a84436610445fca398403d7e6923e8a$e296a2c1a2a5"
     },
     "dungkiep": {
       "userType": 3,
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
       "userName": "dungkiep",
       "company": "Hộ Gia Đình",
-      "password": "",
       "cellphone": "0912345678",
       "email": "dungkiep@sungo.vn",
       "createdAt": "2026-08-31T07:38:26.965Z",
-      "phoneLinked": true
+      "phoneLinked": true,
+      "passwordHash": "pbkdf2$100000$69acacd6e169793a60527837522c8a45$997cdad161bea68d55419d4ba66f4bf800ef6dbdec5213ad3e7643fdaedc9b42c6976dcd70b8d1b09411e8c4f4fe2965e00e7b02c123c51f577c5ec0584f5df9",
+      "cloudPassword": "enc$gcm$5adf736a3802d0b0d1fb1de7$70c2e9a9d2e9406dac222b3b2464b192$14c060d0bb2c"
     },
     "vothehien1006": {
       "userType": 3,
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
       "userName": "Khách Hàng Võ Thế Hiển",
       "company": "Hộ Gia Đình",
-      "password": "",
       "cellphone": "",
       "email": "vothehien1006@sungo.vn",
-      "createdAt": "2026-08-31T08:26:05.743Z"
+      "createdAt": "2026-08-31T08:26:05.743Z",
+      "passwordHash": "pbkdf2$100000$7323828438459cd72a8c992b3a000230$e161b62569b649209a86aa430b62d868c28bfa01c5f161d7bc73cf612c93666e20290b7daf1d7df8d6eaafdf13cc1c305accfddbcaeb32bf6fe85c5a394a017a",
+      "cloudPassword": "enc$gcm$567cb4730f06c3bd91da9d19$23768d982f9eb78ffb39c300ca38467f$a786bee8106e"
     },
     "sungo123": {
       "userType": 3,
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
       "userName": "Khách Hàng sungo123",
       "company": "Hộ Gia Đình",
-      "password": "sungo123",
-      "cloudPassword": "sungo123",
-      "zenoPassword": "sungo123",
+      "cloudPassword": "enc$gcm$a08d0d2aefc8b57803d885d2$efe04f06874988fa12d050ba62f02dc3$6bb460e9c9e423b4",
       "cellphone": "",
       "email": "sungo123@sungo.vn",
-      "createdAt": "2026-08-31T11:50:34.601Z"
+      "createdAt": "2026-08-31T11:50:34.601Z",
+      "passwordHash": "pbkdf2$100000$9e1c623a963151a393f36e6f03a50ca3$b72b0fd7c4264f8951f86110e6c9d6e98e408e1b7c7a6f2776aa0ffd7c6ad207e645f30e4d38a3313e09d218c441e4cd26a34053f8e86edd8655015f8916a9b2"
     }
   },
   "devices": {

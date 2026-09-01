@@ -6,6 +6,7 @@ const siseliClient = require('../siseliClient');
 const deviceOwnership = require('../services/deviceOwnership');
 const liveCloud = require('../services/liveCloud');
 const config = require('../config');
+const security = require('../utils/security');
 
 // 1. Đăng ký tài khoản người dùng mới (Lưu vào PostgreSQL + DeviceOwnership + Auto-Link Inverter)
 router.post('/register', async (req, res) => {
@@ -77,9 +78,12 @@ router.post('/register', async (req, res) => {
         });
       }
 
+      const hashedPass = security.hashPassword(cleanPass);
+      const encryptedCloud = security.encryptSecret(cleanPass);
+
       const insertRes = await pool.query(`
-        INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, siseli_user_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, zeno_password, cloud_password, siseli_user_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING user_id;
       `, [
         acc,
@@ -88,7 +92,9 @@ router.post('/register', async (req, res) => {
         cellphone,
         cleanType,
         roleName,
-        cleanPass,
+        hashedPass,
+        hashedPass,
+        encryptedCloud,
         `ZENO-HOMEUSER-${Date.now()}`
       ]);
       if (insertRes.rows.length > 0) {
@@ -98,7 +104,7 @@ router.post('/register', async (req, res) => {
       console.warn('[Register DB Warning]:', dbErr.message);
     }
 
-    // Lưu vào DeviceOwnership memory & JSON cache
+    // Lưu vào DeviceOwnership memory & JSON cache (Mã hóa tự động trong registerUser)
     const roleInfo = deviceOwnership.registerUser({
       account: acc,
       password: cleanPass,
@@ -235,9 +241,10 @@ router.post('/login', async (req, res) => {
     if (dbRes.rows.length > 0) dbUser = dbRes.rows[0];
   } catch (err) {}
 
-  const zenoPass = storedUser?.zenoPassword || storedUser?.password || dbUser?.zeno_password || dbUser?.password_hash;
-  const cloudPass = storedUser?.cloudPassword || dbUser?.cloud_password || '123456';
-  const matchesZenoPassword = Boolean(inputPass && zenoPass && inputPass === zenoPass);
+  const zenoHash = storedUser?.passwordHash || storedUser?.zenoPassword || storedUser?.password || dbUser?.password_hash || dbUser?.zeno_password;
+  const rawCloudPass = storedUser?.cloudPassword || dbUser?.cloud_password || '123456';
+  const cloudPass = security.decryptSecret(rawCloudPass) || '123456';
+  const matchesZenoPassword = Boolean(inputPass && zenoHash && security.verifyPassword(inputPass, zenoHash));
 
   let userCloudToken = null;
   let rawUserData = null;
@@ -267,6 +274,9 @@ router.post('/login', async (req, res) => {
         stations: userStations || []
       });
 
+      const hashedZeno = zenoPass ? (zenoPass.startsWith('pbkdf2$') ? zenoPass : security.hashPassword(zenoPass)) : security.hashPassword('sungo123');
+      const encryptedCloud = security.encryptSecret(cloudPass || '123456');
+
       // 2. Lưu vào PostgreSQL database
       const customerUpsertRes = await pool.query(`
         INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, cloud_password, zeno_password, siseli_user_id)
@@ -287,9 +297,9 @@ router.post('/login', async (req, res) => {
         rawData.cellphone || '',
         uType,
         rName,
-        zenoPass || 'sungo123',
-        cloudPass || '123456',
-        zenoPass || 'sungo123',
+        hashedZeno,
+        encryptedCloud,
+        hashedZeno,
         String(rawData.userId || rawData.iotUserId || '')
       ]).catch(() => null);
 
@@ -467,7 +477,7 @@ router.post('/login', async (req, res) => {
     );
     if (dbUserRes.rows.length > 0) {
       const u = dbUserRes.rows[0];
-      if (u.password_hash && inputPass && u.password_hash === inputPass) {
+      if (u.password_hash && inputPass && security.verifyPassword(inputPass, u.password_hash)) {
         const roleInfo = deviceOwnership.getUserRole(u.account);
         const masterCloudToken = await liveCloud.getValidToken();
         const userToken = `zeno_token_${u.account}_${u.user_type || 3}_${Date.now()}`;
@@ -771,20 +781,23 @@ router.post('/verify-recovery-otp', async (req, res) => {
       console.warn('[Cloud Reset Password Warn]:', resetErr.response?.data || resetErr.message);
     }
 
-    // Cập nhật mật khẩu mới vào CSDL Zeno Cloud (Cả 2 mật khẩu được đồng bộ)
+    // Cập nhật mật khẩu mới vào CSDL Zeno Cloud (Cả 2 mật khẩu được đồng bộ và mã hóa an toàn)
+    const hashedPass = security.hashPassword(cleanPass);
+    const encryptedCloud = security.encryptSecret(cleanPass);
+
     if (deviceOwnership.data?.users) {
       if (deviceOwnership.data.users[targetAccount]) {
-        deviceOwnership.data.users[targetAccount].password = cleanPass;
-        deviceOwnership.data.users[targetAccount].cloudPassword = cleanPass;
-        deviceOwnership.data.users[targetAccount].zenoPassword = cleanPass;
+        deviceOwnership.data.users[targetAccount].passwordHash = hashedPass;
+        deviceOwnership.data.users[targetAccount].cloudPassword = encryptedCloud;
+        delete deviceOwnership.data.users[targetAccount].password;
+        delete deviceOwnership.data.users[targetAccount].zenoPassword;
       } else {
         deviceOwnership.data.users[targetAccount] = {
           userType: 3,
           roleName: '🏠 Người Tiêu Dùng Cuối (End-User)',
           userName: targetAccount,
-          password: cleanPass,
-          cloudPassword: cleanPass,
-          zenoPassword: cleanPass,
+          passwordHash: hashedPass,
+          cloudPassword: encryptedCloud,
           cellphone: cleanId,
           email: `${targetAccount}@sungo.vn`
         };
@@ -796,7 +809,7 @@ router.post('/verify-recovery-otp', async (req, res) => {
 
     // Cập nhật vào DB PostgreSQL nếu có
     try {
-      await pool.query('UPDATE customers SET cloud_password = $1, zeno_password = $1, password_hash = $1, updated_at = NOW() WHERE LOWER(account) = $2 OR cellphone = $2 OR email = $2', [cleanPass, targetAccount]);
+      await pool.query('UPDATE customers SET cloud_password = $1, zeno_password = $2, password_hash = $2, updated_at = NOW() WHERE LOWER(account) = $3 OR cellphone = $3 OR email = $3', [encryptedCloud, hashedPass, targetAccount]);
     } catch (dbErr) {}
 
     // Xóa cache OTP
@@ -865,16 +878,19 @@ router.post('/recover-by-serial', async (req, res) => {
       }
     }
 
-    // Cập nhật mật khẩu
+    // Cập nhật mật khẩu băm an toàn
+    const hashedPass = security.hashPassword(cleanPass);
     if (deviceOwnership.data.users && deviceOwnership.data.users[targetAccount]) {
-      deviceOwnership.data.users[targetAccount].password = cleanPass;
+      deviceOwnership.data.users[targetAccount].passwordHash = hashedPass;
+      delete deviceOwnership.data.users[targetAccount].password;
+      delete deviceOwnership.data.users[targetAccount].zenoPassword;
       deviceOwnership.save();
     }
 
     try {
       await pool.query(
-        'UPDATE customers SET password_hash = $1 WHERE LOWER(account) = $2 OR cellphone = $2',
-        [cleanPass, cleanId]
+        'UPDATE customers SET password_hash = $1, zeno_password = $1 WHERE LOWER(account) = $2 OR cellphone = $2',
+        [hashedPass, cleanId]
       );
     } catch (e) {}
 

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const security = require('../utils/security');
 
 class DeviceOwnershipService {
   constructor() {
@@ -310,17 +311,16 @@ class DeviceOwnershipService {
       else computedRoleName = 'Chủ Nhà / Người Dùng Cuối (View-Only)';
     }
 
-    const cPass = cloudPassword || password || '123456';
-    const zPass = zenoPassword || password || 'sungo123';
+    const cPass = security.encryptSecret(cloudPassword || password || '123456');
+    const zPassHash = security.hashPassword(zenoPassword || password || 'sungo123');
 
     this.data.users[acc] = {
       userType: type,
       roleName: computedRoleName,
       userName: userName || account,
       company: company || (type === 1 ? 'Zeno Clean Energy Corp' : type === 2 ? 'Đội Kỹ Thuật Lắp Đặt' : 'Gia đình'),
-      password: zPass,
+      passwordHash: zPassHash,
       cloudPassword: cPass,
-      zenoPassword: zPass,
       cellphone: cellphone || '',
       email: email || `${acc}@zenosolar.vn`,
       technicianCode: type === 2 ? (technicianCode ? String(technicianCode).trim().toUpperCase() : `KT_${acc.toUpperCase()}`) : (technicianCode ? String(technicianCode).trim().toUpperCase() : null),
@@ -382,9 +382,8 @@ class DeviceOwnershipService {
         roleName: computedRoleName,
         userName: userName || account,
         company: 'Hộ gia đình',
-        password: password || 'sungo123',
-        cloudPassword: password || '123456',
-        zenoPassword: password || 'sungo123',
+        passwordHash: password ? security.hashPassword(password) : security.hashPassword('sungo123'),
+        cloudPassword: password ? security.encryptSecret(password) : security.encryptSecret('123456'),
         cellphone: cellphone || '',
         email: email || `${acc}@sungo.vn`,
         createdAt: new Date().toISOString()
@@ -394,8 +393,10 @@ class DeviceOwnershipService {
       if (email) this.data.users[acc].email = email;
       if (cellphone) this.data.users[acc].cellphone = cellphone;
       if (password) {
-        this.data.users[acc].cloudPassword = password;
-        if (!this.data.users[acc].zenoPassword) this.data.users[acc].zenoPassword = password;
+        this.data.users[acc].cloudPassword = security.encryptSecret(password);
+        if (!this.data.users[acc].passwordHash) {
+          this.data.users[acc].passwordHash = security.hashPassword(password);
+        }
       }
     }
 
@@ -1014,25 +1015,37 @@ class DeviceOwnershipService {
         createdAt: new Date().toISOString()
       };
     }
-    if (cloudPassword) this.data.users[acc].cloudPassword = String(cloudPassword).trim();
+    if (cloudPassword) {
+      this.data.users[acc].cloudPassword = security.encryptSecret(String(cloudPassword).trim());
+    }
     if (zenoPassword) {
-      this.data.users[acc].zenoPassword = String(zenoPassword).trim();
-      this.data.users[acc].password = String(zenoPassword).trim();
+      this.data.users[acc].passwordHash = security.hashPassword(String(zenoPassword).trim());
+      // Xóa các trường mật khẩu thô cũ
+      delete this.data.users[acc].zenoPassword;
+      delete this.data.users[acc].password;
     }
     this.saveData();
     return {
-      cloudPassword: this.data.users[acc].cloudPassword,
-      zenoPassword: this.data.users[acc].zenoPassword
+      success: true
     };
   }
 
   getUserPasswords(account) {
     const acc = String(account).toLowerCase().trim();
     const u = this.data.users[acc] || {};
+    const rawCloud = u.cloudPassword || u.password || '123456';
     return {
-      cloudPassword: u.cloudPassword || u.password || '123456',
-      zenoPassword: u.zenoPassword || u.password || 'sungo123'
+      cloudPassword: security.decryptSecret(rawCloud) || '123456',
+      passwordHash: u.passwordHash || (u.zenoPassword ? security.hashPassword(u.zenoPassword) : security.hashPassword('sungo123'))
     };
+  }
+
+  verifyUserPassword(account, inputPassword) {
+    const acc = String(account).toLowerCase().trim();
+    const u = this.data.users[acc];
+    if (!u) return false;
+    const stored = u.passwordHash || u.zenoPassword || u.password;
+    return security.verifyPassword(inputPassword, stored);
   }
 
   save() {

@@ -1,6 +1,7 @@
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
+const security = require('./utils/security');
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -88,6 +89,10 @@ async function initDatabase() {
             return; // Tuyệt đối bỏ qua tài khoản đã bị xóa
           }
           if (!deviceOwnership.data.users[accKey]) {
+            const rawCloud = r.cloud_password || '123456';
+            const encCloud = rawCloud.startsWith('enc$') ? rawCloud : security.encryptSecret(rawCloud);
+            const passHash = r.password_hash || r.zeno_password || security.hashPassword('sungo123');
+
             deviceOwnership.data.users[accKey] = {
               userId: r.user_id,
               userType: (accKey === 'sungo.vn' || accKey === 'admin' || accKey === 'zeno_admin') ? 1 : Number(r.user_type || 3),
@@ -95,9 +100,8 @@ async function initDatabase() {
               userName: r.user_name,
               email: r.email,
               cellphone: r.cellphone,
-              password: r.password_hash || '',
-              cloudPassword: r.cloud_password || '123456',
-              zenoPassword: r.zeno_password || r.password_hash || 'sungo123',
+              passwordHash: passHash,
+              cloudPassword: encCloud,
               createdAt: r.created_at
             };
           }
@@ -114,6 +118,9 @@ async function initDatabase() {
 
 async function seedInitialData(client, deviceOwnership) {
   try {
+    const masterPassHash = security.hashPassword('sungo123');
+    const masterCloudEnc = security.encryptSecret('sungo@100%');
+
     // 1. Luôn đảm bảo tài khoản Master sungo.vn tồn tại trên PostgreSQL
     await client.query(`
       INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, cloud_password, zeno_password, created_at)
@@ -129,9 +136,9 @@ async function seedInitialData(client, deviceOwnership) {
       '0901234567',
       1,
       '👑 Tổng Phân Phối (Distributor)',
-      'sungo123',
-      'sungo@100%',
-      'sungo123'
+      masterPassHash,
+      masterCloudEnc,
+      masterPassHash
     ]);
 
     // 2. Chỉ seed tài khoản ban đầu nếu bảng customers hoàn toàn mới (<= 1 row)
@@ -149,6 +156,10 @@ async function seedInitialData(client, deviceOwnership) {
           if (accKey === 'sungo.vn' || deviceOwnership?.isUserDeleted(accKey)) {
             continue; // Bỏ qua nếu đã xóa hoặc là sungo.vn
           }
+
+          const userPassHash = u.passwordHash || security.hashPassword(u.zenoPassword || u.password || 'sungo123');
+          const userCloudEnc = u.cloudPassword || security.encryptSecret('123456');
+
           await client.query(
             `INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, cloud_password, zeno_password, created_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -160,9 +171,9 @@ async function seedInitialData(client, deviceOwnership) {
               u.cellphone || '',
               u.userType || 3,
               u.roleName || '🏠 Người Tiêu Dùng Cuối',
-              u.password || 'sungo123',
-              u.cloudPassword || '123456',
-              u.zenoPassword || u.password || 'sungo123',
+              userPassHash,
+              userCloudEnc,
+              userPassHash,
               u.createdAt ? new Date(u.createdAt) : new Date()
             ]
           );

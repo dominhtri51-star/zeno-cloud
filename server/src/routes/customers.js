@@ -5,6 +5,7 @@ const siseliClient = require('../siseliClient');
 const mockData = require('../mockData');
 const deviceOwnership = require('../services/deviceOwnership');
 const liveCloud = require('../services/liveCloud');
+const security = require('../utils/security');
 
 // Middleware xác thực token
 const checkAuth = (req, res, next) => {
@@ -197,13 +198,13 @@ router.get('/', checkAuth, async (req, res) => {
       return String(a.account).localeCompare(String(b.account));
     });
 
-    // 🔒 BẢO MẬT: Chỉ Tài Khoản Tổng Master (userType === 1) mới được xem Mật Khẩu Lưu Trữ 2 Lớp!
-    if (roleInfo.userType !== 1) {
-      customersWithDevices = customersWithDevices.map(c => {
-        const { cloudPassword, zenoPassword, passwordHash, ...safeCustomer } = c;
-        return safeCustomer;
-      });
-    }
+    // 🔒 BẢO MẬT TUYỆT ĐỐI (ZERO KNOWLEDGE):
+    // Tuyệt đối không trả về bất kỳ trường mật khẩu nào (cloudPassword, zenoPassword, passwordHash) cho bất kỳ ai (kể cả Master).
+    // Quản trị viên chỉ có quyền "Đặt lại mật khẩu mới" (Reset Password), không xem mật khẩu của người dùng.
+    customersWithDevices = customersWithDevices.map(c => {
+      const { cloudPassword, zenoPassword, passwordHash, password, ...safeCustomer } = c;
+      return safeCustomer;
+    });
 
     return res.json({
       success: true,
@@ -395,6 +396,9 @@ router.post('/:id/reset-password', checkAuth, async (req, res) => {
 
   const isZeno = targetPassword === 'zeno' || targetPassword === 'both';
   const isCloud = targetPassword === 'cloud' || targetPassword === 'both';
+  const cleanPass = String(newPassword).trim();
+  const hashedPassword = security.hashPassword(cleanPass);
+  const encryptedCloudPass = security.encryptSecret(cleanPass);
 
   // 1. Cập nhật trong DeviceOwnership
   if (deviceOwnership.data?.users) {
@@ -408,11 +412,12 @@ router.post('/:id/reset-password', checkAuth, async (req, res) => {
     }
     const userObj = deviceOwnership.data.users[targetAcc];
     if (isZeno) {
-      userObj.zenoPassword = newPassword;
-      userObj.password = newPassword;
+      userObj.passwordHash = hashedPassword;
+      delete userObj.zenoPassword;
+      delete userObj.password;
     }
     if (isCloud) {
-      userObj.cloudPassword = newPassword;
+      userObj.cloudPassword = encryptedCloudPass;
     }
     deviceOwnership.saveData();
   }
@@ -421,18 +426,18 @@ router.post('/:id/reset-password', checkAuth, async (req, res) => {
   try {
     if (isZeno && isCloud) {
       await pool.query(
-        'UPDATE customers SET zeno_password = $1, password_hash = $1, cloud_password = $1, updated_at = NOW() WHERE user_id::text = $2 OR LOWER(account) = LOWER($2)',
-        [newPassword, targetAcc]
+        'UPDATE customers SET zeno_password = $1, password_hash = $1, cloud_password = $2, updated_at = NOW() WHERE user_id::text = $3 OR LOWER(account) = LOWER($3)',
+        [hashedPassword, encryptedCloudPass, targetAcc]
       );
     } else if (isZeno) {
       await pool.query(
         'UPDATE customers SET zeno_password = $1, password_hash = $1, updated_at = NOW() WHERE user_id::text = $2 OR LOWER(account) = LOWER($2)',
-        [newPassword, targetAcc]
+        [hashedPassword, targetAcc]
       );
     } else if (isCloud) {
       await pool.query(
         'UPDATE customers SET cloud_password = $1, updated_at = NOW() WHERE user_id::text = $2 OR LOWER(account) = LOWER($2)',
-        [newPassword, targetAcc]
+        [encryptedCloudPass, targetAcc]
       );
     }
   } catch (err) {

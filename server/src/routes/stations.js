@@ -3,6 +3,7 @@ const router = express.Router();
 const siseliClient = require('../siseliClient');
 const liveCloud = require('../services/liveCloud');
 const deviceOwnership = require('../services/deviceOwnership');
+const systemSettings = require('../services/systemSettings');
 const { pool } = require('../db');
 
 // 0. Lấy danh sách trạm kèm thiết bị con (GET /api/stations)
@@ -101,9 +102,15 @@ router.get('/', async (req, res) => {
 
   let allStations = Object.values(stationsMap);
 
-  // Gắn thông tin danh sách các đại lý đã được chia sẻ cho từng trạm
+  // Gắn thông tin danh sách các đại lý đã được chia sẻ và cấu hình công suất cài đặt riêng cho từng trạm
   allStations.forEach(st => {
     st.sharedDealers = deviceOwnership.getStationShares(st.stationId, st.ownerName);
+    const custom = systemSettings.getStationSettings(String(st.stationId));
+    if (custom && custom.installedCapacityKw !== undefined && custom.installedCapacityKw !== null && !isNaN(custom.installedCapacityKw)) {
+      const cap = parseFloat(custom.installedCapacityKw);
+      st.installedCapacity = `${cap} kWp`;
+      st.capacityKw = cap;
+    }
   });
 
   // 3. Phân quyền trả về:

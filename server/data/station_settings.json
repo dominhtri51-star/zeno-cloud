@@ -8,7 +8,7 @@
     "normalPrice": 1850,
     "offPeakPrice": 1250,
     "feedInTariff": 1000,
-    "installedCapacityKw": 12,
+    "installedCapacityKw": 6,
     "pv1CapacityKw": 6,
     "pv2CapacityKw": 6,
     "solarPanelType": "Mono Perc Tier 1 (550W)",
@@ -17,6 +17,7 @@
     "batteryAh": 200,
     "batteryVoltageNominal": 51.2,
     "minSoc": 20,
-    "maxSoc": 100
+    "maxSoc": 100,
+    "updatedAt": "2026-09-01T04:30:28.125Z"
   }
 }

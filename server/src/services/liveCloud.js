@@ -2,13 +2,54 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const deviceOwnership = require('./deviceOwnership');
+const systemSettings = require('./systemSettings');
 
 // Bộ nhớ đệm Tích phân chuỗi thời gian thực tế hàng ngày (Daily Integral Cache)
 const dailyIntegralCache = new Map();
 
+function normalizeRecordToKw(p) {
+  if (!p) return { pv: 0, chg: 0, dis: 0, buy: 0, sell: 0, load: 0, backup: 0, grid: 0, soc: 0 };
+
+  const rawBat = parseFloat(p.batteryPower) || 0;
+  const rawCt = parseFloat(p.CTPower) || 0;
+  const rawAc = parseFloat(p.acOutputActivePower) || 0;
+  const rawGrid = parseFloat(p.GridPower) || 0;
+  const rawPv1 = parseFloat(p.pvInputPower) || 0;
+  const rawPv2 = parseFloat(p.pv2InputPower) || 0;
+  const rawPv3 = parseFloat(p.pv3InputPower) || 0;
+  const rawPv4 = parseFloat(p.pv4InputPower) || 0;
+  const soc = Math.round(parseFloat(p.batteryCapacity) || 0);
+
+  // Nhận biết bản ghi trả về Watts hay kW (VD: -337W, 12W, 188W -> isWatts = true)
+  const isWatts = Math.abs(rawBat) > 25 || Math.abs(rawCt) > 25 || Math.abs(rawAc) > 25 || Math.abs(rawGrid) > 25;
+
+  const toKw = (v) => {
+    if (Math.abs(v) > 25 || isWatts) return v / 1000;
+    return v;
+  };
+
+  const pvKw = (Math.abs(rawPv1) > 25 ? rawPv1 / 1000 : rawPv1) + 
+               (Math.abs(rawPv2) > 25 ? rawPv2 / 1000 : rawPv2) + 
+               (Math.abs(rawPv3) > 25 ? rawPv3 / 1000 : rawPv3) + 
+               (Math.abs(rawPv4) > 25 ? rawPv4 / 1000 : rawPv4);
+  const batKw = toKw(rawBat);
+  const chgKw = batKw < 0 ? Math.abs(batKw) : 0;
+  const disKw = batKw > 0 ? batKw : 0;
+
+  const gridKw = toKw(rawGrid);
+  const buyKw = gridKw > 0 ? gridKw : 0;
+  const sellKw = gridKw < 0 ? Math.abs(gridKw) : 0;
+
+  const ctKw = rawCt > 0 ? (rawCt > 25 || isWatts ? rawCt / 1000 : rawCt) : toKw(rawAc);
+  const backupKw = toKw(rawAc);
+  const loadKw = ctKw > 0 ? ctKw : Math.max(0, pvKw + disKw + buyKw - chgKw - sellKw);
+
+  return { pv: pvKw, chg: chgKw, dis: disKw, buy: buyKw, sell: sellKw, load: loadKw, backup: backupKw, grid: gridKw, soc };
+}
+
 function toKwValue(val) {
   const num = parseFloat(val) || 0;
-  if (Math.abs(num) > 15) return num / 1000;
+  if (Math.abs(num) > 25) return num / 1000;
   return num;
 }
 
@@ -303,11 +344,17 @@ class LiveCloudService {
               );
 
               const devices = devRes.data?.code === 0 ? devRes.data.data?.list || [] : [];
+              const sIdStr = String(st.id);
+              const custom = systemSettings.getStationSettings(sIdStr);
+              const capVal = (custom && custom.installedCapacityKw !== undefined && custom.installedCapacityKw !== null && !isNaN(custom.installedCapacityKw))
+                ? parseFloat(custom.installedCapacityKw)
+                : (parseFloat(st.installedCapacity) || 12.0);
+
               return {
-                stationId: String(st.id),
+                stationId: sIdStr,
                 stationName: st.name || 'Trạm năng lượng',
-                installedCapacity: `${st.installedCapacity || 1.0} kWp`,
-                capacityKw: parseFloat(st.installedCapacity || 1.0),
+                installedCapacity: `${capVal} kWp`,
+                capacityKw: capVal,
                 address: st.address || '',
                 city: st.city || st.province || 'Hồ Chí Minh',
                 country: st.country || 'Vietnam',
@@ -324,10 +371,16 @@ class LiveCloudService {
                 }))
               };
             } catch (err) {
+              const sIdStr = String(st.id);
+              const custom = systemSettings.getStationSettings(sIdStr);
+              const capVal = (custom && custom.installedCapacityKw !== undefined && custom.installedCapacityKw !== null && !isNaN(custom.installedCapacityKw))
+                ? parseFloat(custom.installedCapacityKw)
+                : (parseFloat(st.installedCapacity) || 12.0);
               return {
-                stationId: String(st.id),
+                stationId: sIdStr,
                 stationName: st.name || 'Trạm năng lượng',
-                installedCapacity: `${st.installedCapacity || 1.0} kWp`,
+                installedCapacity: `${capVal} kWp`,
+                capacityKw: capVal,
                 ownerName: st.ownerName || 'Chủ trạm',
                 devices: []
               };
@@ -603,6 +656,17 @@ class LiveCloudService {
         };
       }
 
+      // Kiểm tra trạng thái Pin thực tế của Inverter (điện áp > 35V và có sạc/xả)
+      const latestStateRes = await axios.get(
+        `${this.baseUrl}/remote/device/state/latest?deviceId=${targetDeviceId}&dataSource=1&_t=${Date.now()}`,
+        { headers, timeout: 5000 }
+      ).catch(() => null);
+      const fields = latestStateRes?.data?.data?.fields || {};
+      const batVol = parseFloat(fields['batteryVoltage']?.value || 0);
+      const batSoc = parseInt(fields['batteryCapacity']?.value || 0, 10);
+      const batPower = parseFloat(fields['batteryPower']?.value || 0);
+      const hasBattery = batVol > 35 && (batSoc > 0 || Math.abs(batPower) > 5);
+
       // 1. XỬ LÝ CHO CHẾ ĐỘ NGÀY (TÍCH PHÂN 24H THỜI GIAN THỰC TỪ BẢN GHI ĐIỂM)
       if (scope === 'DAY') {
         const parts = reqTime.split('-');
@@ -640,44 +704,21 @@ class LiveCloudService {
 
         // Tích phân chuỗi thời gian liên tục theo phương pháp hình thang
         for (let i = 1; i < rawList.length; i++) {
-          const prev = rawList[i - 1];
-          const curr = rawList[i];
-          if (!prev.time || !curr.time) continue;
+          const k0 = normalizeRecordToKw(rawList[i - 1]);
+          const k1 = normalizeRecordToKw(rawList[i]);
+          if (!rawList[i - 1].time || !rawList[i].time) continue;
 
-          const t0 = new Date(prev.time).getTime();
-          const t1 = new Date(curr.time).getTime();
+          const t0 = new Date(rawList[i - 1].time).getTime();
+          const t1 = new Date(rawList[i].time).getTime();
           const dtHours = Math.max(0, (t1 - t0) / (1000 * 3600));
           if (dtHours > 2) continue;
 
-          const pv0 = toKwValue(prev.pvInputPower) + toKwValue(prev.pv2InputPower);
-          const pv1 = toKwValue(curr.pvInputPower) + toKwValue(curr.pv2InputPower);
-          totalPvIntegral += ((pv0 + pv1) / 2) * dtHours;
-
-          const bat0 = toKwValue(prev.batteryPower);
-          const bat1 = toKwValue(curr.batteryPower);
-          const chg0 = bat0 < 0 ? Math.abs(bat0) : 0;
-          const chg1 = bat1 < 0 ? Math.abs(bat1) : 0;
-          totalChgIntegral += ((chg0 + chg1) / 2) * dtHours;
-
-          const dis0 = bat0 > 0 ? bat0 : 0;
-          const dis1 = bat1 > 0 ? bat1 : 0;
-          totalDisIntegral += ((dis0 + dis1) / 2) * dtHours;
-
-          const grid0 = toKwValue(prev.GridPower);
-          const grid1 = toKwValue(curr.GridPower);
-          const buy0 = grid0 > 0 ? grid0 : 0;
-          const buy1 = grid1 > 0 ? grid1 : 0;
-          totalBuyIntegral += ((buy0 + buy1) / 2) * dtHours;
-
-          const sell0 = grid0 < 0 ? Math.abs(grid0) : 0;
-          const sell1 = grid1 < 0 ? Math.abs(grid1) : 0;
-          totalSellIntegral += ((sell0 + sell1) / 2) * dtHours;
-
-          const ct0 = parseFloat(prev.CTPower) > 0 ? parseFloat(prev.CTPower) / 1000 : toKwValue(prev.acOutputActivePower);
-          const ct1 = parseFloat(curr.CTPower) > 0 ? parseFloat(curr.CTPower) / 1000 : toKwValue(curr.acOutputActivePower);
-          const load0 = ct0 > 0 ? ct0 : Math.max(0, pv0 + dis0 + buy0 - chg0 - sell0);
-          const load1 = ct1 > 0 ? ct1 : Math.max(0, pv1 + dis1 + buy1 - chg1 - sell1);
-          totalLoadIntegral += ((load0 + load1) / 2) * dtHours;
+          totalPvIntegral += ((k0.pv + k1.pv) / 2) * dtHours;
+          totalChgIntegral += hasBattery ? (((k0.chg + k1.chg) / 2) * dtHours) : 0;
+          totalDisIntegral += hasBattery ? (((k0.dis + k1.dis) / 2) * dtHours) : 0;
+          totalBuyIntegral += ((k0.buy + k1.buy) / 2) * dtHours;
+          totalSellIntegral += ((k0.sell + k1.sell) / 2) * dtHours;
+          totalLoadIntegral += ((k0.load + k1.load) / 2) * dtHours;
         }
 
         // 24 mốc giờ trên đồ thị
@@ -692,30 +733,24 @@ class LiveCloudService {
           });
 
           if (records.length > 0) {
-            const avgPv = records.reduce((s, r) => s + toKwValue(r.pvInputPower) + toKwValue(r.pv2InputPower), 0) / records.length;
-            const avgBat = records.reduce((s, r) => s + toKwValue(r.batteryPower), 0) / records.length;
-            const avgSoc = records.reduce((s, r) => s + (parseFloat(r.batteryCapacity) || 0), 0) / records.length;
-            const avgCt = records.reduce((s, r) => s + (parseFloat(r.CTPower) > 0 ? parseFloat(r.CTPower)/1000 : toKwValue(r.acOutputActivePower)), 0) / records.length;
-            const avgGrid = records.reduce((s, r) => s + toKwValue(r.GridPower), 0) / records.length;
-            const avgBackup = records.reduce((s, r) => s + toKwValue(r.acOutputActivePower), 0) / records.length;
-
-            const pvKw = Number(avgPv.toFixed(3));
-            const chgKw = Number((avgBat < 0 ? Math.abs(avgBat) : 0).toFixed(3));
-            const disKw = Number((avgBat > 0 ? avgBat : 0).toFixed(3));
-            const loadKw = Number(avgCt.toFixed(3));
-            const backupKw = Number(avgBackup.toFixed(3));
-            const gridKw = Number(avgGrid.toFixed(3));
-            const socPct = Math.round(avgSoc);
+            const normList = records.map(normalizeRecordToKw);
+            const avgPv = normList.reduce((s, r) => s + r.pv, 0) / normList.length;
+            const avgChg = hasBattery ? (normList.reduce((s, r) => s + r.chg, 0) / normList.length) : 0;
+            const avgDis = hasBattery ? (normList.reduce((s, r) => s + r.dis, 0) / normList.length) : 0;
+            const avgLoad = normList.reduce((s, r) => s + r.load, 0) / normList.length;
+            const avgBackup = normList.reduce((s, r) => s + r.backup, 0) / normList.length;
+            const avgGrid = normList.reduce((s, r) => s + r.grid, 0) / normList.length;
+            const avgSoc = normList.reduce((s, r) => s + r.soc, 0) / normList.length;
 
             chartData.push({
               label: hourLabel,
-              pv: pvKw,
-              load: loadKw,
-              chg: chgKw,
-              dis: disKw,
-              backup: backupKw,
-              grid: gridKw,
-              soc: socPct
+              pv: Number(avgPv.toFixed(3)),
+              load: Number(avgLoad.toFixed(3)),
+              chg: Number(avgChg.toFixed(3)),
+              dis: Number(avgDis.toFixed(3)),
+              backup: Number(avgBackup.toFixed(3)),
+              grid: Number(avgGrid.toFixed(3)),
+              soc: Math.round(avgSoc)
             });
           } else {
             chartData.push({
@@ -793,30 +828,19 @@ class LiveCloudService {
 
               let pvE = 0, chgE = 0, disE = 0, buyE = 0, sellE = 0, loadE = 0;
               for (let i = 1; i < list.length; i++) {
-                const p0 = list[i - 1];
-                const p1 = list[i];
-                const t0 = new Date(p0.time).getTime();
-                const t1 = new Date(p1.time).getTime();
+                const k0 = normalizeRecordToKw(list[i - 1]);
+                const k1 = normalizeRecordToKw(list[i]);
+                const t0 = new Date(list[i - 1].time).getTime();
+                const t1 = new Date(list[i].time).getTime();
                 const dt = (t1 - t0) / (3600 * 1000);
                 if (dt > 2 || dt <= 0) continue;
 
-                const pv0 = toKwValue(p0.pvInputPower) + toKwValue(p0.pv2InputPower);
-                const pv1 = toKwValue(p1.pvInputPower) + toKwValue(p1.pv2InputPower);
-                pvE += ((pv0 + pv1) / 2) * dt;
-
-                const b0 = toKwValue(p0.batteryPower);
-                const b1 = toKwValue(p1.batteryPower);
-                chgE += (((b0 < 0 ? Math.abs(b0) : 0) + (b1 < 0 ? Math.abs(b1) : 0)) / 2) * dt;
-                disE += (((b0 > 0 ? b0 : 0) + (b1 > 0 ? b1 : 0)) / 2) * dt;
-
-                const g0 = toKwValue(p0.GridPower);
-                const g1 = toKwValue(p1.GridPower);
-                buyE += (((g0 > 0 ? g0 : 0) + (g1 > 0 ? g1 : 0)) / 2) * dt;
-                sellE += (((g0 < 0 ? Math.abs(g0) : 0) + (g1 < 0 ? Math.abs(g1) : 0)) / 2) * dt;
-
-                const ct0 = parseFloat(p0.CTPower) > 0 ? parseFloat(p0.CTPower) / 1000 : toKwValue(p0.acOutputActivePower);
-                const ct1 = parseFloat(p1.CTPower) > 0 ? parseFloat(p1.CTPower) / 1000 : toKwValue(p1.acOutputActivePower);
-                loadE += ((ct0 + ct1) / 2) * dt;
+                pvE += ((k0.pv + k1.pv) / 2) * dt;
+                chgE += hasBattery ? (((k0.chg + k1.chg) / 2) * dt) : 0;
+                disE += hasBattery ? (((k0.dis + k1.dis) / 2) * dt) : 0;
+                buyE += ((k0.buy + k1.buy) / 2) * dt;
+                sellE += ((k0.sell + k1.sell) / 2) * dt;
+                loadE += ((k0.load + k1.load) / 2) * dt;
               }
 
               const resDay = {
@@ -844,17 +868,6 @@ class LiveCloudService {
           if (item && item.data) dayMap.set(item.day, item.data);
         });
 
-        // Kiểm tra trạng thái Pin thực tế của Inverter (điện áp > 35V và có sạc/xả)
-        const latestStateRes = await axios.get(
-          `${this.baseUrl}/remote/device/state/latest?deviceId=${targetDeviceId}&dataSource=1&_t=${Date.now()}`,
-          { headers, timeout: 5000 }
-        ).catch(() => null);
-        const fields = latestStateRes?.data?.data?.fields || {};
-        const batVol = parseFloat(fields['batteryVoltage']?.value || 0);
-        const batSoc = parseInt(fields['batteryCapacity']?.value || 0, 10);
-        const batPower = parseFloat(fields['batteryPower']?.value || 0);
-        const hasBattery = batVol > 35 && (batSoc > 0 || Math.abs(batPower) > 5);
-
         let chartData = [];
         let totalPv = 0, totalLoad = 0, totalChg = 0, totalDis = 0, totalSell = 0, totalBuy = 0;
 
@@ -864,11 +877,11 @@ class LiveCloudService {
           const telemetry = dayMap.get(d);
 
           let pv = rawPv > 0 ? Number(rawPv.toFixed(2)) : (telemetry ? telemetry.pv : 0);
-          let chg = hasBattery ? (telemetry ? telemetry.chg : (pv > 0 ? Number((pv * 0.35).toFixed(2)) : 0)) : 0;
-          let dis = hasBattery ? (telemetry ? telemetry.dis : (pv > 0 ? Number((chg * 0.92).toFixed(2)) : 0)) : 0;
-          let load = telemetry ? telemetry.load : (pv > 0 ? Number((15.0 + pv * 0.2).toFixed(2)) : 0);
+          let chg = hasBattery ? (telemetry ? telemetry.chg : 0) : 0;
+          let dis = hasBattery ? (telemetry ? telemetry.dis : 0) : 0;
+          let load = telemetry ? telemetry.load : (pv > 0 ? Number((pv * 1.5).toFixed(2)) : 0);
           let buy = telemetry ? telemetry.buy : (pv > 0 ? Number(Math.max(0, load - (pv - chg) - dis).toFixed(2)) : 0);
-          let sell = telemetry ? telemetry.sell : (pv > 0 ? Number(Math.max(0, (pv - chg - 10.0) * 0.7).toFixed(2)) : 0);
+          let sell = telemetry ? telemetry.sell : (pv > 0 ? Number(Math.max(0, (pv - chg - load) * 0.9).toFixed(2)) : 0);
 
           totalPv += pv;
           totalLoad += load;
@@ -913,17 +926,6 @@ class LiveCloudService {
 
       const rawYearList = (yearRes?.data?.code === 0 && Array.isArray(yearRes.data?.data)) ? yearRes.data.data : [];
 
-      // Kiểm tra trạng thái Pin thực tế của Inverter
-      const latestStateRes = await axios.get(
-        `${this.baseUrl}/remote/device/state/latest?deviceId=${targetDeviceId}&dataSource=1&_t=${Date.now()}`,
-        { headers, timeout: 5000 }
-      ).catch(() => null);
-      const fields = latestStateRes?.data?.data?.fields || {};
-      const batVol = parseFloat(fields['batteryVoltage']?.value || 0);
-      const batSoc = parseInt(fields['batteryCapacity']?.value || 0, 10);
-      const batPower = parseFloat(fields['batteryPower']?.value || 0);
-      const hasBattery = batVol > 35 && (batSoc > 0 || Math.abs(batPower) > 5);
-
       // Lấy dữ liệu tháng 8 / tháng có dữ liệu gần nhất làm mẫu tính tỷ lệ chính xác từ viễn trắc
       let sampleMonthSummary = null;
       try {
@@ -940,11 +942,11 @@ class LiveCloudService {
         sell: sampleMonthSummary.sellEnergy / sampleMonthSummary.pvEnergy,
         buy: sampleMonthSummary.buyEnergy / sampleMonthSummary.pvEnergy
       } : { 
-        load: 1.85, 
-        chg: hasBattery ? 0.35 : 0, 
-        dis: hasBattery ? 0.32 : 0, 
-        sell: 0.28, 
-        buy: 2.64 
+        load: 1.5, 
+        chg: hasBattery ? 0.2 : 0, 
+        dis: hasBattery ? 0.18 : 0, 
+        sell: 0.05, 
+        buy: 0.45 
       };
 
       let chartData = [];

@@ -700,10 +700,16 @@ router.post('/send-recovery-otp', async (req, res) => {
       const cloudRes = await axios.post(endpoint, {
         address: targetEmailOrPhone,
         intent: 1 // 1: Reset Password
-      }, { headers, timeout: 10000 });
+      }, { headers, timeout: 12000 });
 
       if (cloudRes.data && cloudRes.data.code === 0) {
         captchaId = cloudRes.data.data?.iotCaptchaId;
+        if (captchaId) {
+          sessionCaptchaMap[cleanId] = captchaId;
+          sessionCaptchaMap[targetEmailOrPhone] = captchaId;
+          savePersistentCaptcha(cleanId, captchaId);
+          savePersistentCaptcha(targetEmailOrPhone, captchaId);
+        }
       } else {
         const errorMsg = cloudRes.data?.localMessage || cloudRes.data?.message;
         if (errorMsg) {
@@ -715,16 +721,17 @@ router.post('/send-recovery-otp', async (req, res) => {
     }
 
     // Sinh mã fallback dự phòng trong trường hợp tài khoản nội bộ
-    const localOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    const finalCaptchaId = captchaId || '515855040086511617';
+    const persistentCaptchas = loadPersistentCaptchas();
+    const finalCaptchaId = captchaId || persistentCaptchas[cleanId]?.captchaId || persistentCaptchas[targetEmailOrPhone]?.captchaId || '515855040086511617';
 
     sessionCaptchaMap[cleanId] = finalCaptchaId;
     sessionCaptchaMap[targetEmailOrPhone] = finalCaptchaId;
 
+    const localOtp = Math.floor(100000 + Math.random() * 900000).toString();
     recoveryOtpCache.set(cleanId, {
       otp: localOtp,
       captchaId: finalCaptchaId,
-      expiresAt: Date.now() + 5 * 60 * 1000,
+      expiresAt: Date.now() + 10 * 60 * 1000,
       identity: cleanId,
       account: targetAccount,
       emailOrPhone: targetEmailOrPhone
@@ -747,7 +754,7 @@ router.post('/send-recovery-otp', async (req, res) => {
 // 6. Xác thực mã OTP và Đặt Lại Mật Khẩu Mới trực tiếp với Server Hãng
 router.post('/verify-recovery-otp', async (req, res) => {
   try {
-    const { identity, account, otpCode, newPassword } = req.body;
+    const { identity, account, otpCode, newPassword, captchaId } = req.body;
     const cleanId = String(identity || account || '').trim().toLowerCase();
     const cleanOtp = String(otpCode || '').trim();
     const cleanPass = String(newPassword || '').trim();
@@ -767,8 +774,8 @@ router.post('/verify-recovery-otp', async (req, res) => {
     }
 
     const cached = recoveryOtpCache.get(cleanId) || {};
-    const finalCaptchaId = cached.captchaId || sessionCaptchaMap[cleanId] || '515855040086511617';
-    const targetAccount = cached.account || cleanId;
+    const persistentCaptchas = loadPersistentCaptchas();
+    const finalCaptchaId = captchaId || cached.captchaId || sessionCaptchaMap[cleanId] || persistentCaptchas[cleanId]?.captchaId || persistentCaptchas[cached.emailOrPhone]?.captchaId || '515855040086511617';
 
     const headers = {
       'Content-Type': 'application/json',
@@ -777,41 +784,38 @@ router.post('/verify-recovery-otp', async (req, res) => {
       'User-Agent': 'Mozilla/5.0'
     };
 
-    console.log(`[Cloud Reset Password] Đang đặt lại mật khẩu cho tài khoản [${targetAccount}] trên Server Hãng...`);
+    console.log(`[Cloud Reset Password] Đang đặt lại mật khẩu cho tài khoản [${cleanId}] trên Server Hãng (CaptchaId: ${finalCaptchaId})...`);
 
     let cloudResetOk = false;
-    try {
-      const md5Pass = toMd5(cleanPass);
-      let resetRes = await axios.post(`${config.siseli.baseUrl}/user/reset/password`, {
-        account: targetAccount,
-        newPassword: md5Pass,
-        captchaId: finalCaptchaId,
-        verifyCode: cleanOtp
-      }, { headers, timeout: 10000 });
+    const md5Pass = toMd5(cleanPass);
+    const tryAccounts = [cached.account, cached.emailOrPhone, cleanId].filter(Boolean);
 
-      if (!resetRes.data || resetRes.data.code !== 0) {
-        resetRes = await axios.post(`${config.siseli.baseUrl}/user/reset/password`, {
-          account: targetAccount,
-          newPassword: cleanPass,
+    for (const a of tryAccounts) {
+      try {
+        let resetRes = await axios.post(`${config.siseli.baseUrl}/user/reset/password`, {
+          account: a,
+          newPassword: md5Pass,
           captchaId: finalCaptchaId,
           verifyCode: cleanOtp
-        }, { headers, timeout: 8000 }).catch(() => null) || resetRes;
-      }
+        }, { headers, timeout: 10000 });
 
-      if (resetRes.data && resetRes.data.code === 0) {
-        cloudResetOk = true;
-        console.log(`[Cloud Reset Password] Đặt lại mật khẩu thành công trên Server Hãng cho [${targetAccount}]!`);
-      } else {
-        const msg = resetRes.data?.localMessage || resetRes.data?.message;
-        if (msg && !cached.otp) {
-          return res.status(400).json({
-            success: false,
-            message: msg || 'Server Hãng từ chối mã xác thực OTP!'
-          });
+        if (!resetRes.data || resetRes.data.code !== 0) {
+          resetRes = await axios.post(`${config.siseli.baseUrl}/user/reset/password`, {
+            account: a,
+            newPassword: cleanPass,
+            captchaId: finalCaptchaId,
+            verifyCode: cleanOtp
+          }, { headers, timeout: 8000 }).catch(() => null) || resetRes;
         }
+
+        if (resetRes.data && resetRes.data.code === 0) {
+          cloudResetOk = true;
+          console.log(`[Cloud Reset Password] Đặt lại mật khẩu thành công trên Server Hãng cho [${a}]!`);
+          break;
+        }
+      } catch (resetErr) {
+        console.warn(`[Cloud Reset Password Try for ${a} Warn]:`, resetErr.response?.data || resetErr.message);
       }
-    } catch (resetErr) {
-      console.warn('[Cloud Reset Password Warn]:', resetErr.response?.data || resetErr.message);
     }
 
     // Cập nhật mật khẩu mới vào CSDL Zeno Cloud (Cả 2 mật khẩu được đồng bộ và mã hóa an toàn)

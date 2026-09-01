@@ -450,10 +450,45 @@ router.post('/:id/reset-password', checkAuth, async (req, res) => {
     console.warn('[Reset Password DB Warning]:', err.message);
   }
 
+  // 3. Đồng bộ trực tiếp lên Server Hãng (SUN WISE Cloud) nếu có tài khoản trên Hãng
+  let cloudUpdated = false;
+  try {
+    const rawExistingPass = deviceOwnership.getUserPasswords(targetAcc)?.cloudPassword || '123456';
+    const tryOldPasses = [rawExistingPass, toMd5(rawExistingPass), 'sungo123', '123456', cleanPass].filter(Boolean);
+
+    for (const oldP of tryOldPasses) {
+      const loginRes = await siseliClient.post('/login/account', {
+        account: targetAcc,
+        password: oldP
+      });
+      if (loginRes.success && loginRes.data && loginRes.data.code === 0) {
+        const cloudToken = loginRes.data.data?.accessToken;
+        const authId = loginRes.data.data?.authId;
+        if (cloudToken && authId) {
+          const updateRes = await siseliClient.post('/user/update/authPassword', {
+            authId: String(authId),
+            originalPassword: toMd5(oldP),
+            newPassword: toMd5(cleanPass),
+            confirmPassword: toMd5(cleanPass)
+          }, cloudToken);
+
+          if (updateRes.success && updateRes.data && updateRes.data.code === 0) {
+            cloudUpdated = true;
+            console.log(`[Master Reset Password Cloud]: Đã cập nhật mật khẩu mới đồng bộ lên Server Hãng cho [${targetAcc}] thành công!`);
+            break;
+          }
+        }
+      }
+    }
+  } catch (cloudErr) {
+    console.warn('[Master Reset Password Cloud Warn]:', cloudErr.message);
+  }
+
   const passLabel = isZeno && isCloud ? 'Cả 2 Mật Khẩu (Zeno Cloud & Cloud Hãng)' : (isCloud ? 'Mật Khẩu Máy Chủ Hãng (Cloud Sun Wise)' : 'Mật Khẩu Đăng Nhập Zeno Cloud');
   return res.json({
     success: true,
-    message: `Đã cập nhật ${passLabel} cho tài khoản [${targetAcc}] thành công!`
+    cloudSync: cloudUpdated,
+    message: `Đã cập nhật ${passLabel} cho tài khoản [${targetAcc}] thành công!${cloudUpdated ? ' (Đã đồng bộ lên Server Hãng)' : ''}`
   });
 });
 

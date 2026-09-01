@@ -76,59 +76,44 @@
     "sungo123": {
       "userType": 3,
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
-      "userName": "Khách Hàng sungo123",
+      "userName": "sungo123",
       "company": "Hộ Gia Đình",
-      "cloudPassword": "enc$gcm$a08d0d2aefc8b57803d885d2$efe04f06874988fa12d050ba62f02dc3$6bb460e9c9e423b4",
+      "cloudPassword": "enc$gcm$ba8404911f15849cbb2c7901$9af6de6867a7d17b78459156e2272f97$af2ec65c628c45be",
       "cellphone": "",
       "email": "sungo123@sungo.vn",
       "createdAt": "2026-08-31T11:50:34.601Z",
       "passwordHash": "pbkdf2$100000$9e1c623a963151a393f36e6f03a50ca3$b72b0fd7c4264f8951f86110e6c9d6e98e408e1b7c7a6f2776aa0ffd7c6ad207e645f30e4d38a3313e09d218c441e4cd26a34053f8e86edd8655015f8916a9b2"
     },
-    "phanthivui": {
+    "chuhanatest": {
+      "userId": 8,
       "userType": 3,
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
-      "userName": "Phan Thị Vui (PhanThiVuiPlant)",
-      "company": "Hộ Gia Đình",
-      "cellphone": "0987654321",
-      "email": "phanthivui@sungo.vn",
-      "serialNumber": "96796956562056303625",
-      "dtuCode": "96796956562056303625",
-      "createdAt": "2026-09-01T08:00:00.000Z",
-      "passwordHash": "pbkdf2$100000$9e1c623a963151a393f36e6f03a50ca3$b72b0fd7c4264f8951f86110e6c9d6e98e408e1b7c7a6f2776aa0ffd7c6ad207e645f30e4d38a3313e09d218c441e4cd26a34053f8e86edd8655015f8916a9b2",
-      "cloudPassword": "enc$gcm$a08d0d2aefc8b57803d885d2$efe04f06874988fa12d050ba62f02dc3$6bb460e9c9e423b4"
+      "userName": "Chủ Nhà Dũng Kiệp (zenoPlant)",
+      "email": "chuhanatest@sungo.vn",
+      "cellphone": "0912345678",
+      "passwordHash": "123456",
+      "cloudPassword": "enc$gcm$74df62b84d9af9cd05c116be$e54babfb2f530a8cab9ca029b0249070$6674a3d62868",
+      "createdAt": "2026-08-31T08:44:14.432Z"
     },
-    "dientunuoc": {
+    "zeno_home_9200": {
+      "userId": 9,
       "userType": 3,
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
-      "userName": "dientunuoc",
-      "company": "Hộ Gia Đình",
-      "cellphone": "",
-      "email": "dientunuoc@sungo.vn",
-      "createdAt": "2026-09-01T08:00:00.000Z",
-      "passwordHash": "pbkdf2$100000$9e1c623a963151a393f36e6f03a50ca3$b72b0fd7c4264f8951f86110e6c9d6e98e408e1b7c7a6f2776aa0ffd7c6ad207e645f30e4d38a3313e09d218c441e4cd26a34053f8e86edd8655015f8916a9b2",
-      "cloudPassword": "enc$gcm$a08d0d2aefc8b57803d885d2$efe04f06874988fa12d050ba62f02dc3$6bb460e9c9e423b4"
+      "userName": "Anh Nam (Chủ Nhà Thảo Điền)",
+      "email": "zeno_home_9200@gmail.com",
+      "cellphone": "0988776655",
+      "passwordHash": "Password123!",
+      "cloudPassword": "enc$gcm$2e5a788226921e316c426472$37dd90cac149d5bac7af791cc3b085f8$6b594c7ab056",
+      "createdAt": "2026-08-31T09:46:30.572Z"
     }
   },
   "devices": {
-    "430603922535579697": {
-      "deviceId": "430603922535579697",
-      "serialNumber": "9679695656-1",
-      "dtuCode": "96796956562056303625",
-      "stationId": "508901365286666240",
-      "stationName": "PhanThiVuiPlant",
-      "distributor": "sungo.vn",
-      "installer": "tuan_solar",
-      "customer": "phanthivui",
-      "isConfigLocked": false,
-      "status": "ONLINE",
-      "claimedAt": "2026-09-01T15:26:16.000Z"
-    },
     "465132145264787456": {
       "deviceId": "465132145264787456",
       "dtuCode": "35282147608648059097",
       "serialNumber": "3528214760-1",
       "stationId": "454586755050340353",
-      "stationName": "canh",
+      "stationName": "sungoPlant",
       "distributor": "sungo.vn",
       "installer": "tuan_solar",
       "customer": "sungo123",

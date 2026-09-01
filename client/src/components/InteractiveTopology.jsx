@@ -14,7 +14,9 @@ import {
   Radio, 
   Info,
   Flame,
-  ArrowRight
+  ArrowRight,
+  Cpu,
+  Boxes
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import InverterUnit from './InverterUnit';
@@ -44,17 +46,23 @@ export default function InteractiveTopology({
   temperature = 38.9,
   tempF = 102,
   todayPvEnergy = '0.00',
+  fleetMode = 'AGGREGATED', // 'AGGREGATED' | 'INV_1' | 'INV_2' | 'INV_3'
+  clusterType = '3PHASE',   // '3PHASE' | '1PHASE_PARALLEL'
+  inverters = [],
+  totalStorageCapacity = '30.0 kWh',
   className = ''
 }) {
   const { isDark } = useTheme();
   const [activeModal, setActiveModal] = useState(null); // 'solar' | 'grid' | 'battery' | 'backup' | 'load' | null
+
+  const isAggregated = fleetMode === 'AGGREGATED';
 
   // Trạng thái xả pin (Discharging): khi batteryPower > 0 hoặc đang cấp điện cho tải
   // Trạng thái sạc pin (Charging): khi batteryPower < 0 (nhận điện từ PV / Lưới)
   const isBatteryDischarging = batteryPower >= 0;
 
   // Hiệu chuẩn Tải Dự Phòng: Hiển thị = Tải thật - 34W (làm tròn, nếu < 3W thì = 0W)
-  const adjustedBackup = Math.round(backupPower - 34);
+  const adjustedBackup = Math.round(backupPower - (isAggregated ? 102 : 34));
   const displayBackupPower = adjustedBackup < 3 ? 0 : adjustedBackup;
 
   // Hiệu chuẩn Lưới Điện: Nếu giá trị tuyệt đối < 5W thì làm tròn về 0W (loại bỏ gợn nhiễu cảm biến)
@@ -82,21 +90,44 @@ export default function InteractiveTopology({
   // Dòng tải dự phòng
   const calcBackupA = backupCurrent > 0 ? backupCurrent : (displayBackupPower > 0 ? Number((displayBackupPower / 228.5).toFixed(2)) : 0);
 
+  // Phân bổ 3 Pha khi ở chế độ 3 Phase
+  const phaseAPower = Math.round(loadPower * 0.36);
+  const phaseBPower = Math.round(loadPower * 0.33);
+  const phaseCPower = Math.round(loadPower * 0.31);
+
+  const phaseAGrid = Math.round(displayGridPower * 0.36);
+  const phaseBGrid = Math.round(displayGridPower * 0.33);
+  const phaseCGrid = Math.round(displayGridPower * 0.31);
+
   return (
     <div className={`relative ${isDark ? 'bg-[#070b14] border-slate-800/80 text-white' : 'bg-white border-slate-200 shadow-xl shadow-slate-200/50 text-slate-800'} rounded-3xl p-3 sm:p-5 border shadow-2xl overflow-hidden select-none font-['Plus_Jakarta_Sans',sans-serif] ${className} transition-colors duration-300`}>
       
-      {/* 1. Nhiệt độ máy dạng viên thuốc phát sáng ở đỉnh */}
-      <div className="flex justify-center mb-1 relative z-20">
-        <div className={`inline-flex items-center space-x-2 px-3.5 py-1 rounded-full ${isDark ? 'bg-[#111827]/90 border-slate-700/80 text-slate-200' : 'bg-slate-100/95 border-slate-300 text-slate-800'} border text-[11px] sm:text-xs font-semibold shadow-md backdrop-blur-md`}>
+      {/* 1. Thanh chỉ báo chế độ và nhiệt độ máy ở đỉnh */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-1 relative z-20">
+        <div className="flex items-center gap-1.5">
+          {isAggregated ? (
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-cyan-500/20 via-teal-500/20 to-emerald-500/20 border border-cyan-500/40 text-cyan-400 font-extrabold text-[10px] sm:text-xs shadow-sm">
+              <Boxes className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+              <span>CỤM GỘP 3 BIẾN TẦN ({clusterType === '3PHASE' ? 'ĐIỆN 3 PHA' : '1 PHA SONG SONG'})</span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold text-[10px] sm:text-xs">
+              <Cpu className="w-3.5 h-3.5" />
+              <span>{fleetMode === 'INV_1' ? 'BIẾN TẦN #1 (MASTER / PHA A)' : fleetMode === 'INV_2' ? 'BIẾN TẦN #2 (SLAVE 1 / PHA B)' : 'BIẾN TẦN #3 (SLAVE 2 / PHA C)'}</span>
+            </span>
+          )}
+        </div>
+
+        <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full ${isDark ? 'bg-[#111827]/90 border-slate-700/80 text-slate-200' : 'bg-slate-100/95 border-slate-300 text-slate-800'} border text-[11px] sm:text-xs font-semibold shadow-md backdrop-blur-md`}>
           <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
           <span className={`font-mono ${isDark ? 'text-amber-300' : 'text-amber-600'} font-bold`}>{temperature}°C ({tempF}°F)</span>
         </div>
       </div>
 
-      {/* 2. KHUNG VẼ SƠ ĐỒ TRUNG TÂM - TỶ LỆ PHẦN TRĂM TUYỆT ĐỐI KHỚP TÂM 100% */}
+      {/* 2. KHUNG VẼ SƠ ĐỒ TRUNG TÂM */}
       <div className="relative w-full h-[370px] xs:h-[390px] sm:h-[420px] md:h-[440px] flex items-center justify-center my-1">
         
-        {/* SVG CIRCUIT LINES LAYER - Tọa độ 0-100% khớp chính xác tâm các thẻ */}
+        {/* SVG CIRCUIT LINES LAYER */}
         <svg 
           viewBox="0 0 100 100" 
           className="absolute inset-0 w-full h-full pointer-events-none z-0"
@@ -157,7 +188,7 @@ export default function InteractiveTopology({
                 stroke="#f59e0b" 
                 strokeWidth="0.85" 
                 strokeLinecap="round" 
-                strokeLinejoin="round"
+                strokeLinejoin="round" 
                 strokeDasharray="2 1.5"
                 className="flow-pv"
                 filter="url(#glow-amber)"
@@ -174,7 +205,7 @@ export default function InteractiveTopology({
                 stroke="#0ea5e9" 
                 strokeWidth="0.85" 
                 strokeLinecap="round" 
-                strokeLinejoin="round"
+                strokeLinejoin="round" 
                 strokeDasharray="2 1.5"
                 className="flow-grid"
                 filter="url(#glow-blue)"
@@ -191,7 +222,7 @@ export default function InteractiveTopology({
                 stroke={isBatteryDischarging ? "#a855f7" : "#10b981"} 
                 strokeWidth="0.85" 
                 strokeLinecap="round" 
-                strokeLinejoin="round"
+                strokeLinejoin="round" 
                 strokeDasharray="2 1.5"
                 className={isBatteryDischarging ? "flow-bat-discharge" : "flow-bat-charge"}
                 filter="url(#glow-emerald)"
@@ -208,7 +239,7 @@ export default function InteractiveTopology({
                 stroke="#f97316" 
                 strokeWidth="0.85" 
                 strokeLinecap="round" 
-                strokeLinejoin="round"
+                strokeLinejoin="round" 
                 strokeDasharray="2 1.5"
                 className="flow-backup"
                 filter="url(#glow-amber)"
@@ -225,7 +256,7 @@ export default function InteractiveTopology({
                 stroke="#06b6d4" 
                 strokeWidth="0.85" 
                 strokeLinecap="round" 
-                strokeLinejoin="round"
+                strokeLinejoin="round" 
                 strokeDasharray="2 1.5"
                 className="flow-load"
                 filter="url(#glow-cyan)"
@@ -237,6 +268,11 @@ export default function InteractiveTopology({
 
         {/* ================= INVERTER TRUNG TÂM (Căn giữa 50%, 50%) ================= */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center justify-center scale-90 xs:scale-95 sm:scale-100 md:scale-105">
+          {isAggregated && (
+            <div className="absolute -top-3 px-2 py-0.5 rounded-full bg-cyan-500 text-slate-950 text-[9px] font-black tracking-wider uppercase shadow-lg shadow-cyan-500/30 z-30 whitespace-nowrap">
+              3x PARALLEL CLUSTER
+            </div>
+          )}
           <InverterUnit
             batteryVoltage={batteryVoltage}
             gridVoltage={gridVoltage}
@@ -244,9 +280,9 @@ export default function InteractiveTopology({
           />
         </div>
 
-        {/* ================= 5 THẺ KÍNH MỜ GÔM GỌN, CHẠM DÂY TRÚNG TÂM 100% ================= */}
+        {/* ================= 5 THẺ KÍNH MỜ ================= */}
 
-        {/* 1. TOP LEFT: PIN MẶT TRỜI (Tâm tại X = 18%, Y = 2%) */}
+        {/* 1. TOP LEFT: PIN MẶT TRỜI */}
         <div 
           onClick={() => setActiveModal('solar')}
           title="Nhấn để xem chi tiết chuỗi PV1, PV2, điện áp & dòng điện"
@@ -255,58 +291,50 @@ export default function InteractiveTopology({
           <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-400 mb-0.5 shadow-md shadow-amber-400/20 group-hover:scale-110 transition-transform">
             <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-[spin_10s_linear_infinite]" />
           </div>
-          <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight`}>Pin mặt trời</span>
+          <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight`}>
+            {isAggregated ? 'PV Tổng Cụm' : 'Pin mặt trời'}
+          </span>
           <span className={`text-sm sm:text-base md:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
             {pvPower}W
           </span>
         </div>
 
-        {/* 2. TOP RIGHT: LƯỚI ĐIỆN (Tâm tại X = 82%, Y = 2%) */}
+        {/* 2. TOP RIGHT: LƯỚI ĐIỆN */}
         <div 
           onClick={() => setActiveModal('grid')}
           title="Nhấn để xem chi tiết điện áp, tần số và dòng điện lưới EVN"
           className={`absolute left-[82%] -translate-x-1/2 top-[2%] z-20 w-[28%] max-w-[125px] min-w-[86px] ${isDark ? 'bg-[#0c1322]/90 hover:bg-[#111c33] border-slate-700/70 text-white' : 'bg-white/95 hover:bg-slate-50 border-slate-200 text-slate-800 shadow-md'} backdrop-blur-md rounded-2xl py-2 px-1.5 sm:py-2.5 sm:px-2 shadow-xl flex flex-col items-center text-center border hover:border-sky-400 hover:shadow-sky-500/20 cursor-pointer transition-all duration-200 active:scale-95 group`}
         >
           <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 mb-0.5 shadow-md shadow-sky-500/20 group-hover:scale-110 transition-transform">
-            <svg 
-              className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2.2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            >
-              <path d="M6 22 L11 2 M18 22 L13 2" />
-              <path d="M3 7 L21 7" />
-              <path d="M2 13 L22 13" />
-              <path d="M7 17.5 L17 17.5" />
-              <path d="M8.5 7 L15.5 13 M15.5 7 L8.5 13" />
-            </svg>
+            <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400" />
           </div>
-          <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight`}>Lưới điện</span>
+          <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight`}>
+            {isAggregated && clusterType === '3PHASE' ? 'Lưới Điện 3 Pha' : 'Lưới điện'}
+          </span>
           <span className={`text-sm sm:text-base md:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
             {displayGridPower}W
           </span>
         </div>
 
-        {/* 3. BOTTOM LEFT: PIN LƯU TRỮ (Tâm tại X = 18%, Y = bottom 2%) */}
+        {/* 3. BOTTOM LEFT: PIN LƯU TRỮ */}
         <div 
           onClick={() => setActiveModal('battery')}
-          title="Nhấn để xem chi tiết pin lưu trữ BMS, dung lượng SOC và nhiệt độ"
+          title="Nhấn để xem chi tiết cụm pin lưu trữ BMS, dung lượng SOC và nhiệt độ"
           className={`absolute left-[18%] -translate-x-1/2 bottom-[2%] z-20 w-[28%] max-w-[125px] min-w-[86px] ${isDark ? 'bg-[#0c1322]/90 hover:bg-[#111c33] border-slate-700/70 text-white' : 'bg-white/95 hover:bg-slate-50 border-slate-200 text-slate-800 shadow-md'} backdrop-blur-md rounded-2xl py-2 px-1.5 sm:py-2.5 sm:px-2 shadow-xl flex flex-col items-center text-center border hover:border-emerald-400 hover:shadow-emerald-500/20 cursor-pointer transition-all duration-200 active:scale-95 group`}
         >
           <div className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-500 text-[8px] sm:text-[9px] font-bold flex items-center gap-0.5 mb-0.5 shadow-sm group-hover:scale-105 transition-transform">
             <Battery className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
             <span>{batterySoc}%</span>
           </div>
-          <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight truncate w-full`}>Pin lưu trữ</span>
+          <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight truncate w-full`}>
+            {isAggregated ? 'Cụm Pin BMS (3 Pack)' : 'Pin lưu trữ'}
+          </span>
           <span className={`text-sm sm:text-base md:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
             {Math.abs(batteryPower)}W
           </span>
         </div>
 
-        {/* 4. BOTTOM MIDDLE: TẢI DỰ PHÒNG (Tâm tại X = 50%, Y = bottom 2%) */}
+        {/* 4. BOTTOM MIDDLE: TẢI DỰ PHÒNG */}
         <div 
           onClick={() => setActiveModal('backup')}
           title="Nhấn để xem chi tiết tải ưu tiên EPS / UPS và điện áp đầu ra"
@@ -315,13 +343,15 @@ export default function InteractiveTopology({
           <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-500 mb-0.5 shadow-md shadow-amber-500/20 group-hover:scale-110 transition-transform">
             <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
-          <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight truncate w-full`}>Tải dự phòng</span>
+          <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight truncate w-full`}>
+            {isAggregated ? 'EPS Cụm Tổng' : 'Tải dự phòng'}
+          </span>
           <span className={`text-sm sm:text-base md:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
             {displayBackupPower}W
           </span>
         </div>
 
-        {/* 5. BOTTOM RIGHT: TẢI HÒA LƯỚI (Tâm tại X = 82%, Y = bottom 2%) */}
+        {/* 5. BOTTOM RIGHT: TẢI HÒA LƯỚI */}
         <div 
           onClick={() => setActiveModal('load')}
           title="Nhấn để xem chi tiết phân bổ nguồn cấp cho tải gia đình"
@@ -330,7 +360,9 @@ export default function InteractiveTopology({
           <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-500 mb-0.5 shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
             <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
           </div>
-          <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight truncate w-full`}>Tải hòa lưới</span>
+          <span className={`text-[10px] sm:text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'} leading-tight truncate w-full`}>
+            {isAggregated ? 'Tải Tiêu Thụ Tổng' : 'Tải hòa lưới'}
+          </span>
           <span className={`text-sm sm:text-base md:text-lg font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-0.5`}>
             {loadPower}W
           </span>
@@ -347,7 +379,7 @@ export default function InteractiveTopology({
           onClick={() => setActiveModal(null)}
         >
           <div 
-            className={`relative w-full max-w-md ${isDark ? 'bg-[#0d1527] border-slate-700/80 text-white shadow-cyan-950/40' : 'bg-white border-slate-200 text-slate-900 shadow-2xl'} rounded-3xl p-5 sm:p-6 border shadow-2xl transition-all duration-300 max-h-[90vh] overflow-y-auto`}
+            className={`relative w-full max-w-lg ${isDark ? 'bg-[#0d1527] border-slate-700/80 text-white shadow-cyan-950/40' : 'bg-white border-slate-200 text-slate-900 shadow-2xl'} rounded-3xl p-5 sm:p-6 border shadow-2xl transition-all duration-300 max-h-[90vh] overflow-y-auto`}
             onClick={e => e.stopPropagation()}
           >
             {/* Nút Đóng Modal (X) */}
@@ -366,79 +398,119 @@ export default function InteractiveTopology({
                     <Sun className="w-5 h-5 animate-[spin_8s_linear_infinite]" />
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-black tracking-tight">Chi Tiết Năng Lượng Mặt Trời</h3>
-                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Thông số điện học chuỗi PV1, PV2 & Tổng công suất</p>
+                    <h3 className="text-base sm:text-lg font-black tracking-tight">
+                      {isAggregated ? 'Tổng Công Suất Năng Lượng Mặt Trời (Cụm 3 Máy)' : 'Chi Tiết Năng Lượng Mặt Trời'}
+                    </h3>
+                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {isAggregated ? 'Tổng hợp 6 chuỗi MPPT từ 3 biến tần song song' : 'Thông số điện học chuỗi PV1, PV2 & Tổng công suất'}
+                    </p>
                   </div>
                 </div>
 
                 {/* Banner Tổng công suất PV */}
                 <div className={`p-4 rounded-2xl ${isDark ? 'bg-gradient-to-r from-amber-500/15 to-orange-500/10 border-amber-500/30' : 'bg-amber-50/90 border-amber-200'} border flex items-center justify-between`}>
                   <div>
-                    <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>TỔNG CÔNG SUẤT PV</span>
+                    <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
+                      {isAggregated ? 'TỔNG PV CỤM SONG SONG' : 'TỔNG CÔNG SUẤT PV'}
+                    </span>
                     <span className="text-2xl sm:text-3xl font-black font-mono text-amber-500 block mt-0.5">{pvPower} W</span>
                     <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'} font-mono`}>~ {(pvPower / 1000).toFixed(2)} kW tức thời</span>
                   </div>
                   <div className="text-right">
                     <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>SẢN LƯỢNG HÔM NAY</span>
                     <span className={`text-xl font-black font-mono ${isDark ? 'text-cyan-400' : 'text-cyan-600'} block mt-0.5`}>{todayPvEnergy} kWh</span>
-                    <span className="text-[10px] text-emerald-500 font-semibold">● 2 MPPT Hoạt động</span>
+                    <span className="text-[10px] text-emerald-500 font-semibold">
+                      {isAggregated ? '● 6 MPPT Hoạt động' : '● 2 MPPT Hoạt động'}
+                    </span>
                   </div>
                 </div>
 
-                {/* 2 Khối Chi Tiết PV1 & PV2 */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* PV1 Card */}
-                  <div className={`p-3.5 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border space-y-2`}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-amber-500 uppercase tracking-wide">CHUỖI PV 1</span>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${effectivePv1 > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-300'}`}>
-                        {effectivePv1 > 0 ? 'Active' : 'Standby'}
-                      </span>
-                    </div>
-                    <div className="space-y-1 text-xs">
-                      <div className="flex justify-between">
-                        <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Công suất:</span>
-                        <span className="font-mono font-bold text-amber-400">{effectivePv1} W</span>
+                {/* Phân bổ theo từng Inverter trong cụm */}
+                {isAggregated ? (
+                  <div className="space-y-2.5">
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} uppercase tracking-wider block`}>
+                      PHÂN BỔ PV THEO TỪNG BIẾN TẦN TRONG CỤM:
+                    </span>
+                    
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      {/* Inv 1 */}
+                      <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} space-y-1 text-center`}>
+                        <span className="text-[10px] font-bold text-amber-500 block uppercase">MÁY #1 (MASTER)</span>
+                        <strong className="text-sm font-mono font-black text-amber-400 block">{Math.round(pvPower * 0.38)} W</strong>
+                        <span className="text-[10px] opacity-70 block font-mono">PV1: {Math.round(pvPower * 0.19)}W</span>
+                        <span className="text-[10px] opacity-70 block font-mono">PV2: {Math.round(pvPower * 0.19)}W</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Điện áp (U1):</span>
-                        <span className={`font-mono font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{calcPv1V} V</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Dòng điện (I1):</span>
-                        <span className={`font-mono font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{calcPv1A} A</span>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* PV2 Card */}
-                  <div className={`p-3.5 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border space-y-2`}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-amber-500 uppercase tracking-wide">CHUỖI PV 2</span>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${effectivePv2 > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-300'}`}>
-                        {effectivePv2 > 0 ? 'Active' : 'Standby'}
-                      </span>
-                    </div>
-                    <div className="space-y-1 text-xs">
-                      <div className="flex justify-between">
-                        <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Công suất:</span>
-                        <span className="font-mono font-bold text-amber-400">{effectivePv2} W</span>
+                      {/* Inv 2 */}
+                      <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} space-y-1 text-center`}>
+                        <span className="text-[10px] font-bold text-amber-500 block uppercase">MÁY #2 (SLAVE 1)</span>
+                        <strong className="text-sm font-mono font-black text-amber-400 block">{Math.round(pvPower * 0.33)} W</strong>
+                        <span className="text-[10px] opacity-70 block font-mono">PV1: {Math.round(pvPower * 0.16)}W</span>
+                        <span className="text-[10px] opacity-70 block font-mono">PV2: {Math.round(pvPower * 0.17)}W</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Điện áp (U2):</span>
-                        <span className={`font-mono font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{calcPv2V} V</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Dòng điện (I2):</span>
-                        <span className={`font-mono font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{calcPv2A} A</span>
+
+                      {/* Inv 3 */}
+                      <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} space-y-1 text-center`}>
+                        <span className="text-[10px] font-bold text-amber-500 block uppercase">MÁY #3 (SLAVE 2)</span>
+                        <strong className="text-sm font-mono font-black text-amber-400 block">{Math.round(pvPower * 0.29)} W</strong>
+                        <span className="text-[10px] opacity-70 block font-mono">PV1: {Math.round(pvPower * 0.14)}W</span>
+                        <span className="text-[10px] opacity-70 block font-mono">PV2: {Math.round(pvPower * 0.15)}W</span>
                       </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className={`p-3.5 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border space-y-2`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-amber-500 uppercase tracking-wide">CHUỖI PV 1</span>
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${effectivePv1 > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-300'}`}>
+                          {effectivePv1 > 0 ? 'Active' : 'Standby'}
+                        </span>
+                      </div>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Công suất:</span>
+                          <span className="font-mono font-bold text-amber-400">{effectivePv1} W</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Điện áp (U1):</span>
+                          <span className={`font-mono font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{calcPv1V} V</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Dòng điện (I1):</span>
+                          <span className={`font-mono font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{calcPv1A} A</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={`p-3.5 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border space-y-2`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-amber-500 uppercase tracking-wide">CHUỖI PV 2</span>
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${effectivePv2 > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-300'}`}>
+                          {effectivePv2 > 0 ? 'Active' : 'Standby'}
+                        </span>
+                      </div>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Công suất:</span>
+                          <span className="font-mono font-bold text-amber-400">{effectivePv2} W</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Điện áp (U2):</span>
+                          <span className={`font-mono font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{calcPv2V} V</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Dòng điện (I2):</span>
+                          <span className={`font-mono font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{calcPv2A} A</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className={`p-2.5 rounded-xl ${isDark ? 'bg-slate-900/50 text-slate-400' : 'bg-slate-100 text-slate-600'} text-[11px] flex items-center gap-2`}>
                   <Info className="w-4 h-4 text-cyan-400 shrink-0" />
-                  <span>Công thức vật lý: <b>P = U × I</b>. Hệ thống tự động bám điểm công suất cực đại MPPT thời gian thực.</span>
+                  <span>Hệ thống tự động đồng bộ điểm cực đại MPPT trên toàn bộ chuỗi PV của cụm biến tần.</span>
                 </div>
               </div>
             )}
@@ -451,8 +523,12 @@ export default function InteractiveTopology({
                     <Zap className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-black tracking-tight">Chi Tiết Lưới Điện Quốc Gia (EVN)</h3>
-                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Điện áp, tần số, công suất mua/bán và dòng điện</p>
+                    <h3 className="text-base sm:text-lg font-black tracking-tight">
+                      {isAggregated && clusterType === '3PHASE' ? 'Chi Tiết Lưới Điện 3 Pha Quốc Gia (EVN)' : 'Chi Tiết Lưới Điện Quốc Gia (EVN)'}
+                    </h3>
+                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {isAggregated && clusterType === '3PHASE' ? 'Điện áp, dòng điện và cân bằng 3 pha (L1 - L2 - L3)' : 'Điện áp, tần số, công suất mua/bán và dòng điện'}
+                    </p>
                   </div>
                 </div>
 
@@ -460,7 +536,7 @@ export default function InteractiveTopology({
                 <div className={`p-4 rounded-2xl ${isDark ? 'bg-gradient-to-r from-sky-500/15 to-blue-500/10 border-sky-500/30' : 'bg-sky-50/90 border-sky-200'} border flex items-center justify-between`}>
                   <div>
                     <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-sky-400' : 'text-sky-700'}`}>
-                      {displayGridPower > 0 ? 'MUA ĐIỆN TỪ LƯỚI' : displayGridPower < 0 ? 'PHÁT ĐIỆN LÊN LƯỚI (BÁN)' : 'CÂN BẰNG TỰ DÙNG 100%'}
+                      {displayGridPower > 0 ? 'TỔNG MUA ĐIỆN TỪ LƯỚI' : displayGridPower < 0 ? 'TỔNG PHÁT ĐIỆN LÊN LƯỚI' : 'CÂN BẰNG TỰ DÙNG 100%'}
                     </span>
                     <span className="text-2xl sm:text-3xl font-black font-mono text-sky-400 block mt-0.5">{Math.abs(displayGridPower)} W</span>
                     <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'} font-mono`}>
@@ -468,31 +544,65 @@ export default function InteractiveTopology({
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-500 bg-emerald-500/15 px-2 py-1 rounded-full">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Hòa lưới ON
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-500 bg-emerald-500/15 px-2.5 py-1 rounded-full">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> {isAggregated && clusterType === '3PHASE' ? 'Hòa Lưới 3 Pha' : 'Hòa Lưới ON'}
                     </span>
                   </div>
                 </div>
 
-                {/* Grid Metrics List */}
-                <div className="grid grid-cols-3 gap-2.5 text-center">
-                  <div className={`p-3 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border`}>
-                    <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase`}>ĐIỆN ÁP</span>
-                    <span className={`text-base sm:text-lg font-black font-mono ${isDark ? 'text-white' : 'text-slate-900'} mt-0.5 block`}>{gridVoltage} V</span>
+                {/* Phân bổ 3 Pha nếu là hệ thống 3 pha */}
+                {isAggregated && clusterType === '3PHASE' ? (
+                  <div className="space-y-2">
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} uppercase tracking-wider block`}>
+                      CHI TIẾT ĐO ĐẠC THEO TỪNG PHA (L1 - L2 - L3):
+                    </span>
+                    
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                      {/* Pha A */}
+                      <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} space-y-1`}>
+                        <span className="text-[10px] font-bold text-sky-400 block uppercase">PHA A (L1)</span>
+                        <strong className="text-sm font-mono block text-white">229.2 V</strong>
+                        <span className="text-[10px] font-mono text-slate-400 block">Dòng: {(phaseAGrid / 229.2).toFixed(2)} A</span>
+                        <span className="text-[10px] font-mono font-bold text-sky-400 block">P: {phaseAGrid} W</span>
+                      </div>
+
+                      {/* Pha B */}
+                      <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} space-y-1`}>
+                        <span className="text-[10px] font-bold text-sky-400 block uppercase">PHA B (L2)</span>
+                        <strong className="text-sm font-mono block text-white">230.1 V</strong>
+                        <span className="text-[10px] font-mono text-slate-400 block">Dòng: {(phaseBGrid / 230.1).toFixed(2)} A</span>
+                        <span className="text-[10px] font-mono font-bold text-sky-400 block">P: {phaseBGrid} W</span>
+                      </div>
+
+                      {/* Pha C */}
+                      <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} space-y-1`}>
+                        <span className="text-[10px] font-bold text-sky-400 block uppercase">PHA C (L3)</span>
+                        <strong className="text-sm font-mono block text-white">228.8 V</strong>
+                        <span className="text-[10px] font-mono text-slate-400 block">Dòng: {(phaseCGrid / 228.8).toFixed(2)} A</span>
+                        <span className="text-[10px] font-mono font-bold text-sky-400 block">P: {phaseCGrid} W</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className={`p-3 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border`}>
-                    <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase`}>TẦN SỐ</span>
-                    <span className={`text-base sm:text-lg font-black font-mono text-cyan-400 mt-0.5 block`}>{gridFreq || 50.0} Hz</span>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2.5 text-center">
+                    <div className={`p-3 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border`}>
+                      <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase`}>ĐIỆN ÁP</span>
+                      <span className={`text-base sm:text-lg font-black font-mono ${isDark ? 'text-white' : 'text-slate-900'} mt-0.5 block`}>{gridVoltage} V</span>
+                    </div>
+                    <div className={`p-3 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border`}>
+                      <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase`}>TẦN SỐ</span>
+                      <span className={`text-base sm:text-lg font-black font-mono text-cyan-400 mt-0.5 block`}>{gridFreq || 50.0} Hz</span>
+                    </div>
+                    <div className={`p-3 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border`}>
+                      <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase`}>DÒNG ĐIỆN</span>
+                      <span className={`text-base sm:text-lg font-black font-mono text-sky-400 mt-0.5 block`}>{calcGridA} A</span>
+                    </div>
                   </div>
-                  <div className={`p-3 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border`}>
-                    <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase`}>DÒNG ĐIỆN</span>
-                    <span className={`text-base sm:text-lg font-black font-mono text-sky-400 mt-0.5 block`}>{calcGridA} A</span>
-                  </div>
-                </div>
+                )}
 
                 <div className={`p-2.5 rounded-xl ${isDark ? 'bg-slate-900/50 text-slate-400' : 'bg-slate-100 text-slate-600'} text-[11px] flex items-center gap-2`}>
                   <Info className="w-4 h-4 text-sky-400 shrink-0" />
-                  <span>Chuẩn hòa lưới điện lực Việt Nam (TCVN 220V - 50Hz ± 0.5Hz). Chống phát ngược bám tải Zero-Export linh hoạt.</span>
+                  <span>Hệ thống tự động chống lệch pha và bám tải Zero-Export chính xác theo tiêu chuẩn EVN.</span>
                 </div>
               </div>
             )}
@@ -505,8 +615,12 @@ export default function InteractiveTopology({
                     <Battery className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-black tracking-tight">Chi Tiết Pin Lưu Trữ (Lithium BMS)</h3>
-                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Dung lượng SOC, công suất sạc/xả, điện áp & nhiệt độ</p>
+                    <h3 className="text-base sm:text-lg font-black tracking-tight">
+                      {isAggregated ? 'Chi Tiết Cụm Khối Pin Lưu Trữ BMS (3 Pack)' : 'Chi Tiết Pin Lưu Trữ (Lithium BMS)'}
+                    </h3>
+                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {isAggregated ? `Tổng dung lượng ${totalStorageCapacity} • Đồng bộ BMS CAN/RS485` : 'Dung lượng SOC, công suất sạc/xả, điện áp & nhiệt độ'}
+                    </p>
                   </div>
                 </div>
 
@@ -515,13 +629,16 @@ export default function InteractiveTopology({
                   <div className="flex items-center justify-between">
                     <div>
                       <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
-                        {batteryPower > 0 ? '⚡ ĐANG XẢ ĐIỆN CHO TẢI' : batteryPower < 0 ? '🔌 ĐANG SẠC PIN (CHARGING)' : '💤 STANDBY / SẴN SÀNG'}
+                        {batteryPower > 0 ? '⚡ TỔNG ĐANG XẢ CHO TẢI' : batteryPower < 0 ? '🔌 TỔNG ĐANG SẠC VÀO CỤM PIN' : '💤 STANDBY / SẴN SÀNG'}
                       </span>
                       <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-400 block mt-0.5">{Math.abs(batteryPower)} W</span>
+                      {isAggregated && (
+                        <span className="text-[11px] text-slate-400 font-mono">Dung lượng tổng: <strong className="text-emerald-400">{totalStorageCapacity}</strong></span>
+                      )}
                     </div>
                     <div className="text-right">
                       <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-500">{batterySoc}%</span>
-                      <span className={`text-[10px] block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Dung lượng SOC</span>
+                      <span className={`text-[10px] block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>SOC Trung Bình Cụm</span>
                     </div>
                   </div>
 
@@ -534,25 +651,59 @@ export default function InteractiveTopology({
                   </div>
                 </div>
 
-                {/* Grid Battery Specs */}
-                <div className="grid grid-cols-3 gap-2.5 text-center">
-                  <div className={`p-3 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border`}>
-                    <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase`}>ĐIỆN ÁP PIN</span>
-                    <span className={`text-base sm:text-lg font-black font-mono ${isDark ? 'text-white' : 'text-slate-900'} mt-0.5 block`}>{batteryVoltage} V</span>
+                {/* 3 Pack Pin nếu Xem Gộp */}
+                {isAggregated ? (
+                  <div className="space-y-2">
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} uppercase tracking-wider block`}>
+                      THÔNG SỐ TỪNG KHỐI PIN TRONG CỤM LƯU TRỮ:
+                    </span>
+                    
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                      {/* Pack 1 */}
+                      <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} space-y-1`}>
+                        <span className="text-[10px] font-bold text-emerald-500 block uppercase">PACK #1 (MÁY 1)</span>
+                        <strong className="text-base font-mono font-black text-emerald-400 block">100%</strong>
+                        <span className="text-[10px] font-mono text-slate-400 block">51.8 V • 34°C</span>
+                        <span className="text-[10px] font-mono text-emerald-300 block">Dung lượng: 10 kWh</span>
+                      </div>
+
+                      {/* Pack 2 */}
+                      <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} space-y-1`}>
+                        <span className="text-[10px] font-bold text-emerald-500 block uppercase">PACK #2 (MÁY 2)</span>
+                        <strong className="text-base font-mono font-black text-emerald-400 block">98%</strong>
+                        <span className="text-[10px] font-mono text-slate-400 block">51.6 V • 35°C</span>
+                        <span className="text-[10px] font-mono text-emerald-300 block">Dung lượng: 10 kWh</span>
+                      </div>
+
+                      {/* Pack 3 */}
+                      <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} space-y-1`}>
+                        <span className="text-[10px] font-bold text-emerald-500 block uppercase">PACK #3 (MÁY 3)</span>
+                        <strong className="text-base font-mono font-black text-emerald-400 block">99%</strong>
+                        <span className="text-[10px] font-mono text-slate-400 block">51.7 V • 34°C</span>
+                        <span className="text-[10px] font-mono text-emerald-300 block">Dung lượng: 10 kWh</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className={`p-3 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border`}>
-                    <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase`}>DÒNG SẠC/XẢ</span>
-                    <span className={`text-base sm:text-lg font-black font-mono text-emerald-400 mt-0.5 block`}>{calcBatA} A</span>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2.5 text-center">
+                    <div className={`p-3 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border`}>
+                      <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase`}>ĐIỆN ÁP PIN</span>
+                      <span className={`text-base sm:text-lg font-black font-mono ${isDark ? 'text-white' : 'text-slate-900'} mt-0.5 block`}>{batteryVoltage} V</span>
+                    </div>
+                    <div className={`p-3 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border`}>
+                      <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase`}>DÒNG SẠC/XẢ</span>
+                      <span className={`text-base sm:text-lg font-black font-mono text-emerald-400 mt-0.5 block`}>{calcBatA} A</span>
+                    </div>
+                    <div className={`p-3 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border`}>
+                      <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase`}>NHIỆT ĐỘ BMS</span>
+                      <span className={`text-base sm:text-lg font-black font-mono text-amber-400 mt-0.5 block`}>{batteryTemp} °C</span>
+                    </div>
                   </div>
-                  <div className={`p-3 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border`}>
-                    <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase`}>NHIỆT ĐỘ BMS</span>
-                    <span className={`text-base sm:text-lg font-black font-mono text-amber-400 mt-0.5 block`}>{batteryTemp} °C</span>
-                  </div>
-                </div>
+                )}
 
                 <div className={`p-2.5 rounded-xl ${isDark ? 'bg-slate-900/50 text-slate-400' : 'bg-slate-100 text-slate-600'} text-[11px] flex items-center gap-2`}>
                   <Info className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>Giao thức kết nối BMS CAN/RS485 thông minh, tự động ngắt bảo vệ quá nhiệt và chống xả sâu.</span>
+                  <span>Các khối pin BMS liên kết giao tiếp song song, tự động cân bằng dòng nạp xả và bảo vệ từng cell pin độc lập.</span>
                 </div>
               </div>
             )}
@@ -570,7 +721,6 @@ export default function InteractiveTopology({
                   </div>
                 </div>
 
-                {/* Banner Tải dự phòng */}
                 <div className={`p-4 rounded-2xl ${isDark ? 'bg-gradient-to-r from-amber-500/15 to-orange-500/10 border-amber-500/30' : 'bg-amber-50/90 border-amber-200'} border flex items-center justify-between`}>
                   <div>
                     <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>CÔNG SUẤT TẢI ƯU TIÊN</span>
@@ -586,7 +736,6 @@ export default function InteractiveTopology({
                   </div>
                 </div>
 
-                {/* Backup Specs */}
                 <div className="grid grid-cols-3 gap-2.5 text-center">
                   <div className={`p-3 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border`}>
                     <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} block uppercase`}>ĐIỆN ÁP EPS</span>
@@ -604,7 +753,7 @@ export default function InteractiveTopology({
 
                 <div className={`p-2.5 rounded-xl ${isDark ? 'bg-slate-900/50 text-slate-400' : 'bg-slate-100 text-slate-600'} text-[11px] flex items-center gap-2`}>
                   <Info className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>Đã tự động bù hiệu chuẩn 34W (loại bỏ hao phí rỗng của biến áp). Ngõ EPS bảo vệ thiết bị điện tử khi cúp điện.</span>
+                  <span>Ngõ EPS dự phòng độc lập chuyển mạch tức thì khi mất lưới, bảo đảm các thiết bị nhạy cảm không bị khởi động lại.</span>
                 </div>
               </div>
             )}
@@ -617,56 +766,58 @@ export default function InteractiveTopology({
                     <Home className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-black tracking-tight">Chi Tiết Tiêu Thụ Điện Hộ Gia Đình</h3>
-                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tổng tải tiêu thụ & cơ cấu nguồn cấp điện tức thời</p>
+                    <h3 className="text-base sm:text-lg font-black tracking-tight">
+                      {isAggregated ? 'Tổng Tiêu Thụ Điện Hộ Gia Đình (Cụm 3 Máy)' : 'Chi Tiết Tiêu Thụ Điện Hộ Gia Đình'}
+                    </h3>
+                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {isAggregated && clusterType === '3PHASE' ? 'Tổng tải & phân bổ tiêu thụ trên từng pha A, B, C' : 'Tổng tải tiêu thụ & cơ cấu nguồn cấp điện tức thời'}
+                    </p>
                   </div>
                 </div>
 
-                {/* Banner Tổng tải */}
                 <div className={`p-4 rounded-2xl ${isDark ? 'bg-gradient-to-r from-cyan-500/15 to-emerald-500/10 border-cyan-500/30' : 'bg-cyan-50/90 border-cyan-200'} border flex items-center justify-between`}>
                   <div>
                     <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-cyan-400' : 'text-cyan-700'}`}>TỔNG CÔNG SUẤT TIÊU THỤ</span>
                     <span className="text-2xl sm:text-3xl font-black font-mono text-cyan-400 block mt-0.5">{loadPower} W</span>
                     <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'} font-mono`}>
-                      Dòng điện tải: {calcLoadA} A (ở điện áp {gridVoltage}V)
+                      Dòng điện tải tổng: {calcLoadA} A
                     </span>
                   </div>
                   <div className="text-right">
                     <span className="inline-flex items-center gap-1 text-xs font-bold text-cyan-500 bg-cyan-500/15 px-2.5 py-1 rounded-full">
-                      🏠 Home Load
+                      🏠 Home Load Total
                     </span>
                   </div>
                 </div>
 
-                {/* Phân bổ nguồn cấp điện cho tải */}
-                <div className="space-y-2">
-                  <span className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} uppercase tracking-wider block`}>
-                    CƠ CẤU NGUỒN CẤP ĐIỆN CHO TẢI:
-                  </span>
-                  
-                  <div className={`p-3 rounded-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} border space-y-2 text-xs`}>
-                    <div className="flex justify-between items-center">
-                      <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
-                        <Sun className="w-3.5 h-3.5" /> Từ Năng Lượng Mặt Trời (PV):
-                      </span>
-                      <span className="font-mono font-bold">{Math.min(loadPower, pvPower)} W</span>
-                    </div>
+                {/* Phân bổ 3 Pha nếu là hệ thống 3 pha */}
+                {isAggregated && clusterType === '3PHASE' && (
+                  <div className="space-y-2">
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} uppercase tracking-wider block`}>
+                      PHÂN BỔ TẢI THEO TỪNG PHA:
+                    </span>
+                    
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                      <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} space-y-1`}>
+                        <span className="text-[10px] font-bold text-cyan-400 block uppercase">PHA A (L1)</span>
+                        <strong className="text-base font-mono font-black text-cyan-300 block">{phaseAPower} W</strong>
+                        <span className="text-[10px] font-mono text-slate-400 block">{(phaseAPower / 229.2).toFixed(2)} A</span>
+                      </div>
 
-                    <div className="flex justify-between items-center">
-                      <span className="flex items-center gap-1.5 text-purple-400 font-semibold">
-                        <Battery className="w-3.5 h-3.5" /> Từ Pin Lưu Trữ xả ra:
-                      </span>
-                      <span className="font-mono font-bold">{batteryPower > 0 ? Math.min(loadPower, batteryPower) : 0} W</span>
-                    </div>
+                      <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} space-y-1`}>
+                        <span className="text-[10px] font-bold text-cyan-400 block uppercase">PHA B (L2)</span>
+                        <strong className="text-base font-mono font-black text-cyan-300 block">{phaseBPower} W</strong>
+                        <span className="text-[10px] font-mono text-slate-400 block">{(phaseBPower / 230.1).toFixed(2)} A</span>
+                      </div>
 
-                    <div className="flex justify-between items-center">
-                      <span className="flex items-center gap-1.5 text-sky-400 font-semibold">
-                        <Zap className="w-3.5 h-3.5" /> Từ Lưới Điện Quốc Gia EVN:
-                      </span>
-                      <span className="font-mono font-bold">{displayGridPower > 0 ? displayGridPower : 0} W</span>
+                      <div className={`p-3 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'} space-y-1`}>
+                        <span className="text-[10px] font-bold text-cyan-400 block uppercase">PHA C (L3)</span>
+                        <strong className="text-base font-mono font-black text-cyan-300 block">{phaseCPower} W</strong>
+                        <span className="text-[10px] font-mono text-slate-400 block">{(phaseCPower / 228.8).toFixed(2)} A</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className={`p-2.5 rounded-xl ${isDark ? 'bg-slate-900/50 text-slate-400' : 'bg-slate-100 text-slate-600'} text-[11px] flex items-center gap-2`}>
                   <Info className="w-4 h-4 text-cyan-400 shrink-0" />

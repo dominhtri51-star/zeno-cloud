@@ -19,7 +19,8 @@ function MainApp() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [selectedDeviceContext, setSelectedDeviceContext] = useState({
     stationId: null,
-    deviceId: null
+    deviceId: null,
+    fleetConfig: null
   });
   const [showSecurityPhoneModal, setShowSecurityPhoneModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(user);
@@ -58,8 +59,8 @@ function MainApp() {
     }
   }, [userType, currentPage]);
 
-  const handleSelectDevice = (stationId, deviceId) => {
-    setSelectedDeviceContext({ stationId, deviceId });
+  const handleSelectDevice = (stationId, deviceId, fleetConfig = null) => {
+    setSelectedDeviceContext({ stationId, deviceId, fleetConfig });
     setCurrentPage('dashboard');
   };
 
@@ -72,8 +73,11 @@ function MainApp() {
       return;
     }
 
-    if (context && context.stationId) {
+    if (context && (context.stationId || context.fleetConfig)) {
       setSelectedDeviceContext(context);
+    } else if (!context && page === 'dashboard') {
+      // Khi bấm vào Dashboard từ menu, reset về mặc định trạm đầu tiên máy đầu tiên
+      setSelectedDeviceContext({ stationId: null, deviceId: null, fleetConfig: null });
     }
     setCurrentPage(page);
   };
@@ -113,6 +117,7 @@ function MainApp() {
             <Dashboard 
               initialStationId={selectedDeviceContext.stationId}
               initialDeviceId={selectedDeviceContext.deviceId}
+              initialFleetConfig={selectedDeviceContext.fleetConfig}
               onNavigate={handleNavigate} 
             />
           )}

@@ -15,6 +15,7 @@ import StationSettingsModal from '../components/StationSettingsModal';
 import ShareStationModal from '../components/ShareStationModal';
 import ReassignDealerModal from '../components/ReassignDealerModal';
 import SafeDeleteModal from '../components/SafeDeleteModal';
+import ClusterFleetModal from '../components/ClusterFleetModal';
 import { Settings as SettingsIcon } from 'lucide-react';
 
 export default function Stations({ onNavigate, onSelectDevice }) {
@@ -25,6 +26,10 @@ export default function Stations({ onNavigate, onSelectDevice }) {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [configStation, setConfigStation] = useState(null);
   
+  // Modal Xem Gộp Cụm Trạm (Song Song / 3 Pha)
+  const [isFleetModalOpen, setIsFleetModalOpen] = useState(false);
+  const [selectedFleetStation, setSelectedFleetStation] = useState(null);
+
   // Modal Chia Sẻ Trạm Cho Đại Lý (Dành Cho Chủ Nhà / Người Dùng Cuối)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedStationForShare, setSelectedStationForShare] = useState(null);
@@ -153,6 +158,20 @@ export default function Stations({ onNavigate, onSelectDevice }) {
       onSelectDevice(st.stationId, dev.deviceId);
     } else if (onNavigate) {
       onNavigate('dashboard', { stationId: st.stationId, deviceId: dev.deviceId });
+    }
+  };
+
+  const handleOpenFleetModal = (st, e) => {
+    if (e) e.stopPropagation();
+    setSelectedFleetStation(st);
+    setIsFleetModalOpen(true);
+  };
+
+  const handleConfirmFleet = (fleetConfig) => {
+    if (onSelectDevice) {
+      onSelectDevice(fleetConfig.stationId, null, fleetConfig);
+    } else if (onNavigate) {
+      onNavigate('dashboard', { stationId: fleetConfig.stationId, fleetConfig });
     }
   };
 
@@ -590,9 +609,25 @@ export default function Stations({ onNavigate, onSelectDevice }) {
 
               {/* Danh sách Thiết Bị (Devices / Inverters) của Trạm */}
               <div className="space-y-3">
-                <div className={`flex items-center justify-between text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>
-                  <span>Thiết Bị Inverter Trong Trạm ({(st.devices && st.devices.length) || 1})</span>
-                  <span className="text-cyan-500 lowercase text-[10px] sm:text-[11px] font-medium">• Bấm để xem Bảng Điều Khiển</span>
+                <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>
+                  <div className="flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-cyan-500" />
+                    <span>Thiết Bị Inverter Trong Trạm ({(st.devices && st.devices.length) || 1})</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {/* Nút Xem Gộp Cụm Trạm (Song Song / 3 Pha) */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleOpenFleetModal(st, e)}
+                      className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500/20 via-teal-500/20 to-amber-500/20 hover:from-cyan-500/30 text-cyan-400 border border-cyan-500/40 hover:border-cyan-400 transition flex items-center gap-1.5 text-[11px] font-extrabold cursor-pointer shadow-sm capitalize"
+                      title="Cấu hình gán Pha 1 - Pha 2 - Pha 3 hoặc đấu Song Song để xem gộp dữ liệu toàn trạm"
+                    >
+                      <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>⚡ Xem Gộp Cụm Trạm (Song Song / 3 Pha)</span>
+                    </button>
+                    <span className="text-cyan-500 lowercase text-[10px] sm:text-[11px] font-medium hidden md:inline">• Bấm thiết bị để xem riêng</span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -793,6 +828,14 @@ export default function Stations({ onNavigate, onSelectDevice }) {
         serialNumber={safeDeleteTarget?.serialNumber}
         isMaster={isDistributor}
         isDealer={isInstaller}
+      />
+
+      {/* ⚡ Modal Xem Gộp Cụm Trạm (Song Song / 3 Pha) */}
+      <ClusterFleetModal
+        isOpen={isFleetModalOpen}
+        station={selectedFleetStation}
+        onClose={() => setIsFleetModalOpen(false)}
+        onConfirmFleet={handleConfirmFleet}
       />
     </div>
   );

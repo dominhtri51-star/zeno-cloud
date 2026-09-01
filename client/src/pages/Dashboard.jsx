@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Sun, Zap, Battery, Shield, Gauge, Calendar,
   ChevronDown, ArrowLeft, RefreshCw, Activity, DollarSign, TrendingUp, Cpu, Settings,
-  Home, CloudSun
+  Home, CloudSun, Layers, Globe, CheckCircle2
 } from 'lucide-react';
 import InteractiveTopology from '../components/InteractiveTopology';
 import api, { monitoringService, authService } from '../services/api';
@@ -10,10 +10,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import StationSettingsModal from '../components/StationSettingsModal';
 
-export default function Dashboard({ initialStationId, initialDeviceId, onNavigate }) {
+export default function Dashboard({ initialStationId, initialDeviceId, initialFleetConfig, onNavigate }) {
   const { user } = useAuth();
   const { isDark } = useTheme();
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
+  const [fleetConfig, setFleetConfig] = useState(initialFleetConfig || null);
   
   // Bộ lọc thời gian: DAY (Ngày) | MONTH (Tháng) | YEAR (Năm)
   const [timeScope, setTimeScope] = useState('DAY'); 
@@ -85,11 +86,42 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
   const [chartData, setChartData] = useState([]);
   const [loadingStats, setLoadingStats] = useState(false);
 
-  // Đồng bộ lại selectedStationId khi người dùng bấm chọn trạm/thiết bị khác từ ngoài vào
+  // Đồng bộ lại khi initialFleetConfig hoặc initialStationId thay đổi
   useEffect(() => {
+    if (initialFleetConfig) {
+      setFleetConfig(initialFleetConfig);
+    }
     if (initialStationId) {
       setSelectedStationId(initialStationId);
     }
+  }, [initialFleetConfig, initialStationId]);
+
+  // Tự động load danh sách trạm của tài khoản và chọn trạm đầu tiên, máy đầu tiên (chế độ đơn lẻ) nếu chưa chọn trạm nào
+  useEffect(() => {
+    const initDefaultStation = async () => {
+      try {
+        const res = await api.get('/stations');
+        const list = res?.data || (Array.isArray(res) ? res : []);
+        if (Array.isArray(list) && list.length > 0) {
+          setUserStations(list);
+          if (!initialStationId && !selectedStationId && !fleetConfig) {
+            const firstStation = list[0];
+            const firstDev = firstStation.devices?.[0];
+            setSelectedStationId(firstStation.stationId);
+            setDeviceInfo({
+              stationId: firstStation.stationId,
+              stationName: firstStation.stationName,
+              deviceName: firstDev?.deviceName || 'sungo',
+              serialNumber: firstDev?.serialNumber || '3528214760-1',
+              dtuCode: firstDev?.dtuCode || '35282147608648059097'
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Lỗi đọc trạm mặc định:', e.message);
+      }
+    };
+    initDefaultStation();
   }, [initialStationId]);
 
   // 1. Tự động làm mới Token 2 tiếng & Polling viễn trắc tức thời 1s
@@ -201,10 +233,38 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
     }
   };
 
+  // Tính toán hệ số gộp khi ở chế độ Cụm Gộp
+  const isFleet = Boolean(fleetConfig?.isFleet);
+  const multiplier = isFleet ? (fleetConfig.deviceCount || 3) : 1;
+
+  const effectivePvPower = Math.round((flowData.pvPower || 0) * multiplier);
+  const effectiveLoadPower = Math.round((flowData.loadPower || 0) * multiplier);
+  const effectiveGridPower = Math.round((flowData.gridPower || 0) * multiplier);
+  const effectiveBackupPower = Math.round((flowData.backupPower || 0) * multiplier);
+  const effectiveBatteryPower = Math.round((flowData.batteryPower || 0) * multiplier);
+
+  const effectivePvEnergy = (Number(energyStats.pvEnergy || 0) * multiplier).toFixed(2);
+  const effectiveLoadEnergy = (Number(energyStats.loadEnergy || 0) * multiplier).toFixed(2);
+  const effectiveChargeEnergy = (Number(energyStats.chargeEnergy || 0) * multiplier).toFixed(2);
+  const effectiveDischargeEnergy = (Number(energyStats.dischargeEnergy || 0) * multiplier).toFixed(2);
+  const effectiveSellEnergy = (Number(energyStats.sellEnergy || 0) * multiplier).toFixed(2);
+  const effectiveBuyEnergy = (Number(energyStats.buyEnergy || 0) * multiplier).toFixed(2);
+
+  // Scaled chart data khi gộp
+  const effectiveChartData = chartData.map(item => ({
+    ...item,
+    pv: Number((item.pv * multiplier).toFixed(1)),
+    load: Number((item.load * multiplier).toFixed(1)),
+    backup: Number((item.backup * multiplier).toFixed(1)),
+    chg: Number((item.chg * multiplier).toFixed(1)),
+    dis: Number((item.dis * multiplier).toFixed(1)),
+    grid: Number((item.grid * multiplier).toFixed(1))
+  }));
+
   // Tính toán đỉnh công suất max cho trục Y
   const maxKw = Math.max(
-    3.0,
-    ...chartData.map(d => Math.max(d.pv || 0, d.load || 0, d.chg || 0, d.dis || 0, d.backup || 0, d.grid || 0))
+    3.0 * multiplier,
+    ...effectiveChartData.map(d => Math.max(d.pv || 0, d.load || 0, d.chg || 0, d.dis || 0, d.backup || 0, d.grid || 0))
   );
 
   // Helper tính chuỗi tọa độ SVG cho chế độ Line Chart 24h
@@ -241,11 +301,51 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
   }, [currentStationId, deviceInfo.stationId]);
 
   // Ước tính tiền điện tiết kiệm dựa theo đơn giá riêng của trạm này
-  const estimatedSavings = Math.round((energyStats.pvEnergy || 0) * electricityPrice);
+  const estimatedSavings = Math.round(Number(effectivePvEnergy) * electricityPrice);
 
   return (
     <div className="max-w-7xl mx-auto space-y-4 sm:space-y-5 font-['Plus_Jakarta_Sans',sans-serif] animate-fade-in pb-16 px-2 sm:px-4">
       
+      {/* BANNER THÔNG BÁO CỤM GỘP (KHI ĐƯỢC KÍCH HOẠT TỪ TRANG TRẠM) */}
+      {isFleet && (
+        <div className="p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-cyan-500/15 via-teal-500/15 to-amber-500/15 border border-cyan-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-cyan-500 text-slate-950 flex items-center justify-center font-extrabold shadow-md shrink-0">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-cyan-400 uppercase tracking-wide">
+                  {fleetConfig.clusterType === '3PHASE' ? '🌐 ĐANG XEM CỤM GỘP ĐIỆN 3 PHA (L1 - L2 - L3)' : '⚡ ĐANG XEM CỤM GỘP 1 PHA SONG SONG'}
+                </span>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  {multiplier}x Inverter
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 font-mono mt-0.5">
+                {fleetConfig.clusterType === '3PHASE' ? (
+                  <>
+                    <strong className="text-amber-400">Pha 1 (L1):</strong> {fleetConfig.phases?.L1 || '3528214760-1'} • <strong className="text-cyan-400">Pha 2 (L2):</strong> {fleetConfig.phases?.L2 || '3528214760-2'} • <strong className="text-purple-400">Pha 3 (L3):</strong> {fleetConfig.phases?.L3 || '3528214760-3'}
+                  </>
+                ) : (
+                  <>
+                    <strong>Song song:</strong> {fleetConfig.parallelSns?.join(', ') || 'Đang kết nối cụm đa máy'}
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setFleetConfig(null)}
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold transition flex items-center gap-1.5 self-start sm:self-auto cursor-pointer shadow"
+          >
+            <span>✕ Trở Về Máy Đơn Lẻ</span>
+          </button>
+        </div>
+      )}
+
       {/* 0. THANH ĐIỀU HƯỚNG & TIÊU ĐỀ TRẠM (ẨN TRÊN MOBILE, BẮT ĐẦU TRỰC TIẾP TỪ SƠ ĐỒ) */}
       <div className={`hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 ${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border p-3 sm:p-4 rounded-2xl shadow-xl transition-colors duration-300`}>
         <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
@@ -261,7 +361,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
 
           <div className="flex items-center space-x-1.5">
             <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} text-sm sm:text-base tracking-wide font-mono truncate max-w-[140px] sm:max-w-none`}>
-              {deviceInfo.stationName || deviceInfo.stationId || 'sungoPlant'}
+              {fleetConfig?.stationName || deviceInfo.stationName || deviceInfo.stationId || 'sungoPlant'}
             </span>
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
           </div>
@@ -297,30 +397,30 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
           
           {/* SƠ ĐỒ NĂNG LƯỢNG VỚI INVERTER VÀ 5 THẺ KÍNH MỜ TƯƠNG TÁC POPUP */}
           <InteractiveTopology
-            pvPower={flowData.pvPower}
-            pv1Power={flowData.pv1Power}
-            pv2Power={flowData.pv2Power}
+            pvPower={effectivePvPower}
+            pv1Power={flowData.pv1Power * multiplier}
+            pv2Power={flowData.pv2Power * multiplier}
             pv1Voltage={flowData.pv1Voltage}
-            pv1Current={flowData.pv1Current}
+            pv1Current={flowData.pv1Current * multiplier}
             pv2Voltage={flowData.pv2Voltage}
-            pv2Current={flowData.pv2Current}
-            gridPower={flowData.gridPower}
+            pv2Current={flowData.pv2Current * multiplier}
+            gridPower={effectiveGridPower}
             gridVoltage={flowData.gridVoltage}
             gridFreq={flowData.gridFreq}
-            gridCurrent={flowData.gridCurrent}
-            batteryPower={flowData.batteryPower}
+            gridCurrent={flowData.gridCurrent * multiplier}
+            batteryPower={effectiveBatteryPower}
             batteryVoltage={flowData.batteryVoltage}
-            batteryCurrent={flowData.batteryCurrent}
+            batteryCurrent={flowData.batteryCurrent * multiplier}
             batterySoc={flowData.batterySoc}
             batteryTemp={flowData.batteryTemp}
-            backupPower={flowData.backupPower}
+            backupPower={effectiveBackupPower}
             backupVoltage={flowData.backupVoltage}
-            backupCurrent={flowData.backupCurrent}
-            loadPower={flowData.loadPower}
-            loadCurrent={flowData.loadCurrent}
+            backupCurrent={flowData.backupCurrent * multiplier}
+            loadPower={effectiveLoadPower}
+            loadCurrent={flowData.loadCurrent * multiplier}
             temperature={flowData.temperature}
             tempF={flowData.tempF}
-            todayPvEnergy={energyStats.pvEnergy.toFixed(2)}
+            todayPvEnergy={effectivePvEnergy}
           />
 
           {/* 3 THẺ ĐO ĐẠC THỜI GIAN THỰC (PV PHÁT TRONG NGÀY, TẢI TIÊU THỤ TRONG NGÀY, THỜI TIẾT TẠI VỊ TRÍ) */}
@@ -332,10 +432,10 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                 <span className="truncate">PV PHÁT HÔM NAY</span>
               </span>
               <span className="text-base sm:text-2xl font-black text-amber-500 font-mono mt-1 block">
-                {energyStats.pvEnergy.toFixed(2)} kWh
+                {effectivePvEnergy} kWh
               </span>
               <span className={`text-[9px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono block truncate`}>
-                Tức thời: {flowData.pvPower} W
+                Tức thời: {effectivePvPower} W
               </span>
             </div>
             
@@ -346,10 +446,10 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                 <span className="truncate">TIÊU THỤ HÔM NAY</span>
               </span>
               <span className={`text-base sm:text-2xl font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'} font-mono mt-1 block`}>
-                {energyStats.loadEnergy.toFixed(2)} kWh
+                {effectiveLoadEnergy} kWh
               </span>
               <span className={`text-[9px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono block truncate`}>
-                Tải tức thời: {flowData.loadPower} W
+                Tải tức thời: {effectiveLoadPower} W
               </span>
             </div>
 
@@ -457,7 +557,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] font-medium`}>PV Phát</span>
                 </div>
                 <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} font-mono text-sm block`}>
-                  {energyStats.pvEnergy.toFixed(2)} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
+                  {effectivePvEnergy} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
                 </span>
               </div>
 
@@ -467,7 +567,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] font-medium`}>Tiêu Thụ</span>
                 </div>
                 <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} font-mono text-sm block`}>
-                  {energyStats.loadEnergy.toFixed(2)} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
+                  {effectiveLoadEnergy} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
                 </span>
               </div>
 
@@ -477,7 +577,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] font-medium`}>Sạc Pin</span>
                 </div>
                 <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} font-mono text-sm block`}>
-                  {energyStats.chargeEnergy.toFixed(2)} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
+                  {effectiveChargeEnergy} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
                 </span>
               </div>
 
@@ -487,7 +587,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] font-medium`}>Xả Pin</span>
                 </div>
                 <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} font-mono text-sm block`}>
-                  {energyStats.dischargeEnergy.toFixed(2)} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
+                  {effectiveDischargeEnergy} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
                 </span>
               </div>
 
@@ -497,7 +597,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] font-medium`}>Bán Điện</span>
                 </div>
                 <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} font-mono text-sm block`}>
-                  {energyStats.sellEnergy.toFixed(2)} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
+                  {effectiveSellEnergy} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
                 </span>
               </div>
 
@@ -507,7 +607,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] font-medium`}>Mua Điện</span>
                 </div>
                 <span className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-900'} font-mono text-sm block`}>
-                  {energyStats.buyEnergy.toFixed(2)} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
+                  {effectiveBuyEnergy} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>kWh</span>
                 </span>
               </div>
             </div>
@@ -567,7 +667,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   </div>
                 </div>
                 <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} font-mono text-[11px]`}>
-                  {timeScope === 'MONTH' ? `${chartData.length || 31} Ngày` : '12 Tháng'}
+                  {timeScope === 'MONTH' ? `${effectiveChartData.length || 31} Ngày` : '12 Tháng'}
                 </span>
               </div>
             )}
@@ -598,7 +698,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   {/* Đường PV (Vàng) */}
                   {lineToggles.pv && (
                     <polyline
-                      points={getLinePoints(chartData, 'pv', maxKw, 140, 450)}
+                      points={getLinePoints(effectiveChartData, 'pv', maxKw, 140, 450)}
                       fill="none"
                       stroke="#f59e0b"
                       strokeWidth="2.5"
@@ -607,7 +707,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   {/* Đường Tải hòa lưới (Cyan) */}
                   {lineToggles.load && (
                     <polyline
-                      points={getLinePoints(chartData, 'load', maxKw, 140, 450)}
+                      points={getLinePoints(effectiveChartData, 'load', maxKw, 140, 450)}
                       fill="none"
                       stroke="#06b6d4"
                       strokeWidth="2"
@@ -616,7 +716,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   {/* Đường Tải dự phòng (Cam) */}
                   {lineToggles.backup && (
                     <polyline
-                      points={getLinePoints(chartData, 'backup', maxKw, 140, 450)}
+                      points={getLinePoints(effectiveChartData, 'backup', maxKw, 140, 450)}
                       fill="none"
                       stroke="#f97316"
                       strokeWidth="1.5"
@@ -625,7 +725,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   {/* Đường Sạc pin (Xanh lá) */}
                   {lineToggles.chg && (
                     <polyline
-                      points={getLinePoints(chartData, 'chg', maxKw, 140, 450)}
+                      points={getLinePoints(effectiveChartData, 'chg', maxKw, 140, 450)}
                       fill="none"
                       stroke="#10b981"
                       strokeWidth="2"
@@ -634,7 +734,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   {/* Đường Xả pin (Tím) */}
                   {lineToggles.dis && (
                     <polyline
-                      points={getLinePoints(chartData, 'dis', maxKw, 140, 450)}
+                      points={getLinePoints(effectiveChartData, 'dis', maxKw, 140, 450)}
                       fill="none"
                       stroke="#a855f7"
                       strokeWidth="2"
@@ -643,7 +743,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   {/* Đường Lưới điện (Sky) */}
                   {lineToggles.grid && (
                     <polyline
-                      points={getLinePoints(chartData, 'grid', maxKw, 140, 450)}
+                      points={getLinePoints(effectiveChartData, 'grid', maxKw, 140, 450)}
                       fill="none"
                       stroke="#38bdf8"
                       strokeWidth="1.5"
@@ -652,7 +752,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   {/* Đường SOC % Pin (Hồng nét đứt) */}
                   {lineToggles.soc && (
                     <polyline
-                      points={getLinePoints(chartData, 'soc', 100, 140, 450)}
+                      points={getLinePoints(effectiveChartData, 'soc', 100, 140, 450)}
                       fill="none"
                       stroke="#ec4899"
                       strokeWidth="2"
@@ -665,8 +765,8 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
               /* COMBO CHART CỘT + ĐƯỜNG KHI CHỌN THÁNG/NĂM (DỮ LIỆU THỰC TỪ CLOUD HÃNG) */
               (() => {
                 const maxComboVal = Math.max(
-                  timeScope === 'YEAR' ? 100 : 20,
-                  ...chartData.map(d => Math.max(d.pv || 0, d.load || 0))
+                  timeScope === 'YEAR' ? 100 * multiplier : 20 * multiplier,
+                  ...effectiveChartData.map(d => Math.max(d.pv || 0, d.load || 0))
                 );
 
                 return (
@@ -679,7 +779,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                     </div>
 
                     <div className="w-full h-full flex items-end justify-between gap-0.5 sm:gap-1 px-1 relative">
-                      {chartData.map((item, idx) => {
+                      {effectiveChartData.map((item, idx) => {
                         const pvH = Math.max(0, Math.min(100, (item.pv / maxComboVal) * 100));
                         const loadH = Math.max(0, Math.min(100, (item.load / maxComboVal) * 100));
 
@@ -713,13 +813,13 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
 
                       <svg viewBox="0 0 450 140" className="absolute inset-0 w-full h-full pointer-events-none z-10" preserveAspectRatio="none">
                         <polyline
-                          points={getLinePoints(chartData, 'chg', maxComboVal, 140, 450)}
+                          points={getLinePoints(effectiveChartData, 'chg', maxComboVal, 140, 450)}
                           fill="none"
                           stroke="#10b981"
                           strokeWidth="2"
                         />
                         <polyline
-                          points={getLinePoints(chartData, 'dis', maxComboVal, 140, 450)}
+                          points={getLinePoints(effectiveChartData, 'dis', maxComboVal, 140, 450)}
                           fill="none"
                           stroke="#a855f7"
                           strokeWidth="2"
@@ -750,7 +850,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
                   <span>14</span>
                   <span>21</span>
                   <span>28</span>
-                  <span>{chartData.length || 31}</span>
+                  <span>{effectiveChartData.length || 31}</span>
                 </>
               ) : (
                 <>
@@ -771,7 +871,7 @@ export default function Dashboard({ initialStationId, initialDeviceId, onNavigat
       {/* Modal Cài Đặt Dự Án Riêng Cho Trạm Đang Xem */}
       <StationSettingsModal
         isOpen={isProjectSettingsOpen}
-        station={{ stationId: currentStationId, stationName: deviceInfo.stationName }}
+        station={{ stationId: currentStationId, stationName: fleetConfig?.stationName || deviceInfo.stationName }}
         onClose={() => setIsProjectSettingsOpen(false)}
         onSaved={(newCfg) => {
           if (newCfg?.electricityPrice) {

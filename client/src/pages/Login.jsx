@@ -35,20 +35,20 @@ export default function Login({ onLoginSuccess }) {
   const [sunwiseSuccess, setSunwiseSuccess] = useState('');
   const [sunwiseSubmitting, setSunwiseSubmitting] = useState(false);
 
-  // ================= FORGOT / RECOVERY FORM STATE =================
-  const [recoveryMethod, setRecoveryMethod] = useState('otp'); // 'otp' | 'serial'
+  // ================= FORGOT / RECOVERY FORM STATE (SUN WISE CLOUD OTP) =================
+  const [recoveryChannel, setRecoveryChannel] = useState('email'); // 'email' | 'phone'
+  const [recoveryAreaCode, setRecoveryAreaCode] = useState('+84');
   const [recoveryIdentity, setRecoveryIdentity] = useState('');
   const [recoveryOtp, setRecoveryOtp] = useState('');
   const [recoveryNewPassword, setRecoveryNewPassword] = useState('');
   const [recoveryConfirmPassword, setRecoveryConfirmPassword] = useState('');
-  const [recoverySerial, setRecoverySerial] = useState('');
   const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
+  const [showRecoveryConfirmPassword, setShowRecoveryConfirmPassword] = useState(false);
+  const [forgotStep, setForgotStep] = useState(1); // 1: Input email/phone, 2: Input OTP + new pass
   const [otpCountdown, setOtpCountdown] = useState(0);
   const [otpLoading, setOtpLoading] = useState(false);
   const [recoveryError, setRecoveryError] = useState('');
   const [recoverySuccess, setRecoverySuccess] = useState('');
-  const [demoOtpHint, setDemoOtpHint] = useState('');
 
   // Đếm ngược gửi lại OTP Sunwise
   useEffect(() => {
@@ -69,23 +69,31 @@ export default function Login({ onLoginSuccess }) {
   }, [otpCountdown]);
 
   // Gửi mã OTP khôi phục qua Phone / Email từ Server Hãng
-  const handleSendRecoveryOtp = async () => {
+  const handleSendRecoveryOtp = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
     setRecoveryError('');
     setRecoverySuccess('');
-    setDemoOtpHint('');
 
     const cleanId = recoveryIdentity.trim();
     if (!cleanId) {
-      return setRecoveryError('Vui lòng nhập Số điện thoại hoặc Email hoặc Tên tài khoản!');
+      return setRecoveryError(recoveryChannel === 'email' ? 'Vui lòng nhập địa chỉ Email!' : 'Vui lòng nhập Số điện thoại!');
+    }
+
+    if (recoveryChannel === 'email' && !cleanId.includes('@')) {
+      return setRecoveryError('Địa chỉ email không hợp lệ!');
     }
 
     setOtpLoading(true);
     try {
-      const res = await authService.sendRecoveryOtp({ identity: cleanId });
+      const res = await authService.sendRecoveryOtp({ 
+        identity: cleanId,
+        areaCode: recoveryAreaCode,
+        channel: recoveryChannel 
+      });
       if (res.success) {
-        setOtpSent(true);
+        setForgotStep(2);
         setOtpCountdown(60);
-        setRecoverySuccess(res.message || 'Mã xác thực OTP đã được Server Hãng gửi về Phone/Email của quý khách!');
+        setRecoverySuccess(res.message || `Mã xác thực OTP đã được Server Hãng gửi về ${recoveryChannel === 'email' ? 'Email' : 'Số điện thoại'} [${cleanId}]!`);
       } else {
         setRecoveryError(res.message || 'Gửi mã OTP thất bại từ Server Hãng');
       }
@@ -121,7 +129,7 @@ export default function Login({ onLoginSuccess }) {
       });
 
       if (res.success) {
-        setRecoverySuccess(res.message || 'Đặt lại mật khẩu thành công trực tiếp với Server Hãng! Đang đăng nhập...');
+        setRecoverySuccess(res.message || 'Đã ghi nhận mật khẩu mới trên Máy Chủ Hãng thành công! Đang đăng nhập...');
         localStorage.setItem('zeno_user', JSON.stringify(res.user));
         localStorage.setItem('zeno_token', res.token);
         localStorage.setItem('zeno_mode', 'LIVE');
@@ -133,48 +141,6 @@ export default function Login({ onLoginSuccess }) {
       }
     } catch (err) {
       setRecoveryError(err.message || 'Lỗi đặt lại mật khẩu');
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  // Khôi phục bằng Serial Inverter (Zeno Cloud)
-  const handleSerialRecoverySubmit = async (e) => {
-    e.preventDefault();
-    setRecoveryError('');
-    setRecoverySuccess('');
-
-    if (!recoveryIdentity.trim() || !recoverySerial.trim()) {
-      return setRecoveryError('Vui lòng nhập Số điện thoại và Số Serial Inverter!');
-    }
-    if (recoveryNewPassword.length < 6) {
-      return setRecoveryError('Mật khẩu mới phải từ 6 ký tự trở lên!');
-    }
-    if (recoveryNewPassword !== recoveryConfirmPassword) {
-      return setRecoveryError('Mật khẩu xác nhận không khớp!');
-    }
-
-    setOtpLoading(true);
-    try {
-      const res = await authService.recoverBySerial({
-        identity: recoveryIdentity.trim(),
-        serialNumber: recoverySerial.trim(),
-        newPassword: recoveryNewPassword.trim()
-      });
-
-      if (res.success) {
-        setRecoverySuccess(res.message || 'Đổi mật khẩu thành công! Đang tự động đăng nhập...');
-        localStorage.setItem('zeno_user', JSON.stringify(res.user));
-        localStorage.setItem('zeno_token', res.token);
-        localStorage.setItem('zeno_mode', 'LIVE');
-        setTimeout(() => {
-          window.location.reload();
-        }, 1200);
-      } else {
-        setRecoveryError(res.message || 'Xác thực Inverter thất bại');
-      }
-    } catch (err) {
-      setRecoveryError(err.message || 'Lỗi khôi phục qua Serial');
     } finally {
       setOtpLoading(false);
     }
@@ -552,58 +518,29 @@ export default function Login({ onLoginSuccess }) {
             </div>
           )}
 
-          {/* ======================= TAB 3: KHÔI PHỤC MẬT KHẨU ======================= */}
+          {/* ======================= TAB 3: KHÔI PHỤC MẬT KHẨU (SUN WISE CLOUD OTP) ======================= */}
           {authMode === 'forgot' && (
             <div>
+              {/* Header Navigation */}
               <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800/70">
                 <button
                   type="button"
-                  onClick={() => { setAuthMode('login'); setRecoveryError(''); setRecoverySuccess(''); }}
+                  onClick={() => {
+                    if (forgotStep === 2) {
+                      setForgotStep(1);
+                    } else {
+                      setAuthMode('login');
+                    }
+                    setRecoveryError('');
+                    setRecoverySuccess('');
+                  }}
                   className="text-xs text-slate-400 hover:text-cyan-400 flex items-center gap-1.5 font-bold transition cursor-pointer"
                 >
-                  <ArrowLeft className="w-4 h-4" /> Quay Lại
+                  <ArrowLeft className="w-4 h-4" /> {forgotStep === 2 ? 'Thay đổi Email/SĐT' : 'Quay Lại'}
                 </button>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                  TỰ ĐỘNG & MIỄN PHÍ
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#00d084]/10 text-[#00d084] border border-[#00d084]/30 flex items-center gap-1">
+                  <Shield className="w-3 h-3" /> MÁY CHỦ HÃNG OTP
                 </span>
-              </div>
-
-              <div className="text-center mb-4">
-                <div className="w-10 h-10 mx-auto rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-2">
-                  <KeyRound className="w-5 h-5 text-cyan-400" />
-                </div>
-                <h3 className="text-sm sm:text-base font-extrabold text-slate-100">
-                  Lấy Lại Mật Khẩu Tự Động
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Chọn 1 trong 2 phương thức xác thực dưới đây để đặt lại mật khẩu mới
-                </p>
-              </div>
-
-              {/* Method Switcher: OTP Phone/Email vs Serial Inverter (Zeno Cloud) */}
-              <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800 mb-3.5">
-                <button
-                  type="button"
-                  onClick={() => { setRecoveryMethod('otp'); setRecoveryError(''); setRecoverySuccess(''); }}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    recoveryMethod === 'otp'
-                      ? 'bg-gradient-to-r from-[#00d084] to-teal-500 text-slate-950 shadow font-black'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <MessageSquare className="w-3.5 h-3.5" /> Mã OTP Phone / Email
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setRecoveryMethod('serial'); setRecoveryError(''); setRecoverySuccess(''); }}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    recoveryMethod === 'serial'
-                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow font-black'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <Cpu className="w-3.5 h-3.5" /> Mã SN Biến Tần (Zeno Cloud)
-                </button>
               </div>
 
               {recoveryError && (
@@ -620,207 +557,177 @@ export default function Login({ onLoginSuccess }) {
                 </div>
               )}
 
-              {/* ================= PHƯƠNG THỨC 1: OTP PHONE / EMAIL (SERVER HÃNG) ================= */}
-              {recoveryMethod === 'otp' && (
-                <form onSubmit={handleVerifyOtpSubmit} className="space-y-3">
-                  <div className="p-2.5 rounded-xl bg-teal-500/10 border border-teal-500/20 text-[11px] text-teal-300 flex items-start gap-2">
-                    <Shield className="w-4 h-4 shrink-0 mt-0.5 text-teal-400" />
-                    <span>Hệ thống sẽ gửi yêu cầu trực tiếp lên <strong>Máy Chủ Hãng</strong> để phát mã OTP về Số điện thoại / Email của bạn.</span>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Số điện thoại hoặc Email tài khoản *
-                    </label>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <User className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500" />
-                        <input
-                          type="text"
-                          required
-                          placeholder="VD: 0912345678 hoặc email@gmail.com"
-                          value={recoveryIdentity}
-                          onChange={(e) => setRecoveryIdentity(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-[#00d084]"
-                        />
-                      </div>
+              {/* BƯỚC 1: NHẬP EMAIL HOẶC SỐ ĐIỆN THOẠI (SUN WISE APP GIAO DIỆN CHUẨN) */}
+              {forgotStep === 1 && (
+                <form onSubmit={handleSendRecoveryOtp} className="space-y-4">
+                  <div className="mb-2">
+                    <h3 className="text-xl font-extrabold text-slate-100 mb-1">
+                      Khôi phục Mật khẩu
+                    </h3>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                      <span>Thay đổi phương thức</span>
                       <button
                         type="button"
-                        onClick={handleSendRecoveryOtp}
-                        disabled={otpLoading || otpCountdown > 0}
-                        className="px-3 py-2 bg-[#00d084] hover:bg-[#00b875] disabled:opacity-50 text-slate-950 font-black text-xs rounded-xl shadow transition shrink-0 cursor-pointer flex items-center gap-1"
+                        onClick={() => {
+                          setRecoveryChannel(recoveryChannel === 'email' ? 'phone' : 'email');
+                          setRecoveryIdentity('');
+                          setRecoveryError('');
+                        }}
+                        className="text-[#00d084] hover:underline font-bold cursor-pointer"
                       >
-                        {otpLoading ? 'Đang gửi...' : (otpCountdown > 0 ? `${otpCountdown}s gửi lại` : 'Gửi OTP Hãng')}
+                        {recoveryChannel === 'email' ? 'Lấy lại bằng Số điện thoại' : 'Lấy lại bằng E-mail'}
                       </button>
                     </div>
                   </div>
 
-                  {/* Nhập mã OTP từ Server Hãng */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-semibold text-slate-300">
-                        Nhập mã OTP 6 số từ Server Hãng *
-                      </label>
-                      <span className="text-[10px] text-slate-400">SMS / Email Hãng</span>
-                    </div>
-                    <input
-                      type="text"
-                      maxLength={6}
-                      required
-                      placeholder="Nhập 6 chữ số OTP"
-                      value={recoveryOtp}
-                      onChange={(e) => setRecoveryOtp(e.target.value.trim())}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-center text-sm font-mono tracking-widest text-[#00d084] placeholder-slate-600 focus:outline-none focus:border-[#00d084]"
-                    />
-                  </div>
-
-                  {/* Mật khẩu mới & Xác nhận */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* Input Email hoặc Phone */}
+                  {recoveryChannel === 'email' ? (
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
-                        Mật khẩu mới *
-                      </label>
                       <div className="relative">
-                        <Lock className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500" />
                         <input
-                          type={showRecoveryPassword ? "text" : "password"}
+                          type="email"
                           required
-                          placeholder="6–32 ký tự"
-                          value={recoveryNewPassword}
-                          onChange={(e) => setRecoveryNewPassword(e.target.value)}
-                          className="w-full pl-9 pr-8 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-[#00d084]"
+                          placeholder="E-mail"
+                          value={recoveryIdentity}
+                          onChange={(e) => setRecoveryIdentity(e.target.value)}
+                          className="w-full px-4 py-3 bg-slate-900/90 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#00d084] transition"
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowRecoveryPassword(!showRecoveryPassword)}
-                          className="absolute right-2.5 top-2.5 text-slate-500 hover:text-slate-300 cursor-pointer"
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex rounded-xl bg-slate-900/90 border border-slate-800 overflow-hidden focus-within:border-[#00d084] transition">
+                        <select
+                          value={recoveryAreaCode}
+                          onChange={(e) => setRecoveryAreaCode(e.target.value)}
+                          className="bg-transparent text-xs font-bold text-slate-200 px-3 py-3 border-r border-slate-800 focus:outline-none cursor-pointer"
                         >
-                          {showRecoveryPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
-                        Nhập lại mật khẩu *
-                      </label>
-                      <div className="relative">
-                        <Lock className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500" />
+                          <option value="+84" className="bg-slate-900 text-slate-200">+84 (VN)</option>
+                          <option value="+86" className="bg-slate-900 text-slate-200">+86 (CN)</option>
+                          <option value="+1" className="bg-slate-900 text-slate-200">+1 (US)</option>
+                          <option value="+49" className="bg-slate-900 text-slate-200">+49 (DE)</option>
+                          <option value="+33" className="bg-slate-900 text-slate-200">+33 (FR)</option>
+                          <option value="+81" className="bg-slate-900 text-slate-200">+81 (JP)</option>
+                        </select>
                         <input
-                          type={showRecoveryPassword ? "text" : "password"}
+                          type="tel"
                           required
-                          placeholder="Xác nhận mật khẩu"
-                          value={recoveryConfirmPassword}
-                          onChange={(e) => setRecoveryConfirmPassword(e.target.value)}
-                          className="w-full pl-9 pr-8 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-[#00d084]"
+                          placeholder="Số điện thoại"
+                          value={recoveryIdentity}
+                          onChange={(e) => setRecoveryIdentity(e.target.value)}
+                          className="w-full px-3 py-3 bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
                         />
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   <button
                     type="submit"
                     disabled={otpLoading}
-                    className="w-full py-3 rounded-full bg-[#00d084] hover:bg-[#00b875] text-slate-950 font-black text-sm shadow-xl shadow-[#00d084]/20 transition duration-200 mt-2 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-3.5 rounded-full bg-[#00d084] hover:bg-[#00b875] text-[#0d1117] font-black text-base shadow-xl shadow-[#00d084]/20 transition duration-200 mt-4 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
-                    {otpLoading ? 'Đang Đặt Lại Mật Khẩu Lên Server Hãng...' : 'Xác Thực OTP & Đặt Lại Mật Khẩu (Server Hãng)'}
-                    <Sparkles className="w-4 h-4" />
+                    {otpLoading ? 'Đang Gửi Yêu Cầu Hãng...' : 'Tiếp'}
                   </button>
                 </form>
               )}
 
-              {/* ================= PHƯƠNG THỨC 2: KHÔI PHỤC BẰNG SERIAL BIẾN TẦN (ZENO CLOUD) ================= */}
-              {recoveryMethod === 'serial' && (
-                <form onSubmit={handleSerialRecoverySubmit} className="space-y-3">
-                  <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 flex items-start gap-2">
-                    <Shield className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
-                    <span>Hệ thống <strong>Zeno Cloud</strong> sẽ đối chiếu Số Serial Inverter và Số điện thoại đã liên kết trạm để mở khóa đổi mật khẩu ngay tức thì!</span>
+              {/* BƯỚC 2: NHẬP MÃ XÁC THỰC OTP VÀ MẬT KHẨU MỚI (SUN WISE APP GIAO DIỆN CHUẨN) */}
+              {forgotStep === 2 && (
+                <form onSubmit={handleVerifyOtpSubmit} className="space-y-3.5">
+                  <div className="mb-2">
+                    <h3 className="text-xl font-extrabold text-slate-100 mb-1">
+                      Vui lòng nhập mã xác thực
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Mã xác thực đã được gửi đến <strong className="text-slate-200">{recoveryIdentity}</strong>
+                    </p>
                   </div>
 
+                  {/* Input OTP kèm Countdown Timer */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Số điện thoại hoặc Tên tài khoản *
-                    </label>
-                    <div className="relative">
-                      <User className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500" />
+                    <div className="flex rounded-xl bg-slate-900/90 border border-slate-800 overflow-hidden focus-within:border-[#00d084] transition">
                       <input
                         type="text"
+                        maxLength={6}
                         required
-                        placeholder="VD: 0912345678 hoặc anhthodienmayman"
-                        value={recoveryIdentity}
-                        onChange={(e) => setRecoveryIdentity(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500"
+                        placeholder="Vui lòng nhập mã xác thực..."
+                        value={recoveryOtp}
+                        onChange={(e) => setRecoveryOtp(e.target.value.trim())}
+                        className="w-full px-3.5 py-3 bg-transparent text-sm font-mono tracking-widest text-[#00d084] placeholder-slate-500 focus:outline-none"
                       />
+                      <button
+                        type="button"
+                        onClick={handleSendRecoveryOtp}
+                        disabled={otpLoading || otpCountdown > 0}
+                        className="px-3 py-2 text-xs font-bold text-[#00d084] hover:text-emerald-300 disabled:text-slate-500 whitespace-nowrap transition cursor-pointer border-l border-slate-800"
+                      >
+                        {otpLoading ? '...' : (otpCountdown > 0 ? `${otpCountdown} s` : 'Gửi lại')}
+                      </button>
+                    </div>
+                    <div className="text-right mt-1">
+                      <button
+                        type="button"
+                        onClick={handleSendRecoveryOtp}
+                        disabled={otpLoading || otpCountdown > 0}
+                        className="text-[11px] text-cyan-400 hover:underline cursor-pointer disabled:text-slate-600"
+                      >
+                        Không nhận được mã xác minh?
+                      </button>
                     </div>
                   </div>
 
+                  {/* Nhập Mật Khẩu Mới */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Số Serial Biến Tần Inverter (SN in trên tem máy) *
-                    </label>
                     <div className="relative">
-                      <Cpu className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500" />
                       <input
-                        type="text"
+                        type={showRecoveryPassword ? "text" : "password"}
                         required
-                        placeholder="VD: 5037108978-1"
-                        value={recoverySerial}
-                        onChange={(e) => setRecoverySerial(e.target.value.trim())}
-                        className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs sm:text-sm font-mono text-amber-300 placeholder-slate-600 focus:outline-none focus:border-amber-500"
+                        placeholder="Nhập Mật khẩu"
+                        value={recoveryNewPassword}
+                        onChange={(e) => setRecoveryNewPassword(e.target.value)}
+                        className="w-full px-3.5 pr-10 py-3 bg-slate-900/90 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#00d084] transition"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowRecoveryPassword(!showRecoveryPassword)}
+                        className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-300 cursor-pointer"
+                      >
+                        {showRecoveryPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
-                        Mật khẩu mới *
-                      </label>
-                      <div className="relative">
-                        <Lock className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500" />
-                        <input
-                          type={showRecoveryPassword ? "text" : "password"}
-                          required
-                          placeholder="Tối thiểu 6 ký tự"
-                          value={recoveryNewPassword}
-                          onChange={(e) => setRecoveryNewPassword(e.target.value)}
-                          className="w-full pl-9 pr-8 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowRecoveryPassword(!showRecoveryPassword)}
-                          className="absolute right-2.5 top-2.5 text-slate-500 hover:text-slate-300 cursor-pointer"
-                        >
-                          {showRecoveryPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
-                        Nhập lại mật khẩu *
-                      </label>
-                      <div className="relative">
-                        <Lock className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500" />
-                        <input
-                          type={showRecoveryPassword ? "text" : "password"}
-                          required
-                          placeholder="Xác nhận mật khẩu"
-                          value={recoveryConfirmPassword}
-                          onChange={(e) => setRecoveryConfirmPassword(e.target.value)}
-                          className="w-full pl-9 pr-8 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500"
-                        />
-                      </div>
+                  {/* Nhập Lại Mật Khẩu */}
+                  <div>
+                    <div className="relative">
+                      <input
+                        type={showRecoveryConfirmPassword ? "text" : "password"}
+                        required
+                        placeholder="Vui lòng nhập lại mật khẩu."
+                        value={recoveryConfirmPassword}
+                        onChange={(e) => setRecoveryConfirmPassword(e.target.value)}
+                        className="w-full px-3.5 pr-10 py-3 bg-slate-900/90 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#00d084] transition"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowRecoveryConfirmPassword(!showRecoveryConfirmPassword)}
+                        className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-300 cursor-pointer"
+                      >
+                        {showRecoveryConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
+
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    ⓘ Vui lòng nhập mật khẩu dài 6-32 ký tự (phân biệt chữ hoa/thường).
+                  </p>
 
                   <button
                     type="submit"
                     disabled={otpLoading}
-                    className="w-full py-3 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm shadow-xl shadow-amber-500/20 transition duration-200 mt-2 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-3.5 rounded-full bg-[#00d084] hover:bg-[#00b875] text-[#0d1117] font-black text-base shadow-xl shadow-[#00d084]/20 transition duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
-                    {otpLoading ? 'Đang Xác Thực Zeno Cloud...' : 'Xác Thực Biến Tần & Đổi Mật Khẩu (Zeno Cloud)'}
-                    <Sparkles className="w-4 h-4" />
+                    {otpLoading ? 'Đang Ghi Nhận Lên Máy Chủ Hãng...' : 'Hoàn thành'}
                   </button>
                 </form>
               )}

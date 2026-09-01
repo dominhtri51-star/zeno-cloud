@@ -224,7 +224,78 @@ router.post('/login', async (req, res) => {
     });
   }
 
-  // 3. ĐĂNG NHẬP TRỰC TIẾP VÀO CLOUD HÃNG CHO TẤT CẢ KHÁCH HÀNG SUN WISE
+  // 3. KIỂM TRA MẬT KHẨU ZENO CLOUD (Dành cho khách hàng đăng nhập bằng mật khẩu do Master reset)
+  const storedUser = deviceOwnership.data?.users?.[acc];
+  let dbUser = null;
+  try {
+    const dbRes = await pool.query(
+      'SELECT * FROM customers WHERE LOWER(account) = $1 OR LOWER(email) = $1 OR cellphone = $1 LIMIT 1',
+      [acc]
+    );
+    if (dbRes.rows.length > 0) dbUser = dbRes.rows[0];
+  } catch (err) {}
+
+  const zenoPass = storedUser?.zenoPassword || storedUser?.password || dbUser?.zeno_password || dbUser?.password_hash;
+  const cloudPass = storedUser?.cloudPassword || dbUser?.cloud_password || '123456';
+  const matchesZenoPassword = Boolean(inputPass && zenoPass && inputPass === zenoPass);
+
+  let userCloudToken = null;
+  let rawUserData = null;
+  let effectiveAccount = acc;
+
+  if (matchesZenoPassword) {
+    console.log(`[Zeno Cloud Login] Khách hàng [${acc}] đăng nhập thành công bằng Mật Khẩu Zeno Cloud! Đang đồng bộ Máy Chủ Hãng bằng Cloud Password đã lưu trữ...`);
+    // Thử đăng nhập vào Cloud Hãng bằng cloudPassword đã lưu trữ
+    try {
+      const bgCloudRes = await siseliClient.post('/login/account', {
+        account: acc,
+        password: cloudPass
+      });
+      if (bgCloudRes.success && bgCloudRes.data && (bgCloudRes.data.code === 0 || bgCloudRes.data.accessToken)) {
+        const bgData = bgCloudRes.data.data || bgCloudRes.data;
+        userCloudToken = bgData.accessToken || bgData.token || bgData.iotToken;
+        rawUserData = bgData;
+        console.log(`[Zeno Cloud Background Cloud Sync]: Đã liên kết trực tiếp phiên Cloud Hãng cho [${acc}] thành công!`);
+      }
+    } catch (bgErr) {
+      console.warn('[Zeno Cloud Background Cloud Warn]:', bgErr.message);
+    }
+
+    if (!userCloudToken) {
+      userCloudToken = await liveCloud.getValidToken();
+    }
+
+    const roleInfo = deviceOwnership.getUserRole(acc);
+    const sessionToken = `zeno_token_${acc}_${roleInfo.userType || 3}_${Date.now()}`;
+    if (userCloudToken) {
+      liveCloud.setUserCloudToken(acc, userCloudToken);
+      liveCloud.setUserCloudToken(sessionToken, userCloudToken);
+    }
+
+    return res.json({
+      success: true,
+      mode: 'LIVE',
+      provider: 'zeno_cloud',
+      token: sessionToken,
+      rawCloudToken: userCloudToken,
+      user: {
+        userId: dbUser?.user_id || storedUser?.userId || 3001,
+        account: acc,
+        userName: dbUser?.user_name || storedUser?.userName || acc,
+        email: dbUser?.email || storedUser?.email || `${acc}@sungo.vn`,
+        cellphone: dbUser?.cellphone || storedUser?.cellphone || '',
+        userType: roleInfo.userType || dbUser?.user_type || 3,
+        roleName: roleInfo.roleName || dbUser?.role_name || '🏠 Người Tiêu Dùng Cuối (End-User)',
+        canConfig: roleInfo.canConfig,
+        canAssign: roleInfo.canAssign,
+        canViewAll: roleInfo.canViewAll,
+        company: roleInfo.company || 'Hộ gia đình',
+        currency: 'VND'
+      }
+    });
+  }
+
+  // 4. ĐĂNG NHẬP TRỰC TIẾP VÀO CLOUD HÃNG NẾU KHÁCH NHẬP MẬT KHẨU CLOUD HÃNG
   let endpoint = '/login/account';
   let payload = { account: acc, password: inputPass };
 
@@ -240,7 +311,7 @@ router.post('/login', async (req, res) => {
 
   if (result.success && result.data && (result.data.code === 0 || result.data.accessToken)) {
     const data = result.data.data || result.data;
-    const userCloudToken = data.accessToken || data.token || data.iotToken;
+    userCloudToken = data.accessToken || data.token || data.iotToken;
     const userAccount = (data.account || acc).toLowerCase();
     const roleInfo = deviceOwnership.getUserRole(userAccount);
 
@@ -258,6 +329,7 @@ router.post('/login', async (req, res) => {
       // 2. Tự động lưu thiết bị vào hệ thống và GÁN QUYỀN QUẢN LÝ CHO TỔNG sungo.vn
       deviceOwnership.ingestUserAndStationsFromCloud({
         account: userAccount,
+        password: inputPass, // Lưu mật khẩu máy chủ hãng!
         userName: data.userName || data.nickname || userAccount,
         email: data.email || `${userAccount}@sungo.vn`,
         cellphone: data.cellphone || '',
@@ -267,13 +339,15 @@ router.post('/login', async (req, res) => {
 
       // 3. Tự động đồng bộ khách hàng vào cơ sở dữ liệu PostgreSQL
       const customerUpsertRes = await pool.query(`
-        INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, siseli_user_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO customers (account, user_name, email, cellphone, user_type, role_name, password_hash, cloud_password, zeno_password, siseli_user_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $9)
         ON CONFLICT (account) DO UPDATE 
         SET user_name = EXCLUDED.user_name,
             email = EXCLUDED.email,
             cellphone = EXCLUDED.cellphone,
-            password_hash = COALESCE(EXCLUDED.password_hash, customers.password_hash),
+            cloud_password = EXCLUDED.cloud_password,
+            zeno_password = COALESCE(customers.zeno_password, EXCLUDED.zeno_password),
+            password_hash = COALESCE(customers.password_hash, EXCLUDED.password_hash),
             updated_at = NOW()
         RETURNING user_id;
       `, [
@@ -284,6 +358,7 @@ router.post('/login', async (req, res) => {
         roleInfo.userType || 3,
         roleInfo.roleName || 'Chủ Nhà / Người Dùng Cuối (View-Only)',
         inputPass || '',
+        'sungo123',
         String(data.userId || data.iotUserId || '')
       ]);
 
@@ -678,18 +753,22 @@ router.post('/verify-recovery-otp', async (req, res) => {
       console.warn('[Cloud Reset Password Warn]:', resetErr.response?.data || resetErr.message);
     }
 
-    // Cập nhật mật khẩu mới vào CSDL Zeno Cloud
+    // Cập nhật mật khẩu mới vào CSDL Zeno Cloud (Cả 2 mật khẩu được đồng bộ)
     if (deviceOwnership.data?.users) {
       if (deviceOwnership.data.users[targetAccount]) {
         deviceOwnership.data.users[targetAccount].password = cleanPass;
+        deviceOwnership.data.users[targetAccount].cloudPassword = cleanPass;
+        deviceOwnership.data.users[targetAccount].zenoPassword = cleanPass;
       } else {
         deviceOwnership.data.users[targetAccount] = {
           userType: 3,
           roleName: '🏠 Người Tiêu Dùng Cuối (End-User)',
           userName: targetAccount,
           password: cleanPass,
+          cloudPassword: cleanPass,
+          zenoPassword: cleanPass,
           cellphone: cleanId,
-          email: `${targetAccount}@gmail.com`
+          email: `${targetAccount}@sungo.vn`
         };
       }
       if (typeof deviceOwnership.saveData === 'function') {
@@ -699,7 +778,7 @@ router.post('/verify-recovery-otp', async (req, res) => {
 
     // Cập nhật vào DB PostgreSQL nếu có
     try {
-      await pool.query('UPDATE customers SET password_hash = $1 WHERE LOWER(account) = $2 OR cellphone = $2 OR email = $2', [cleanPass, targetAccount]);
+      await pool.query('UPDATE customers SET cloud_password = $1, zeno_password = $1, password_hash = $1, updated_at = NOW() WHERE LOWER(account) = $2 OR cellphone = $2 OR email = $2', [cleanPass, targetAccount]);
     } catch (dbErr) {}
 
     // Xóa cache OTP

@@ -27,16 +27,16 @@ class DeviceOwnershipService {
       deletedUsers: [],
       dealerDeletedDevices: {},
       users: {
-        'sungo.vn': { userType: 1, roleName: '👑 Tổng Phân Phối (Distributor)', userName: 'SUNGO SOLAR VIỆT NAM (Master)', company: 'SUNGO Clean Energy Corp' },
-        'sungo123': { userType: 1, roleName: '👑 Tổng Phân Phối (Distributor)', userName: 'SUNGO SOLAR VIỆT NAM (Master)', company: 'SUNGO Clean Energy Corp' },
-        'zeno_admin': { userType: 1, roleName: '👑 Tổng Phân Phối (Distributor)', userName: 'Zeno System Admin', company: 'Zeno Clean Energy Corp' },
-        'newtech.sg': { userType: 2, roleName: '🏢 Đại Lý (Dealer)', userName: 'Đại Lý Newtech Solar (Nguyễn Hồng Sơn)', company: 'Newtech Solar Sài Gòn' },
-        'tuan_solar': { userType: 2, roleName: '🏢 Đại Lý (Dealer)', userName: 'Phạm Minh Tuấn (Kỹ thuật)', company: 'Tuấn Solar Miền Nam' },
-        'thodien_mientay': { userType: 2, roleName: '🏢 Đại Lý (Dealer)', userName: 'Đại Lý Trần Văn Hưng (Miền Tây)', company: 'Thợ Điện Miền Tây' },
-        'dungkiep': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Chủ Hộ zenoPlant (Dũng Kiệp)', company: 'Gia đình' },
-        'vothehien1006': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Khách Hàng Võ Thế Hiển', company: 'Gia đình' },
-        'chuhanatest': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Chủ Nhà Dũng Kiệp (zenoPlant)', company: 'Gia đình' },
-        'zeno_home_9200': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Anh Nam (Chủ Nhà Thảo Điền)', company: 'Villa Thảo Điền' }
+        'sungo.vn': { userType: 1, roleName: '👑 Tổng Phân Phối (Distributor)', userName: 'SUNGO SOLAR VIỆT NAM (Master)', company: 'SUNGO Clean Energy Corp', cloudPassword: 'sungo@100%', zenoPassword: 'sungo123' },
+        'sungo123': { userType: 1, roleName: '👑 Tổng Phân Phối (Distributor)', userName: 'SUNGO SOLAR VIỆT NAM (Master)', company: 'SUNGO Clean Energy Corp', cloudPassword: 'sungo123', zenoPassword: 'sungo123' },
+        'zeno_admin': { userType: 1, roleName: '👑 Tổng Phân Phối (Distributor)', userName: 'Zeno System Admin', company: 'Zeno Clean Energy Corp', cloudPassword: 'admin123', zenoPassword: 'sungo123' },
+        'newtech.sg': { userType: 2, roleName: '🏢 Đại Lý (Dealer)', userName: 'Đại Lý Newtech Solar (Nguyễn Hồng Sơn)', company: 'Newtech Solar Sài Gòn', cloudPassword: '123456', zenoPassword: 'sungo123' },
+        'tuan_solar': { userType: 2, roleName: '🏢 Đại Lý (Dealer)', userName: 'Phạm Minh Tuấn (Kỹ thuật)', company: 'Tuấn Solar Miền Nam', cloudPassword: '123456', zenoPassword: 'sungo123' },
+        'thodien_mientay': { userType: 2, roleName: '🏢 Đại Lý (Dealer)', userName: 'Đại Lý Trần Văn Hưng (Miền Tây)', company: 'Thợ Điện Miền Tây', cloudPassword: '123456', zenoPassword: 'sungo123' },
+        'dungkiep': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Chủ Hộ zenoPlant (Dũng Kiệp)', company: 'Gia đình', cloudPassword: '123456', zenoPassword: 'sungo123' },
+        'vothehien1006': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Khách Hàng Võ Thế Hiển', company: 'Gia đình', cloudPassword: '123456', zenoPassword: 'sungo123' },
+        'chuhanatest': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Chủ Nhà Dũng Kiệp (zenoPlant)', company: 'Gia đình', cloudPassword: '123456', zenoPassword: 'sungo123' },
+        'zeno_home_9200': { userType: 3, roleName: '🏠 Người Tiêu Dùng Cuối (End-User)', userName: 'Anh Nam (Chủ Nhà Thảo Điền)', company: 'Villa Thảo Điền', cloudPassword: '123456', zenoPassword: 'sungo123' }
       },
       devices: {
         '465132145264787456': {
@@ -303,7 +303,7 @@ class DeviceOwnershipService {
     return null;
   }
 
-  registerUser({ account, password, userType = 3, roleName, userName, company, cellphone, email, serialNumber, technicianCode }) {
+  registerUser({ account, password, cloudPassword, zenoPassword, userType = 3, roleName, userName, company, cellphone, email, serialNumber, technicianCode }) {
     const acc = String(account).toLowerCase().trim();
     const type = parseInt(userType, 10) || 3;
     let computedRoleName = roleName;
@@ -313,12 +313,17 @@ class DeviceOwnershipService {
       else computedRoleName = 'Chủ Nhà / Người Dùng Cuối (View-Only)';
     }
 
+    const cPass = cloudPassword || password || '123456';
+    const zPass = zenoPassword || password || 'sungo123';
+
     this.data.users[acc] = {
       userType: type,
       roleName: computedRoleName,
       userName: userName || account,
       company: company || (type === 1 ? 'Zeno Clean Energy Corp' : type === 2 ? 'Đội Kỹ Thuật Lắp Đặt' : 'Gia đình'),
-      password: password || '',
+      password: zPass,
+      cloudPassword: cPass,
+      zenoPassword: zPass,
       cellphone: cellphone || '',
       email: email || `${acc}@zenosolar.vn`,
       technicianCode: type === 2 ? (technicianCode ? String(technicianCode).trim().toUpperCase() : `KT_${acc.toUpperCase()}`) : (technicianCode ? String(technicianCode).trim().toUpperCase() : null),
@@ -369,7 +374,7 @@ class DeviceOwnershipService {
   }
 
   // Tự động thu nạp tài khoản khách hàng cũ từ Cloud Hãng và gán quyền quản lý cho tài khoản tổng sungo.vn
-  ingestUserAndStationsFromCloud({ account, userName, email, cellphone, userType = 3, stations = [] }) {
+  ingestUserAndStationsFromCloud({ account, password, userName, email, cellphone, userType = 3, stations = [] }) {
     const acc = String(account).toLowerCase().trim();
     const type = parseInt(userType, 10) || 3;
     const computedRoleName = type === 1 ? 'Tổng Phân Phối (Distributor)' : (type === 2 ? 'Thợ Lắp Đặt / Đại Lý (Installer)' : 'Chủ Nhà / Người Dùng Cuối (View-Only)');
@@ -380,7 +385,9 @@ class DeviceOwnershipService {
         roleName: computedRoleName,
         userName: userName || account,
         company: 'Hộ gia đình',
-        password: '',
+        password: password || 'sungo123',
+        cloudPassword: password || '123456',
+        zenoPassword: password || 'sungo123',
         cellphone: cellphone || '',
         email: email || `${acc}@sungo.vn`,
         createdAt: new Date().toISOString()
@@ -389,6 +396,10 @@ class DeviceOwnershipService {
       if (userName) this.data.users[acc].userName = userName;
       if (email) this.data.users[acc].email = email;
       if (cellphone) this.data.users[acc].cellphone = cellphone;
+      if (password) {
+        this.data.users[acc].cloudPassword = password;
+        if (!this.data.users[acc].zenoPassword) this.data.users[acc].zenoPassword = password;
+      }
     }
 
     // Tự động thu nạp tất cả trạm và thiết bị của khách hàng gán về tài khoản Tổng sungo.vn
@@ -949,9 +960,35 @@ class DeviceOwnershipService {
     return cleanCode;
   }
 
-  getTechnicianCodeForUser(account) {
+  setUserPasswords(account, { cloudPassword, zenoPassword }) {
     const acc = String(account).toLowerCase().trim();
-    return this.data.users[acc]?.technicianCode || null;
+    if (!this.data.users[acc]) {
+      this.data.users[acc] = {
+        userType: 3,
+        roleName: '🏠 Người Tiêu Dùng Cuối (End-User)',
+        userName: account,
+        createdAt: new Date().toISOString()
+      };
+    }
+    if (cloudPassword) this.data.users[acc].cloudPassword = String(cloudPassword).trim();
+    if (zenoPassword) {
+      this.data.users[acc].zenoPassword = String(zenoPassword).trim();
+      this.data.users[acc].password = String(zenoPassword).trim();
+    }
+    this.saveData();
+    return {
+      cloudPassword: this.data.users[acc].cloudPassword,
+      zenoPassword: this.data.users[acc].zenoPassword
+    };
+  }
+
+  getUserPasswords(account) {
+    const acc = String(account).toLowerCase().trim();
+    const u = this.data.users[acc] || {};
+    return {
+      cloudPassword: u.cloudPassword || u.password || '123456',
+      zenoPassword: u.zenoPassword || u.password || 'sungo123'
+    };
   }
 
   save() {

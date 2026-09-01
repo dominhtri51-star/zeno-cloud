@@ -43,6 +43,8 @@ router.get('/', checkAuth, async (req, res) => {
         uIdx++;
         const isAccMaster = (userKey === 'sungo.vn' || userKey === 'sungo123' || userKey === 'zeno_admin' || userKey === 'admin');
         const uType = isAccMaster ? 1 : Number(u.userType || 3);
+        const cPass = u.cloudPassword || (isAccMaster ? 'sungo@100%' : '123456');
+        const zPass = u.zenoPassword || u.password || 'sungo123';
         registeredUsersMap[userKey] = {
           userId: u.userId || uIdx,
           account: acc,
@@ -51,6 +53,8 @@ router.get('/', checkAuth, async (req, res) => {
           cellphone: u.cellphone || '',
           userType: uType,
           roleName: u.roleName || (uType === 1 ? '👑 Tổng Phân Phối' : uType === 2 ? '🏢 Đại Lý (Dealer)' : '🏠 Người Tiêu Dùng Cuối'),
+          cloudPassword: cPass,
+          zenoPassword: zPass,
           status: u.status || 'ACTIVE',
           groupId: u.groupId || (uType === 2 ? 1 : 2),
           groupName: u.groupName || (uType === 1 ? 'Hệ Thống Tổng' : uType === 2 ? 'Nhóm Đại Lý Lắp Đặt' : 'Nhóm Khách Hàng Hộ Gia Đình'),
@@ -72,6 +76,9 @@ router.get('/', checkAuth, async (req, res) => {
           c.user_type as "userType",
           c.role_name as "roleName",
           c.status,
+          c.cloud_password as "cloudPassword",
+          c.zeno_password as "zenoPassword",
+          c.password_hash as "passwordHash",
           c.group_id as "groupId",
           COALESCE(g.group_name, 'Chưa phân nhóm') as "groupName",
           TO_CHAR(c.created_at, 'YYYY-MM-DD HH24:MI:SS') as "createdAt"
@@ -86,6 +93,8 @@ router.get('/', checkAuth, async (req, res) => {
           if (userKey && !deviceOwnership.isUserDeleted(userKey) && !deviceOwnership.isUserDeleted(r.userId)) {
             const isAccMaster = (userKey === 'sungo.vn' || userKey === 'sungo123' || userKey === 'zeno_admin' || userKey === 'admin');
             const uType = isAccMaster ? 1 : Number(r.userType || registeredUsersMap[userKey]?.userType || 3);
+            const dbCPass = r.cloudPassword || registeredUsersMap[userKey]?.cloudPassword || (isAccMaster ? 'sungo@100%' : '123456');
+            const dbZPass = r.zenoPassword || r.passwordHash || registeredUsersMap[userKey]?.zenoPassword || 'sungo123';
             registeredUsersMap[userKey] = {
               ...registeredUsersMap[userKey],
               userId: r.userId || registeredUsersMap[userKey]?.userId,
@@ -95,6 +104,8 @@ router.get('/', checkAuth, async (req, res) => {
               cellphone: r.cellphone || registeredUsersMap[userKey]?.cellphone,
               userType: uType,
               roleName: isAccMaster ? '👑 Tổng Phân Phối' : (r.roleName || registeredUsersMap[userKey]?.roleName),
+              cloudPassword: dbCPass,
+              zenoPassword: dbZPass,
               status: r.status || 'ACTIVE',
               groupId: r.groupId,
               groupName: r.groupName,
@@ -354,37 +365,76 @@ router.put('/:id', checkAuth, async (req, res) => {
   return res.json({ success: true, message: 'Cập nhật thông tin tài khoản thành công' });
 });
 
-// 5. Đặt lại mật khẩu khách hàng
+// 5. Đặt lại mật khẩu khách hàng (Mật khẩu Zeno Cloud hoặc Mật khẩu Cloud Hãng)
 router.post('/:id/reset-password', checkAuth, async (req, res) => {
   const customerId = req.params.id;
-  const { newPassword, account } = req.body;
+  const { newPassword, targetPassword = 'zeno', account } = req.body;
 
   if (!newPassword || newPassword.length < 6) {
     return res.status(400).json({ success: false, message: 'Mật khẩu mới phải từ 6 ký tự trở lên!' });
   }
 
   let targetAcc = account;
-  if (deviceOwnership.data?.users) {
+  if (!targetAcc && deviceOwnership.data?.users) {
     for (const [acc, u] of Object.entries(deviceOwnership.data.users)) {
       if (String(u.userId) === String(customerId) || acc.toLowerCase() === String(customerId).toLowerCase()) {
         targetAcc = acc;
-        u.password = newPassword;
         break;
       }
     }
-    if (targetAcc && deviceOwnership.data.users[targetAcc]) {
-      deviceOwnership.data.users[targetAcc].password = newPassword;
+  }
+  if (!targetAcc) targetAcc = String(customerId).toLowerCase();
+
+  const isZeno = targetPassword === 'zeno' || targetPassword === 'both';
+  const isCloud = targetPassword === 'cloud' || targetPassword === 'both';
+
+  // 1. Cập nhật trong DeviceOwnership
+  if (deviceOwnership.data?.users) {
+    if (!deviceOwnership.data.users[targetAcc]) {
+      deviceOwnership.data.users[targetAcc] = {
+        userType: 3,
+        roleName: '🏠 Người Tiêu Dùng Cuối (End-User)',
+        userName: targetAcc,
+        createdAt: new Date().toISOString()
+      };
+    }
+    const userObj = deviceOwnership.data.users[targetAcc];
+    if (isZeno) {
+      userObj.zenoPassword = newPassword;
+      userObj.password = newPassword;
+    }
+    if (isCloud) {
+      userObj.cloudPassword = newPassword;
     }
     deviceOwnership.saveData();
   }
 
+  // 2. Cập nhật trong PostgreSQL
   try {
-    await pool.query('UPDATE customers SET password_hash = $1, updated_at = NOW() WHERE user_id::text = $2 OR account = $2', [newPassword, customerId]);
-  } catch (err) {}
+    if (isZeno && isCloud) {
+      await pool.query(
+        'UPDATE customers SET zeno_password = $1, password_hash = $1, cloud_password = $1, updated_at = NOW() WHERE user_id::text = $2 OR LOWER(account) = LOWER($2)',
+        [newPassword, targetAcc]
+      );
+    } else if (isZeno) {
+      await pool.query(
+        'UPDATE customers SET zeno_password = $1, password_hash = $1, updated_at = NOW() WHERE user_id::text = $2 OR LOWER(account) = LOWER($2)',
+        [newPassword, targetAcc]
+      );
+    } else if (isCloud) {
+      await pool.query(
+        'UPDATE customers SET cloud_password = $1, updated_at = NOW() WHERE user_id::text = $2 OR LOWER(account) = LOWER($2)',
+        [newPassword, targetAcc]
+      );
+    }
+  } catch (err) {
+    console.warn('[Reset Password DB Warning]:', err.message);
+  }
 
+  const passLabel = isZeno && isCloud ? 'Cả 2 Mật Khẩu (Zeno Cloud & Cloud Hãng)' : (isCloud ? 'Mật Khẩu Máy Chủ Hãng (Cloud Sun Wise)' : 'Mật Khẩu Đăng Nhập Zeno Cloud');
   return res.json({
     success: true,
-    message: `Đã đổi mật khẩu cho tài khoản ${targetAcc || customerId} thành công.`
+    message: `Đã cập nhật ${passLabel} cho tài khoản [${targetAcc}] thành công!`
   });
 });
 

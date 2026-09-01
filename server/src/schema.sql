@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS customers (
     group_id INT REFERENCES customer_groups(group_id) ON DELETE SET NULL,
     siseli_user_id VARCHAR(100),
     password_hash VARCHAR(255),
+    cloud_password VARCHAR(255) DEFAULT '123456',
+    zeno_password VARCHAR(255) DEFAULT 'sungo123',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

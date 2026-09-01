@@ -71,7 +71,7 @@ export const customerService = {
   createCustomer: (data) => api.post('/customers', data),
   updateCustomer: (id, data) => api.put(`/customers/${id}`, data),
   setTechnicianCode: (id, data) => api.post(`/customers/${id}/technician-code`, data),
-  resetPassword: (id, newPassword) => api.post(`/customers/${id}/reset-password`, { newPassword }),
+  resetPassword: (id, newPassword, targetPassword = 'zeno', account) => api.post(`/customers/${id}/reset-password`, { newPassword, targetPassword, account }),
   deleteCustomer: (id, adminPassword) => api.delete(`/customers/${id}`, { data: { adminPassword } })
 };
 

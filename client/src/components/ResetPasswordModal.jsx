@@ -14,12 +14,6 @@ export default function ResetPasswordModal({ isOpen, onClose, customer, onSucces
 
   if (!isOpen || !customer) return null;
 
-  const handlePresetClick = (preset) => {
-    setNewPassword(preset);
-    setConfirmPassword(preset);
-    setError('');
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -111,31 +105,6 @@ export default function ResetPasswordModal({ isOpen, onClose, customer, onSucces
             </div>
           )}
 
-          {/* Preset Quick Buttons */}
-          <div>
-            <div className={`text-[11px] font-semibold mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              Mật khẩu gợi ý chọn nhanh:
-            </div>
-            <div className="flex gap-1.5 flex-wrap">
-              {['sungo123', 'zeno123', '123456', 'sungo@100%'].map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => handlePresetClick(p)}
-                  className={`text-[11px] px-2.5 py-1 rounded-lg border font-mono font-bold transition cursor-pointer ${
-                    newPassword === p
-                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
-                      : isDark
-                      ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
-                      : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-3.5 pt-1">
             {/* Input Mật Khẩu Mới */}
             <div>
@@ -151,13 +120,13 @@ export default function ResetPasswordModal({ isOpen, onClose, customer, onSucces
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className={`w-full pl-10 pr-10 py-2.5 ${
-                    isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                    isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
                   } border rounded-xl text-xs focus:outline-none focus:border-cyan-500 transition`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-200 cursor-pointer"
+                  className={`absolute right-3.5 top-3 ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-700'} cursor-pointer`}
                   title="Ẩn / Hiện mật khẩu"
                 >
                   {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -179,7 +148,7 @@ export default function ResetPasswordModal({ isOpen, onClose, customer, onSucces
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className={`w-full pl-10 pr-10 py-2.5 ${
-                    isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                    isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
                   } border rounded-xl text-xs focus:outline-none focus:border-cyan-500 transition`}
                 />
               </div>

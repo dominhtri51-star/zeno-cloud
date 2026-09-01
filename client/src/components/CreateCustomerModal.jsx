@@ -118,7 +118,7 @@ export default function CreateCustomerModal({ isOpen, onClose, onSuccess, groups
                   value={formData.account}
                   onChange={(e) => setFormData({ ...formData, account: e.target.value })}
                   className={`w-full pl-9 pr-3 py-2 ${
-                    isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                    isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
                   } border rounded-xl text-xs focus:outline-none focus:border-cyan-500 transition`}
                 />
               </div>
@@ -135,7 +135,7 @@ export default function CreateCustomerModal({ isOpen, onClose, onSuccess, groups
                 value={formData.userName}
                 onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
                 className={`w-full px-3 py-2 ${
-                  isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                  isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
                 } border rounded-xl text-xs focus:outline-none focus:border-cyan-500 transition`}
               />
             </div>
@@ -155,7 +155,7 @@ export default function CreateCustomerModal({ isOpen, onClose, onSuccess, groups
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className={`w-full pl-9 pr-3 py-2 ${
-                    isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                    isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
                   } border rounded-xl text-xs focus:outline-none focus:border-cyan-500 transition`}
                 />
               </div>
@@ -174,7 +174,7 @@ export default function CreateCustomerModal({ isOpen, onClose, onSuccess, groups
                   value={formData.cellphone}
                   onChange={(e) => setFormData({ ...formData, cellphone: e.target.value })}
                   className={`w-full pl-9 pr-3 py-2 ${
-                    isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                    isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
                   } border rounded-xl text-xs focus:outline-none focus:border-cyan-500 transition`}
                 />
               </div>
@@ -196,7 +196,7 @@ export default function CreateCustomerModal({ isOpen, onClose, onSuccess, groups
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className={`w-full pl-9 pr-3 py-2 ${
-                    isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                    isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
                   } border rounded-xl text-xs focus:outline-none focus:border-cyan-500 transition`}
                 />
               </div>
@@ -216,7 +216,7 @@ export default function CreateCustomerModal({ isOpen, onClose, onSuccess, groups
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                   className={`w-full pl-9 pr-3 py-2 ${
-                    isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                    isDark ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
                   } border rounded-xl text-xs focus:outline-none focus:border-cyan-500 transition`}
                 />
               </div>
@@ -242,7 +242,7 @@ export default function CreateCustomerModal({ isOpen, onClose, onSuccess, groups
                     });
                   }}
                   className={`w-full pl-9 pr-3 py-2 ${
-                    isDark ? 'bg-slate-950 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                    isDark ? 'bg-slate-950 border-slate-700 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'
                   } border rounded-xl text-xs focus:outline-none focus:border-cyan-500 transition cursor-pointer`}
                 >
                   <option value="3">🏠 Cấp 3: Người Tiêu Dùng Cuối (End-User)</option>

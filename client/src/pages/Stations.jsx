@@ -281,7 +281,7 @@ export default function Stations({ onNavigate, onSelectDevice }) {
           
           {/* Ô Nhập Tìm Kiếm Tức Thì */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-cyan-400 pointer-events-none" />
+            <Search className={`w-4 h-4 absolute left-3.5 top-3.5 ${isDark ? 'text-cyan-400' : 'text-cyan-600'} pointer-events-none`} />
             <input
               type="text"
               placeholder={getSearchPlaceholder()}
@@ -290,12 +290,14 @@ export default function Stations({ onNavigate, onSelectDevice }) {
               onKeyDown={(e) => {
                 if (e.key === 'Escape') setSearchQuery('');
               }}
-              className="w-full pl-10 pr-10 py-2.5 bg-slate-950/80 border border-slate-800 focus:border-cyan-500 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none transition shadow-inner font-medium"
+              className={`w-full pl-10 pr-10 py-2.5 ${
+                isDark ? 'bg-slate-950/80 border-slate-800 text-white placeholder-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
+              } border focus:border-cyan-500 rounded-xl text-xs focus:outline-none transition font-medium`}
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-3 text-slate-400 hover:text-white p-0.5 rounded-md hover:bg-slate-800 transition cursor-pointer"
+                className={`absolute right-3 top-3 ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'} p-0.5 rounded-md transition cursor-pointer`}
                 title="Xóa từ khóa (Esc)"
               >
                 <X className="w-4 h-4" />
@@ -304,13 +306,13 @@ export default function Stations({ onNavigate, onSelectDevice }) {
           </div>
 
           {/* Chọn Phạm Vi Tìm Kiếm (Scope) */}
-          <div className="flex items-center gap-1 bg-slate-950/90 border border-slate-800 p-1 rounded-xl text-[11px] sm:text-xs shrink-0 overflow-x-auto max-w-full">
+          <div className={`flex items-center gap-1 ${isDark ? 'bg-slate-950/90 border-slate-800' : 'bg-slate-100 border-slate-200'} border p-1 rounded-xl text-[11px] sm:text-xs shrink-0 overflow-x-auto max-w-full`}>
             <button
               onClick={() => setSearchScope('ALL')}
               className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer whitespace-nowrap ${
                 searchScope === 'ALL'
                   ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 shadow-md'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  : isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800/60' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -322,7 +324,7 @@ export default function Stations({ onNavigate, onSelectDevice }) {
               className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer whitespace-nowrap ${
                 searchScope === 'NAME'
                   ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 shadow-md'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  : isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800/60' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
               }`}
             >
               <Tag className="w-3.5 h-3.5" />
@@ -334,7 +336,7 @@ export default function Stations({ onNavigate, onSelectDevice }) {
               className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer whitespace-nowrap ${
                 searchScope === 'SN'
                   ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 shadow-md'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  : isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800/60' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
               }`}
             >
               <Hash className="w-3.5 h-3.5" />
@@ -346,7 +348,7 @@ export default function Stations({ onNavigate, onSelectDevice }) {
               className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer whitespace-nowrap ${
                 searchScope === 'DTU'
                   ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 shadow-md'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  : isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800/60' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
               }`}
             >
               <Radio className="w-3.5 h-3.5" />
@@ -359,7 +361,7 @@ export default function Stations({ onNavigate, onSelectDevice }) {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-slate-300 focus:outline-none focus:border-cyan-500 cursor-pointer w-full sm:w-auto"
+              className={`px-3 py-2 ${isDark ? 'bg-slate-950 border-slate-800 text-slate-300' : 'bg-white border-slate-300 text-slate-800 shadow-sm'} border rounded-xl text-xs font-bold focus:outline-none focus:border-cyan-500 cursor-pointer w-full sm:w-auto`}
             >
               <option value="DEFAULT">Sắp xếp: Mặc định</option>
               <option value="NAME_ASC">Tên dự án (A → Z)</option>
@@ -370,10 +372,10 @@ export default function Stations({ onNavigate, onSelectDevice }) {
         </div>
 
         {/* Hàng Phụ: Bộ Lọc Trạng Thái & Thống Kê Số Lượng */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-slate-800/60 text-xs">
+        <div className={`flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t ${isDark ? 'border-slate-800/60' : 'border-slate-200'} text-xs`}>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              <Filter className="w-3 h-3 text-slate-500" />
+            <span className={`text-[11px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-600'} uppercase tracking-wider flex items-center gap-1`}>
+              <Filter className={`w-3 h-3 ${isDark ? 'text-slate-500' : 'text-slate-600'}`} />
               Lọc nhanh:
             </span>
 
@@ -381,8 +383,8 @@ export default function Stations({ onNavigate, onSelectDevice }) {
               onClick={() => setStatusFilter('ALL')}
               className={`px-2.5 py-1 rounded-lg font-semibold transition text-[11px] cursor-pointer ${
                 statusFilter === 'ALL'
-                  ? 'bg-slate-800 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                  ? isDark ? 'bg-slate-800 text-cyan-300 border border-cyan-500/40 shadow-sm' : 'bg-cyan-50 text-cyan-700 border border-cyan-300 shadow-sm'
+                  : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
               }`}
             >
               Tất cả ({stations.length})
@@ -392,8 +394,8 @@ export default function Stations({ onNavigate, onSelectDevice }) {
               onClick={() => setStatusFilter('ONLINE')}
               className={`px-2.5 py-1 rounded-lg font-semibold transition text-[11px] flex items-center gap-1.5 cursor-pointer ${
                 statusFilter === 'ONLINE'
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-emerald-400 hover:bg-slate-900 border border-transparent'
+                  ? isDark ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm' : 'bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-sm'
+                  : isDark ? 'text-slate-400 hover:text-emerald-400 hover:bg-slate-900 border border-transparent' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-100 border border-transparent'
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
@@ -404,8 +406,8 @@ export default function Stations({ onNavigate, onSelectDevice }) {
               onClick={() => setStatusFilter('MULTI')}
               className={`px-2.5 py-1 rounded-lg font-semibold transition text-[11px] flex items-center gap-1.5 cursor-pointer ${
                 statusFilter === 'MULTI'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-amber-400 hover:bg-slate-900 border border-transparent'
+                  ? isDark ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm' : 'bg-amber-50 text-amber-700 border border-amber-300 shadow-sm'
+                  : isDark ? 'text-slate-400 hover:text-amber-400 hover:bg-slate-900 border border-transparent' : 'text-slate-600 hover:text-amber-700 hover:bg-slate-100 border border-transparent'
               }`}
             >
               <Layers className="w-3 h-3" />
@@ -414,20 +416,9 @@ export default function Stations({ onNavigate, onSelectDevice }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-slate-400 font-medium">
-              Hiển thị: <strong className="text-cyan-400 font-mono">{filteredStations.length}</strong> / {stations.length} dự án
+            <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'} font-medium`}>
+              Hiển thị: <strong className={`${isDark ? 'text-cyan-400' : 'text-cyan-700'} font-mono`}>{filteredStations.length}</strong> / {stations.length} dự án
             </span>
-
-            {isFiltering && (
-              <button
-                onClick={handleClearFilters}
-                className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition text-[11px] font-bold flex items-center gap-1 cursor-pointer"
-                title="Xóa toàn bộ bộ lọc và từ khóa"
-              >
-                <X className="w-3 h-3" />
-                <span>Xóa bộ lọc</span>
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -436,33 +427,27 @@ export default function Stations({ onNavigate, onSelectDevice }) {
       {loading ? (
         <div className="py-16 text-center space-y-3">
           <div className="w-8 h-8 border-3 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-xs text-slate-400">Đang quét trạm & thiết bị từ Cloud...</p>
+          <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Đang quét trạm & thiết bị từ Cloud...</p>
         </div>
       ) : stations.length === 0 ? (
-        <div className="bg-[#0b101e] border border-slate-800/90 rounded-2xl p-10 text-center space-y-3">
-          <Server className="w-12 h-12 text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-slate-300">Chưa tìm thấy trạm nào</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+        <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border rounded-2xl p-10 text-center space-y-3`}>
+          <Server className={`w-12 h-12 ${isDark ? 'text-slate-600' : 'text-slate-400'} mx-auto`} />
+          <h3 className={`text-base font-bold ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>Chưa tìm thấy trạm nào</h3>
+          <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'} max-w-sm mx-auto`}>
             Tài khoản hiện chưa có trạm năng lượng nào được đăng ký trên hệ thống.
           </p>
         </div>
       ) : filteredStations.length === 0 ? (
         /* Giao diện khi tìm kiếm không có kết quả */
-        <div className="bg-[#0b101e] border border-slate-800/90 rounded-2xl p-10 text-center space-y-4 shadow-xl animate-fade-in">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/10">
+        <div className={`${isDark ? 'bg-[#0b101e] border-slate-800/90' : 'bg-white border-slate-200 shadow-md'} border rounded-2xl p-10 text-center space-y-4 shadow-xl animate-fade-in`}>
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/10">
             <Search className="w-7 h-7" />
           </div>
           <div className="space-y-1 max-w-md mx-auto">
-            <h3 className="text-base font-bold text-slate-200">Không tìm thấy dự án nào phù hợp</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Không có dự án nào khớp với từ khóa <strong className="text-cyan-400 font-mono font-bold">"{searchQuery}"</strong> trong phạm vi đã chọn.
+            <h3 className={`text-base font-bold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>Không tìm thấy dự án nào phù hợp</h3>
+            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'} leading-relaxed`}>
+              Không có dự án nào khớp với từ khóa <strong className="text-cyan-500 font-mono font-bold">"{searchQuery}"</strong> trong phạm vi đã chọn.
             </p>
-          </div>
-          <div className="text-xs text-slate-500 bg-slate-950/80 border border-slate-800/80 rounded-xl p-3 max-w-md mx-auto text-left space-y-1">
-            <span className="font-bold text-slate-400 block mb-1">💡 Gợi ý tìm kiếm nhanh:</span>
-            <p>• Nhập chính xác hoặc 1 phần tên dự án (VD: <span className="text-slate-300 font-mono">Kho trung châu</span>, <span className="text-slate-300 font-mono">sungoPlant</span>)</p>
-            <p>• Nhập số Serial SN biến tần (VD: <span className="text-slate-300 font-mono">3528214760-1</span>, <span className="text-slate-300 font-mono">6074969919-1</span>)</p>
-            <p>• Nhập mã DTU truyền thông (VD: <span className="text-slate-300 font-mono">35282147608648059097</span>)</p>
           </div>
           <div>
             <button

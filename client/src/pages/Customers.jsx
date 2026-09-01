@@ -165,7 +165,7 @@ export default function Customers() {
             placeholder="Tìm theo tên, account, email, SĐT..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={`w-full pl-9 pr-4 py-2 ${isDark ? 'bg-slate-950/80 border-slate-800 text-slate-100 placeholder-slate-500 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-cyan-600'} border rounded-xl text-xs focus:outline-none transition`}
+            className={`w-full pl-9 pr-4 py-2 ${isDark ? 'bg-slate-950/80 border-slate-800 text-slate-100 placeholder-slate-500 focus:border-cyan-500' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-cyan-600 shadow-sm'} border rounded-xl text-xs focus:outline-none transition font-medium`}
           />
         </div>
 
@@ -175,7 +175,7 @@ export default function Customers() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className={`px-3.5 py-2 ${isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-800'} border rounded-xl text-xs font-bold focus:outline-none focus:border-cyan-500 cursor-pointer`}
+            className={`px-3.5 py-2 ${isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-white border-slate-300 text-slate-900 shadow-sm'} border rounded-xl text-xs font-bold focus:outline-none focus:border-cyan-500 cursor-pointer`}
           >
             <option value="ALL">Tất cả vai trò</option>
             <option value="DEALER">🏢 Cấp 2: Đại Lý (Dealer)</option>

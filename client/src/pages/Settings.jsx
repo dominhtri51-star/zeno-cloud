@@ -364,7 +364,7 @@ export default function Settings() {
                 required
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className={`w-full ${isDark ? 'bg-slate-950 border-slate-700/80 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'} border rounded-xl px-3.5 py-2.5 font-mono text-sm focus:outline-none focus:border-cyan-500`}
+                className={`w-full ${isDark ? 'bg-slate-950 border-slate-700/80 text-white placeholder-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'} border rounded-xl px-3.5 py-2.5 font-mono text-sm focus:outline-none focus:border-cyan-500`}
                 placeholder="Nhập mật khẩu đang dùng"
               />
             </div>
@@ -377,7 +377,7 @@ export default function Settings() {
                 minLength={6}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className={`w-full ${isDark ? 'bg-slate-950 border-slate-700/80 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'} border rounded-xl px-3.5 py-2.5 font-mono text-sm focus:outline-none focus:border-cyan-500`}
+                className={`w-full ${isDark ? 'bg-slate-950 border-slate-700/80 text-white placeholder-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'} border rounded-xl px-3.5 py-2.5 font-mono text-sm focus:outline-none focus:border-cyan-500`}
                 placeholder="Tối thiểu 6 ký tự"
               />
             </div>
@@ -390,7 +390,7 @@ export default function Settings() {
                 minLength={6}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`w-full ${isDark ? 'bg-slate-950 border-slate-700/80 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'} border rounded-xl px-3.5 py-2.5 font-mono text-sm focus:outline-none focus:border-cyan-500`}
+                className={`w-full ${isDark ? 'bg-slate-950 border-slate-700/80 text-white placeholder-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'} border rounded-xl px-3.5 py-2.5 font-mono text-sm focus:outline-none focus:border-cyan-500`}
                 placeholder="Nhập lại mật khẩu mới"
               />
             </div>

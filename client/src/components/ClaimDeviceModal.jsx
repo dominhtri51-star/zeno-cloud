@@ -465,20 +465,24 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
                           value={ssid}
                           onChange={(e) => setSsid(e.target.value)}
                           onFocus={() => setShowDropdown(true)}
-                          className="w-full pl-3.5 pr-10 py-2.5 bg-slate-900 border border-slate-750 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                          className={`w-full pl-3.5 pr-10 py-2.5 ${
+                            isDark ? 'bg-slate-900 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
+                          } border rounded-xl text-xs focus:outline-none focus:border-emerald-500`}
                         />
                         <button
                           type="button"
                           onClick={() => setShowDropdown(!showDropdown)}
-                          className="absolute right-3 top-3 text-slate-400 hover:text-white cursor-pointer"
+                          className={`absolute right-3 top-3 ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'} cursor-pointer`}
                         >
                           <Search className="w-4 h-4" />
                         </button>
 
                         {/* Menu dropdown danh sách Wi-Fi */}
                         {showDropdown && scannedWifis.length > 0 && (
-                          <div className="absolute top-full left-0 right-0 mt-1.5 bg-[#0e1628] border border-slate-700 rounded-xl shadow-2xl z-20 max-h-48 overflow-y-auto p-1.5 space-y-1">
-                            <div className="text-[10px] font-bold text-slate-400 px-2 py-1">
+                          <div className={`absolute top-full left-0 right-0 mt-1.5 ${
+                            isDark ? 'bg-[#0e1628] border-slate-700' : 'bg-white border-slate-200'
+                          } border rounded-xl shadow-2xl z-20 max-h-48 overflow-y-auto p-1.5 space-y-1`}>
+                            <div className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} px-2 py-1`}>
                               MẠNG WI-FI 2.4GHZ GẦN NHẤT (ĐÃ QUÉT THỰC TẾ):
                             </div>
                             {scannedWifis.map((w, idx) => (
@@ -491,12 +495,12 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
                                 }}
                                 className={`w-full p-2 rounded-lg text-left flex items-center justify-between text-xs transition cursor-pointer ${
                                   ssid === w.ssid
-                                    ? 'bg-emerald-500/20 text-emerald-300 font-bold'
-                                    : 'text-slate-300 hover:bg-slate-800'
+                                    ? isDark ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'bg-emerald-50 text-emerald-800 font-bold'
+                                    : isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-slate-100'
                                 }`}
                               >
                                 <span className="truncate pr-2">{w.ssid}</span>
-                                <span className="text-[10px] text-emerald-400 font-mono shrink-0">
+                                <span className="text-[10px] text-emerald-500 font-mono shrink-0">
                                   {w.signal}% ({w.frequency})
                                 </span>
                               </button>
@@ -508,7 +512,7 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
 
                     {/* Mật khẩu Wi-Fi */}
                     <div className="space-y-1.5">
-                      <label className="block text-xs font-bold text-slate-200">
+                      <label className={`block text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                         Mật khẩu Wi-Fi:
                       </label>
                       <div className="relative">
@@ -517,12 +521,14 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
                           placeholder="Vui lòng nhập mật khẩu Wi-Fi..."
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="w-full pl-3.5 pr-10 py-2.5 bg-slate-900 border border-slate-750 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                          className={`w-full pl-3.5 pr-10 py-2.5 ${
+                            isDark ? 'bg-slate-900 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
+                          } border rounded-xl text-xs focus:outline-none focus:border-emerald-500`}
                         />
                         <button
                           type="button"
                           onClick={() => setShowWifiPassword(!showWifiPassword)}
-                          className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 cursor-pointer"
+                          className={`absolute right-3 top-3 ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-700'} cursor-pointer`}
                         >
                           {showWifiPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -672,9 +678,9 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+                <label className={`block text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} mb-1.5 flex items-center justify-between`}>
                   <span>1. Mã Datalogger / DTU (Cục Phát WiFi/4G) *</span>
-                  <span className="text-[10px] text-teal-400 font-normal">Định danh mạng gốc</span>
+                  <span className="text-[10px] text-teal-500 font-normal">Định danh mạng gốc</span>
                 </label>
                 <input
                   type="text"
@@ -687,28 +693,32 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
                       setSerialNumber(`${val.substring(0, 10)}-1`);
                     }
                   }}
-                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-750 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-emerald-500 font-bold text-teal-300"
+                  className={`w-full px-3.5 py-2.5 ${
+                    isDark ? 'bg-slate-900 border-slate-700 text-teal-300' : 'bg-white border-slate-300 text-teal-700 shadow-sm'
+                  } border rounded-xl text-xs font-mono font-bold focus:outline-none focus:border-emerald-500`}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+                <label className={`block text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} mb-1.5 flex items-center justify-between`}>
                   <span>2. Số Serial Biến Tần (Inverter SN) *</span>
-                  <span className="text-[10px] text-slate-400 font-normal">Mã phần cứng máy</span>
+                  <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-normal`}>Mã phần cứng máy</span>
                 </label>
                 <input
                   type="text"
                   placeholder="VD: 3528214760-1, 5037108978-1..."
                   value={serialNumber}
                   onChange={(e) => setSerialNumber(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-750 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-emerald-500"
+                  className={`w-full px-3.5 py-2.5 ${
+                    isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'
+                  } border rounded-xl text-xs font-mono font-bold focus:outline-none focus:border-emerald-500`}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                <label className={`block text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} mb-1.5`}>
                   3. Tên Trạm Năng Lượng
                 </label>
                 <input
@@ -716,7 +726,9 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
                   placeholder="VD: Trạm Nhà Phố Phú Mỹ Hưng (Anh Nam)"
                   value={stationName}
                   onChange={(e) => setStationName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-750 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className={`w-full px-3.5 py-2.5 ${
+                    isDark ? 'bg-slate-900 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 shadow-sm'
+                  } border rounded-xl text-xs focus:outline-none focus:border-emerald-500`}
                 />
               </div>
 

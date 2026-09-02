@@ -780,6 +780,7 @@ router.post('/verify-recovery-otp', async (req, res) => {
     }
 
     const cached = recoveryOtpCache.get(cleanId) || {};
+    const targetAccount = cached.account || cleanId;
     const persistentCaptchas = loadPersistentCaptchas();
     const finalCaptchaId = captchaId || cached.captchaId || sessionCaptchaMap[cleanId] || persistentCaptchas[cleanId]?.captchaId || persistentCaptchas[cached.emailOrPhone]?.captchaId || '515855040086511617';
 

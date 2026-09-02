@@ -101,9 +101,11 @@ export default function PwaInstallBanner() {
 
         {/* Header App Info */}
         <div className="flex items-start gap-3 mb-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-emerald-500/30 shrink-0">
-            ☀️
-          </div>
+          <img 
+            src="/apple-touch-icon.png" 
+            alt="Zeno Solar Icon" 
+            className="w-11 h-11 rounded-2xl border border-emerald-500/50 shadow-lg shadow-emerald-500/30 shrink-0 object-cover" 
+          />
           <div className="pr-6">
             <div className="flex items-center gap-1.5">
               <h4 className="font-extrabold text-sm text-slate-100">Cài Đặt App Zeno Solar</h4>

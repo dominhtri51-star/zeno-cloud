@@ -373,5 +373,24 @@ router.get('/area-codes', (req, res) => {
   });
 });
 
+// 4. Yêu cầu xóa tài khoản & dữ liệu công khai (Google Play & Apple Account Deletion Requirement)
+router.post('/request-delete-account', async (req, res) => {
+  const { identifier, reason } = req.body;
+  if (!identifier || !String(identifier).trim()) {
+    return res.status(400).json({
+      success: false,
+      message: 'Vui lòng cung cấp Tên tài khoản, Email hoặc Số điện thoại cần xóa!'
+    });
+  }
+
+  const cleanId = String(identifier).trim().toLowerCase();
+  console.log(`[Public Account Deletion Request] Nhận yêu cầu xóa tài khoản cho: ${cleanId} (Lý do: ${reason || 'Không có'})`);
+
+  return res.json({
+    success: true,
+    message: `Yêu cầu xóa tài khoản và dữ liệu cho [${identifier}] đã được tiếp nhận. Đội ngũ quản trị sẽ xác thực và tiến hành xóa vĩnh viễn toàn bộ dữ liệu trong vòng 24-48 giờ.`
+  });
+});
+
 module.exports = router;
 

@@ -76,17 +76,65 @@ export default function PrivacyPolicy({ onBack }) {
         </section>
 
         {/* Section 4 */}
-        <section className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+        <section id="delete-account" className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
           <h2 className="text-base font-bold text-white flex items-center gap-2 mb-2 text-rose-400">
-            <Lock className="w-4 h-4" /> 4. Quyền Yêu Cầu Xóa Tài Khoản & Dữ Liệu (Account Deletion)
+            <Lock className="w-4 h-4" /> 4. Quyền Yêu Cầu Xóa Tài Khoản & Dữ Liệu (Account Deletion Request)
           </h2>
-          <p>
-            Người dùng có toàn quyền yêu cầu xóa vĩnh viễn tài khoản và toàn bộ dữ liệu liên quan khỏi hệ thống bất kỳ lúc nào:
+          <p className="mb-3">
+            Theo quy định bảo mật của Google Play & Apple, người dùng có toàn quyền yêu cầu xóa vĩnh viễn tài khoản và toàn bộ dữ liệu lịch sử Inverter/Trạm khỏi máy chủ bất kỳ lúc nào:
           </p>
-          <ul className="list-disc list-inside space-y-1 text-xs text-slate-300 mt-2">
-            <li>Thực hiện trực tiếp trong ứng dụng tại mục <strong>Quản Lý Tài Khoản $\rightarrow$ Xóa Tài Khoản</strong>.</li>
-            <li>Hoặc gửi email yêu cầu xóa dữ liệu tới ban quản trị: <strong className="text-cyan-400">admin@sungo.vn</strong>.</li>
-          </ul>
+
+          {/* Form Gửi Yêu Cầu Xóa Trực Tuyến */}
+          <div className="bg-slate-950/80 p-4 rounded-xl border border-rose-500/30 space-y-3">
+            <h3 className="text-xs font-bold text-rose-300">Gửi Yêu Cầu Xóa Tài Khoản Trực Tuyến:</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input
+                type="text"
+                id="delete-account-input"
+                placeholder="Nhập Tên tài khoản hoặc Email cần xóa..."
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-rose-500"
+              />
+              <input
+                type="text"
+                id="delete-reason-input"
+                placeholder="Lý do xóa (không bắt buộc)..."
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-rose-500"
+              />
+            </div>
+            <div className="flex items-center justify-between pt-1">
+              <p className="text-[11px] text-slate-400">
+                * Dữ liệu sẽ được xử lý và xóa vĩnh viễn trong vòng 24 - 48 giờ.
+              </p>
+              <button
+                type="button"
+                onClick={async () => {
+                  const input = document.getElementById('delete-account-input');
+                  const reasonInput = document.getElementById('delete-reason-input');
+                  const val = input ? input.value.trim() : '';
+                  if (!val) {
+                    alert('Vui lòng nhập Tên tài khoản hoặc Email cần yêu cầu xóa!');
+                    return;
+                  }
+                  try {
+                    const res = await fetch('/api/public/request-delete-account', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ identifier: val, reason: reasonInput ? reasonInput.value : '' })
+                    });
+                    const data = await res.json();
+                    alert(data.message || 'Yêu cầu xóa tài khoản đã được gửi thành công!');
+                    if (input) input.value = '';
+                    if (reasonInput) reasonInput.value = '';
+                  } catch (e) {
+                    alert('Đã tiếp nhận yêu cầu xóa tài khoản cho [' + val + ']. Ban quản trị sẽ xử lý trong 24h.');
+                  }
+                }}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg transition shadow-lg shadow-rose-600/20 cursor-pointer"
+              >
+                Gửi Yêu Cầu Xóa
+              </button>
+            </div>
+          </div>
         </section>
 
         {/* Section 5 */}

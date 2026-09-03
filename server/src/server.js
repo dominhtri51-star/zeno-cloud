@@ -7,9 +7,45 @@ const { initDatabase, logApiCall } = require('./db');
 
 const app = express();
 
+// Security Headers Middleware (Google & Apple Store Compliance)
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(self), geolocation=(), microphone=()');
+  next();
+});
+
+// Simple Rate Limiting for Auth/OTP endpoints to prevent brute force
+const requestCounts = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_MINUTE = 30;
+
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/auth/') || req.path.startsWith('/api/public/')) {
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    const now = Date.now();
+    const userRequests = requestCounts.get(ip) || [];
+    const recentRequests = userRequests.filter(timestamp => now - timestamp < RATE_LIMIT_WINDOW);
+
+    if (recentRequests.length >= MAX_REQUESTS_PER_MINUTE) {
+      return res.status(429).json({
+        success: false,
+        message: 'Bạn đã gửi quá nhiều yêu cầu trong thời gian ngắn. Vui lòng thử lại sau 1 phút!'
+      });
+    }
+
+    recentRequests.push(now);
+    requestCounts.set(ip, recentRequests);
+  }
+  next();
+});
+
 // Middlewares
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use(morgan('dev'));
 
 // Audit logging middleware for TablePlus tracking

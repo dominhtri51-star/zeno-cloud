@@ -8,7 +8,7 @@ import {
   Info, Scan, ChevronDown, QrCode
 } from 'lucide-react';
 
-export default function Login({ onLoginSuccess }) {
+export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
   const { login, register, loading } = useAuth();
   
   // Tab Switcher: 'login' | 'register' | 'forgot'

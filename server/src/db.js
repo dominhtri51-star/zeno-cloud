@@ -167,7 +167,7 @@ async function seedInitialData(client, deviceOwnership) {
             [
               account,
               u.userName || account,
-              u.email || `${account}@sungo.vn`,
+              (u.email && !u.email.endsWith('@sungo.vn')) ? u.email : (account === 'sungo.vn' ? 'admin@sungo.vn' : ''),
               u.cellphone || '',
               u.userType || 3,
               u.roleName || '🏠 Người Tiêu Dùng Cuối',

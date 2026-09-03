@@ -1,8 +1,12 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const deviceOwnership = require('./deviceOwnership');
 const systemSettings = require('./systemSettings');
+const security = require('../utils/security');
+
+const toMd5 = (str) => (str ? crypto.createHash('md5').update(String(str)).digest('hex') : '');
 
 // Bộ nhớ đệm Tích phân chuỗi thời gian thực tế hàng ngày (Daily Integral Cache)
 const dailyIntegralCache = new Map();
@@ -246,6 +250,64 @@ class LiveCloudService {
     }
 
     return this.activeToken;
+  }
+
+  // Lấy thông tin thực tế của tài khoản từ Cloud Hãng (Email thật, Số điện thoại thật, Tên thật)
+  async fetchRealUserProfileFromCloud(account, password = null) {
+    const accKey = String(account || '').trim().toLowerCase();
+    if (!accKey || accKey.startsWith('demo_')) return null;
+
+    const storedUser = deviceOwnership.data?.users?.[accKey];
+    let cloudPass = password;
+    if (!cloudPass && storedUser?.cloudPassword) {
+      cloudPass = security.decryptSecret(storedUser.cloudPassword);
+    }
+    if (!cloudPass) cloudPass = '123456';
+
+    const tryPasses = [cloudPass, toMd5(cloudPass), 'sungo123', 'sungo@100%'];
+    const tryAccounts = [accKey, storedUser?.email, storedUser?.cellphone].filter(Boolean);
+
+    for (const loginAcc of tryAccounts) {
+      for (const p of tryPasses) {
+        try {
+          const res = await axios.post(
+            `${this.baseUrl}/login/account`,
+            { account: loginAcc, password: p },
+            { headers: { 'Content-Type': 'application/json', 'Time-Zone': 'Asia/Ho_Chi_Minh', 'X-Helios-Provider': 'sunwise' }, timeout: 8000 }
+          );
+
+          if (res.data && res.data.code === 0 && res.data.data) {
+            const d = res.data.data;
+            const rawEmail = String(d.email || '').trim();
+            const realEmail = rawEmail && !rawEmail.endsWith('@sungo.vn') ? rawEmail : (rawEmail === 'admin@sungo.vn' ? 'admin@sungo.vn' : (storedUser?.email && !storedUser.email.endsWith('@sungo.vn') ? storedUser.email : ''));
+            const realPhone = String(d.cellphone || d.telephone || storedUser?.cellphone || '').trim();
+            const realName = d.userName || d.nickname || d.account || storedUser?.userName || accKey;
+            const realUserId = d.userId || d.id || storedUser?.userId;
+
+            // Cập nhật lại deviceOwnership với thông tin chính xác từ Hãng
+            if (storedUser) {
+              storedUser.email = realEmail;
+              storedUser.cellphone = realPhone;
+              storedUser.userName = realName;
+              if (realUserId) storedUser.userId = realUserId;
+              deviceOwnership.saveData();
+            }
+
+            return {
+              account: accKey,
+              userId: realUserId,
+              userName: realName,
+              email: realEmail,
+              cellphone: realPhone,
+              accessToken: d.accessToken || d.token,
+              userType: d.userType
+            };
+          }
+        } catch (e) {}
+      }
+    }
+
+    return null;
   }
 
   isRawCloudToken(token) {

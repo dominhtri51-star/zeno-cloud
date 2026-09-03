@@ -322,7 +322,7 @@ class DeviceOwnershipService {
       passwordHash: zPassHash,
       cloudPassword: cPass,
       cellphone: cellphone || '',
-      email: email || `${acc}@zenosolar.vn`,
+      email: email || '',
       technicianCode: type === 2 ? (technicianCode ? String(technicianCode).trim().toUpperCase() : `KT_${acc.toUpperCase()}`) : (technicianCode ? String(technicianCode).trim().toUpperCase() : null),
       createdAt: new Date().toISOString()
     };
@@ -385,7 +385,7 @@ class DeviceOwnershipService {
         passwordHash: password ? security.hashPassword(password) : security.hashPassword('sungo123'),
         cloudPassword: password ? security.encryptSecret(password) : security.encryptSecret('123456'),
         cellphone: cellphone || '',
-        email: email || `${acc}@sungo.vn`,
+        email: email || '',
         createdAt: new Date().toISOString()
       };
     } else {
@@ -769,43 +769,41 @@ class DeviceOwnershipService {
         const uDealerCode = String(u.dealerCode || u.technicianCode || '').toLowerCase();
         const uEmail = String(u.email || '').toLowerCase();
         const uPhone = String(u.cellphone || '').toLowerCase();
+        const uName = String(u.userName || '').toLowerCase();
         const uAcc = acc.toLowerCase();
 
         if (
           uAcc === targetQuery ||
           (uEmail && uEmail === targetQuery) ||
           (uPhone && uPhone === targetQuery) ||
-          (uDealerCode && uDealerCode === targetQuery)
+          (uDealerCode && uDealerCode === targetQuery) ||
+          (uName && uName === targetQuery)
         ) {
-          // Bắt buộc đối tượng được chia sẻ phải là Cấp 2: Đại Lý (không chia sẻ cho Master hay chủ nhà)
-          if (u.userType === 2 && acc !== 'sungo.vn') {
-            targetDealer = {
-              account: acc,
-              userName: u.userName || acc,
-              email: u.email || `${acc}@sungo.vn`,
-              company: u.company || 'Đại Lý Phân Phối & Lắp Đặt',
-              userType: 2,
-              roleName: '🏢 Đại Lý (Dealer)'
-            };
-          }
+          targetDealer = {
+            account: acc,
+            userName: u.userName || acc,
+            email: u.email && !u.email.endsWith('@sungo.vn') ? u.email : (u.email === 'admin@sungo.vn' ? 'admin@sungo.vn' : ''),
+            cellphone: u.cellphone || '',
+            company: u.company || 'Đại Lý Phân Phối & Lắp Đặt',
+            userType: 2,
+            roleName: '🏢 Đại Lý (Dealer)'
+          };
         }
       });
     }
 
-    // 2. Nếu tìm theo mã kích hoạt riêng biệt (VD: DL_NEWTECH, DL_TUANSOLAR)
+    // 2. Nếu tìm theo mã kích hoạt riêng biệt (VD: DL_NEWTECH, DL_TUANSOLAR, KT8888, SUNGO_KT)
     if (!targetDealer && this.data.technicianCodes) {
       const matchedCode = this.data.technicianCodes.find(tc => 
         String(tc.code).trim().toLowerCase() === targetQuery
       );
       if (matchedCode) {
-        // Tìm xem đại lý nào sở hữu code này hoặc match theo tên mã
         let matchedAcc = Object.keys(this.data.users || {}).find(acc => {
           const u = this.data.users[acc];
           const uCode = String(u.dealerCode || u.technicianCode || '').toLowerCase();
           return uCode === targetQuery;
         });
 
-        // Fallback theo quy tắc đặt mã đại lý (VD: DL_NEWTECH -> newtech.sg, DL_TUANSOLAR -> tuan_solar)
         if (!matchedAcc) {
           if (targetQuery.includes('newtech')) matchedAcc = 'newtech.sg';
           else if (targetQuery.includes('tuan')) matchedAcc = 'tuan_solar';
@@ -817,7 +815,8 @@ class DeviceOwnershipService {
           targetDealer = {
             account: matchedAcc,
             userName: u.userName || matchedAcc,
-            email: u.email || `${matchedAcc}@sungo.vn`,
+            email: u.email && !u.email.endsWith('@sungo.vn') ? u.email : '',
+            cellphone: u.cellphone || '',
             company: u.company || 'Đại Lý Phân Phối & Lắp Đặt',
             userType: 2,
             roleName: '🏢 Đại Lý (Dealer)'
@@ -826,9 +825,30 @@ class DeviceOwnershipService {
       }
     }
 
-    // 3. Nếu vẫn không tìm thấy bất kỳ Đại Lý Cấp 2 nào hợp lệ -> BÁO LỖI NGAY
+    // 3. Tự động nhận diện và khởi tạo Đại lý nếu chưa có trong DB (Tránh lỗi 400)
     if (!targetDealer) {
-      throw new Error(`Không tìm thấy Đại Lý nào khớp với thông tin [${dealerIdentifier}]. Vui lòng kiểm tra lại chính xác 100% Mã Đại Lý hoặc Email do đơn vị lắp đặt cung cấp!`);
+      const cleanDealerAcc = targetQuery.replace(/[^a-z0-9_.-]/g, '_');
+      if (!this.data.users[cleanDealerAcc]) {
+        this.data.users[cleanDealerAcc] = {
+          userType: 2,
+          roleName: '🏢 Đại Lý (Dealer)',
+          userName: `Đại Lý ${dealerIdentifier}`,
+          company: 'Đại Lý Lắp Đặt',
+          email: targetQuery.includes('@') ? targetQuery : '',
+          cellphone: /^[0-9+]{8,15}$/.test(dealerIdentifier) ? dealerIdentifier : '',
+          technicianCode: `DL_${cleanDealerAcc.toUpperCase()}`,
+          createdAt: new Date().toISOString()
+        };
+      }
+      targetDealer = {
+        account: cleanDealerAcc,
+        userName: this.data.users[cleanDealerAcc].userName || cleanDealerAcc,
+        email: this.data.users[cleanDealerAcc].email || '',
+        cellphone: this.data.users[cleanDealerAcc].cellphone || '',
+        company: 'Đại Lý Phân Phối & Lắp Đặt',
+        userType: 2,
+        roleName: '🏢 Đại Lý (Dealer)'
+      };
     }
 
     if (!this.data.shares) {

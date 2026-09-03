@@ -52,11 +52,18 @@ router.get('/', checkAuth, async (req, res) => {
         const uType = isAccMaster ? 1 : Number(u.userType || 3);
         const cPass = u.cloudPassword || (isAccMaster ? 'sungo@100%' : '123456');
         const zPass = u.zenoPassword || u.password || 'sungo123';
+        
+        // Không tạo email ảo @sungo.vn: Chỉ giữ email thực tế do người dùng đăng ký hoặc từ Cloud Hãng
+        const rawEmail = String(u.email || '').trim();
+        const validEmail = (isAccMaster && rawEmail === 'admin@sungo.vn') 
+          ? 'admin@sungo.vn' 
+          : (rawEmail.endsWith('@sungo.vn') ? '' : rawEmail);
+
         registeredUsersMap[userKey] = {
           userId: u.userId || uIdx,
           account: acc,
           userName: u.userName || acc,
-          email: u.email || `${acc}@sungo.vn`,
+          email: validEmail,
           cellphone: u.cellphone || '',
           userType: uType,
           roleName: u.roleName || (uType === 1 ? '👑 Tổng Phân Phối' : uType === 2 ? '🏢 Đại Lý (Dealer)' : '🏠 Người Tiêu Dùng Cuối'),
@@ -256,7 +263,7 @@ router.post('/', checkAuth, async (req, res) => {
       userName: userName || account,
       company: cleanType === 2 ? 'Đại Lý Phân Phối & Lắp Đặt' : 'Hộ Gia Đình',
       cellphone: cellphone || '',
-      email: email || `${account}@sungo.vn`,
+      email: email || '',
       technicianCode: technicianCode || (cleanType === 2 ? `DL_${account.toUpperCase()}` : null)
     });
 
@@ -286,7 +293,7 @@ router.post('/', checkAuth, async (req, res) => {
     // 3. Đồng bộ lên Cloud nếu có token thực tế
     if (!req.isDemo && req.token) {
       try {
-        await siseliClient.createAccount(req.token, { account, password, email, cellphone, userType: cleanType });
+        await siseliClient.createAccount(req.token, { account, password, email: email || '', cellphone: cellphone || '', userType: cleanType });
       } catch (e) {
         console.warn('[Cloud Sync Warn]:', e.message);
       }
@@ -306,7 +313,7 @@ router.post('/', checkAuth, async (req, res) => {
         userId: Date.now(),
         account,
         userName: userName || account,
-        email: email || `${account}@sungo.vn`,
+        email: email || '',
         cellphone: cellphone || '',
         userType: cleanType,
         roleName,
@@ -686,12 +693,17 @@ router.post('/:id/sync-cloud', checkAuth, async (req, res) => {
     }
 
     // 3. Tự động Ingest vào deviceOwnership và gán quyền sở hữu Master sungo.vn
+    const authenticEmail = rawUserData.email && !rawUserData.email.endsWith('@sungo.vn') 
+      ? rawUserData.email 
+      : (rawUserData.email === 'admin@sungo.vn' ? 'admin@sungo.vn' : (storedUser.email && !storedUser.email.endsWith('@sungo.vn') ? storedUser.email : ''));
+    const authenticPhone = rawUserData.cellphone || storedUser.cellphone || '';
+
     deviceOwnership.ingestUserAndStationsFromCloud({
       account: accKey,
       password: cloudPass,
       userName: rawUserData.userName || rawUserData.nickname || accKey,
-      email: rawUserData.email || `${accKey}@sungo.vn`,
-      cellphone: rawUserData.cellphone || '',
+      email: authenticEmail,
+      cellphone: authenticPhone,
       userType: storedUser.userType || 3,
       stations: userStations || []
     });

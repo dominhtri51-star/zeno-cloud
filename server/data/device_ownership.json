@@ -30,7 +30,7 @@
       "userName": "Đại Lý Tuấn Solar Miền Nam",
       "company": "Tuấn Solar Energy",
       "cellphone": "0918765432",
-      "email": "tuan@sungo.vn",
+      "email": "",
       "dealerCode": "DL_TUANSOLAR",
       "technicianCode": "DL_TUANSOLAR",
       "createdAt": "2026-08-31T08:00:00.000Z",
@@ -56,7 +56,7 @@
       "userName": "dungkiep",
       "company": "Hộ Gia Đình",
       "cellphone": "0912345678",
-      "email": "dungkiep@sungo.vn",
+      "email": "",
       "createdAt": "2026-08-31T07:38:26.965Z",
       "phoneLinked": true,
       "passwordHash": "pbkdf2$100000$69acacd6e169793a60527837522c8a45$997cdad161bea68d55419d4ba66f4bf800ef6dbdec5213ad3e7643fdaedc9b42c6976dcd70b8d1b09411e8c4f4fe2965e00e7b02c123c51f577c5ec0584f5df9",
@@ -68,7 +68,7 @@
       "userName": "Khách Hàng Võ Thế Hiển",
       "company": "Hộ Gia Đình",
       "cellphone": "",
-      "email": "vothehien1006@sungo.vn",
+      "email": "",
       "createdAt": "2026-08-31T08:26:05.743Z",
       "passwordHash": "pbkdf2$100000$7323828438459cd72a8c992b3a000230$e161b62569b649209a86aa430b62d868c28bfa01c5f161d7bc73cf612c93666e20290b7daf1d7df8d6eaafdf13cc1c305accfddbcaeb32bf6fe85c5a394a017a",
       "cloudPassword": "enc$gcm$567cb4730f06c3bd91da9d19$23768d982f9eb78ffb39c300ca38467f$a786bee8106e"
@@ -80,7 +80,7 @@
       "company": "Hộ Gia Đình",
       "cloudPassword": "enc$gcm$ba8404911f15849cbb2c7901$9af6de6867a7d17b78459156e2272f97$af2ec65c628c45be",
       "cellphone": "",
-      "email": "sungo123@sungo.vn",
+      "email": "",
       "createdAt": "2026-08-31T11:50:34.601Z",
       "passwordHash": "pbkdf2$100000$9e1c623a963151a393f36e6f03a50ca3$b72b0fd7c4264f8951f86110e6c9d6e98e408e1b7c7a6f2776aa0ffd7c6ad207e645f30e4d38a3313e09d218c441e4cd26a34053f8e86edd8655015f8916a9b2"
     },
@@ -89,7 +89,7 @@
       "userType": 3,
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
       "userName": "Chủ Nhà Dũng Kiệp (zenoPlant)",
-      "email": "chuhanatest@sungo.vn",
+      "email": "",
       "cellphone": "0912345678",
       "passwordHash": "123456",
       "cloudPassword": "enc$gcm$74df62b84d9af9cd05c116be$e54babfb2f530a8cab9ca029b0249070$6674a3d62868",
@@ -114,7 +114,7 @@
       "passwordHash": "pbkdf2$100000$148641e6a0287b9e58c9efb176642733$612f3301d23d3657ba5635dea9fcff88f9e8f0f7d4c119e50259e17bf4a962154eb21b412bb3d5f245d9894e011929b97ca363c8cd6e94cf889d686db8d5af0a",
       "cloudPassword": "enc$gcm$36d99c5ea035b5efa264ab02$8c5934d234002ba63d03bb54c211f837$09eca17a96220e5f",
       "cellphone": "",
-      "email": "triminh123@sungo.vn",
+      "email": "",
       "createdAt": "2026-09-02T05:40:48.230Z"
     }
   },

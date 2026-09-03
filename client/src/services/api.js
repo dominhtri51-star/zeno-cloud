@@ -38,7 +38,13 @@ api.interceptors.response.use(
         console.warn('[API Auto-Refresh Error]:', refreshErr.message);
       }
     }
-    const message = error.response?.data?.message || error.message || 'Lỗi kết nối máy chủ';
+    const message = error.response?.data?.message || 
+                    error.response?.data?.msg || 
+                    error.response?.data?.localMessage || 
+                    error.response?.data?.error || 
+                    (typeof error.response?.data === 'string' ? error.response.data : null) ||
+                    error.message || 
+                    'Lỗi kết nối máy chủ';
     return Promise.reject(new Error(message));
   }
 );

@@ -273,11 +273,15 @@ router.post('/login', async (req, res) => {
       }
 
       // 1. Lưu vào DeviceOwnership persistent JSON
+      const cleanEmail = rawData.email && !rawData.email.endsWith('@sungo.vn') 
+        ? rawData.email 
+        : (rawData.email === 'admin@sungo.vn' ? 'admin@sungo.vn' : '');
+
       deviceOwnership.ingestUserAndStationsFromCloud({
         account: userAcc,
         password: cloudPass || '123456',
         userName: rawData.userName || rawData.nickname || userAcc,
-        email: rawData.email || `${userAcc}@sungo.vn`,
+        email: cleanEmail,
         cellphone: rawData.cellphone || '',
         userType: uType,
         stations: userStations || []
@@ -413,7 +417,7 @@ router.post('/login', async (req, res) => {
         userId: dbUser?.user_id || storedUser?.userId || 3001,
         account: acc,
         userName: dbUser?.user_name || storedUser?.userName || acc,
-        email: dbUser?.email || storedUser?.email || `${acc}@sungo.vn`,
+        email: (dbUser?.email && !dbUser.email.endsWith('@sungo.vn')) ? dbUser.email : ((storedUser?.email && !storedUser.email.endsWith('@sungo.vn')) ? storedUser.email : (acc === 'sungo.vn' ? 'admin@sungo.vn' : '')),
         cellphone: dbUser?.cellphone || storedUser?.cellphone || '',
         userType: roleInfo.userType || dbUser?.user_type || 3,
         roleName: roleInfo.roleName || dbUser?.role_name || '🏠 Người Tiêu Dùng Cuối (End-User)',
@@ -465,6 +469,10 @@ router.post('/login', async (req, res) => {
     // CƠ CHẾ TỰ ĐỘNG THU NẠP (AUTO-INGESTION) TÀI KHOẢN VÀ TRẠM CỦA KHÁCH HÀNG
     await performAutoIngestion(userAccount, inputPass, zenoHash || 'sungo123', data, userCloudToken);
 
+    const authenticUserEmail = (data.email && !data.email.endsWith('@sungo.vn')) 
+      ? data.email 
+      : (data.email === 'admin@sungo.vn' ? 'admin@sungo.vn' : '');
+
     return res.json({
       success: true,
       mode: 'LIVE',
@@ -477,8 +485,8 @@ router.post('/login', async (req, res) => {
         userId: data.userId || data.iotUserId || 3001,
         account: userAccount,
         userName: data.userName || data.nickname || userAccount,
-        email: data.email || `${userAccount}@sungo.vn`,
-        cellphone: data.cellphone,
+        email: authenticUserEmail,
+        cellphone: data.cellphone || '',
         userType: roleInfo.userType || 3,
         roleName: roleInfo.roleName || 'Chủ Nhà / Người Dùng Cuối (View-Only)',
         canConfig: roleInfo.canConfig,

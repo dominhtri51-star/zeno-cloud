@@ -97,8 +97,24 @@ export const monitoringService = {
   updateStationSettings: (stationId, settings) => api.post('/stations/settings', { stationId, settings }),
   getAlarms: () => api.get('/alarms'),
   resolveAlarm: (id) => api.put(`/alarms/${id}/resolve`),
-  shareStation: (data) => api.post('/stations/share', data),
-  unshareStation: (data) => api.post('/stations/unshare', data),
+  shareStation: (stationIdOrData, payload = {}) => {
+    if (typeof stationIdOrData === 'object' && stationIdOrData !== null) {
+      return api.post('/stations/share', stationIdOrData);
+    }
+    return api.post('/stations/share', { stationId: stationIdOrData, ...payload });
+  },
+  unshareStation: (stationIdOrData, dealerAccount) => {
+    if (typeof stationIdOrData === 'object' && stationIdOrData !== null) {
+      return api.post('/stations/unshare', stationIdOrData);
+    }
+    return api.post('/stations/unshare', { stationId: stationIdOrData, dealerAccount });
+  },
+  revokeStationShare: (stationIdOrData, dealerAccount) => {
+    if (typeof stationIdOrData === 'object' && stationIdOrData !== null) {
+      return api.post('/stations/unshare', stationIdOrData);
+    }
+    return api.post('/stations/unshare', { stationId: stationIdOrData, dealerAccount });
+  },
   getStationShares: (stationId) => api.get(`/stations/shares?stationId=${stationId}`),
   getAvailableDealers: () => api.get('/stations/dealers-list'),
   getDealersList: () => api.get('/stations/dealers-list'),

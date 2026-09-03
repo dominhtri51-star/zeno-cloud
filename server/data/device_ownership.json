@@ -105,6 +105,17 @@
       "passwordHash": "Password123!",
       "cloudPassword": "enc$gcm$2e5a788226921e316c426472$37dd90cac149d5bac7af791cc3b085f8$6b594c7ab056",
       "createdAt": "2026-08-31T09:46:30.572Z"
+    },
+    "triminh123": {
+      "userType": 3,
+      "roleName": "Chủ Nhà / Người Dùng Cuối (View-Only)",
+      "userName": "triminh123",
+      "company": "Hộ gia đình",
+      "passwordHash": "pbkdf2$100000$148641e6a0287b9e58c9efb176642733$612f3301d23d3657ba5635dea9fcff88f9e8f0f7d4c119e50259e17bf4a962154eb21b412bb3d5f245d9894e011929b97ca363c8cd6e94cf889d686db8d5af0a",
+      "cloudPassword": "enc$gcm$36d99c5ea035b5efa264ab02$8c5934d234002ba63d03bb54c211f837$09eca17a96220e5f",
+      "cellphone": "",
+      "email": "triminh123@sungo.vn",
+      "createdAt": "2026-09-02T05:40:48.230Z"
     }
   },
   "devices": {

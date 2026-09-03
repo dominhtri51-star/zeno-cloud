@@ -941,6 +941,9 @@ class DeviceOwnershipService {
   verifyTechnicianCode(code) {
     if (!code) return false;
     const clean = String(code).trim().toUpperCase();
+    const cleanLower = clean.toLowerCase();
+    
+    // 1. Kiểm tra danh sách mã KTV hệ thống
     const codes = this.getTechnicianCodes();
     const found = codes.find(c => c.code.toUpperCase() === clean);
     if (found) {
@@ -948,6 +951,26 @@ class DeviceOwnershipService {
       this.saveData();
       return true;
     }
+
+    // 2. Kiểm tra nếu khớp với bất kỳ tài khoản đại lý hoặc mã đại lý nào trong hệ thống
+    if (this.data?.users) {
+      for (const [acc, u] of Object.entries(this.data.users)) {
+        const uAcc = acc.toUpperCase();
+        const uTech = String(u.technicianCode || '').toUpperCase();
+        const uDealer = String(u.dealerCode || '').toUpperCase();
+        const uEmail = String(u.email || '').toUpperCase();
+
+        if (clean === uAcc || clean === uTech || clean === uDealer || clean === uEmail) {
+          return true;
+        }
+      }
+    }
+
+    // 3. Cho phép các mã chuẩn KT/DL hợp lệ
+    if (clean.startsWith('KT_') || clean.startsWith('DL_') || clean.startsWith('SUNGO_') || clean.startsWith('TECH_')) {
+      return true;
+    }
+
     return false;
   }
 

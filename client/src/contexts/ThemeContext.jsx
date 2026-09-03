@@ -9,9 +9,9 @@ export function ThemeProvider({ children }) {
       if (savedTheme === 'light' || savedTheme === 'dark') {
         return savedTheme;
       }
-      return 'dark'; // Mặc định là Theme Tối
+      return 'light'; // Mặc định là Theme Sáng (Light Mode)
     } catch {
-      return 'dark';
+      return 'light';
     }
   });
 

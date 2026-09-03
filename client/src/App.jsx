@@ -12,11 +12,17 @@ import Alarms from './pages/Alarms';
 import PublicRegister from './pages/PublicRegister';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 function MainApp() {
   const { isAuthenticated, user } = useAuth();
   const { isDark } = useTheme();
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [currentPage, setCurrentPage] = useState(() => {
+    if (typeof window !== 'undefined' && (window.location.pathname === '/privacy' || window.location.hash.includes('privacy'))) {
+      return 'privacy';
+    }
+    return 'dashboard';
+  });
   const [selectedDeviceContext, setSelectedDeviceContext] = useState({
     stationId: null,
     deviceId: null,
@@ -91,9 +97,19 @@ function MainApp() {
     );
   }
 
+  // If user opens the public privacy policy page directly
+  if (currentPage === 'privacy') {
+    return (
+      <PrivacyPolicy onBack={() => {
+        if (typeof window !== 'undefined') window.history.pushState({}, '', '/');
+        setCurrentPage(isAuthenticated ? 'stations' : 'login');
+      }} />
+    );
+  }
+
   // If not logged in, show login
   if (!isAuthenticated) {
-    return <Login onLoginSuccess={() => setCurrentPage('stations')} />;
+    return <Login onLoginSuccess={() => setCurrentPage('stations')} onNavigateToPrivacy={() => setCurrentPage('privacy')} />;
   }
 
   return (

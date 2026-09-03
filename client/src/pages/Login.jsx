@@ -722,10 +722,34 @@ export default function Login({ onLoginSuccess }) {
           )}
         </div>
 
+        {/* Direct APK Download Button */}
+        <div className="mt-4">
+          <a
+            href="/Zeno-Solar.apk"
+            download="Zeno-Solar.apk"
+            className="w-full py-2.5 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-emerald-500/50 text-slate-200 text-xs font-bold flex items-center justify-center gap-2 transition duration-200 shadow-lg cursor-pointer group"
+          >
+            <span className="text-base">📲</span>
+            <span className="text-slate-200 group-hover:text-emerald-400 transition">Tải App Cho Samsung / Android (.APK)</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono">6.0 MB</span>
+          </a>
+        </div>
+
         {/* Footer Note */}
-        <div className="text-center mt-4 text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
-          <Shield className="w-3.5 h-3.5 text-cyan-500" />
-          Bảo mật SSL 256-bit & Máy chủ Zeno Cloud Dedicated
+        <div className="text-center mt-3 text-[11px] text-slate-500 flex flex-col items-center justify-center gap-1">
+          <div className="flex items-center gap-1.5">
+            <Shield className="w-3.5 h-3.5 text-cyan-500" />
+            <span>Bảo mật SSL 256-bit & Máy chủ Zeno Cloud Dedicated</span>
+          </div>
+          {onNavigateToPrivacy && (
+            <button
+              type="button"
+              onClick={onNavigateToPrivacy}
+              className="text-slate-400 hover:text-slate-300 underline cursor-pointer text-[10.5px] mt-0.5"
+            >
+              Chính sách quyền riêng tư
+            </button>
+          )}
         </div>
       </div>
     </div>

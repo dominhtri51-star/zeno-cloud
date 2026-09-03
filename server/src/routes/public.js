@@ -315,7 +315,7 @@ router.post('/register', async (req, res) => {
             account,
             password: cleanPass,
             userName: name,
-            email: cleanEmail || `${account}@sungo.vn`,
+            email: cleanEmail || '',
             cellphone: cleanPhone || '',
             userType: cleanType,
             stations

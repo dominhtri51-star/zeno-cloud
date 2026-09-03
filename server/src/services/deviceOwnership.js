@@ -480,7 +480,7 @@ class DeviceOwnershipService {
             account: acc,
             userName: u.userName || acc,
             company: u.company || 'Đại Lý Phân Phối & Lắp Đặt',
-            email: u.email || `${acc}@sungo.vn`,
+            email: (u.email && !u.email.endsWith('@sungo.vn')) ? u.email : '',
             cellphone: u.cellphone || '',
             technicianCode: u.technicianCode || u.dealerCode || `KT_${acc.toUpperCase()}`
           });
@@ -511,7 +511,7 @@ class DeviceOwnershipService {
             roleName: '🏢 Đại Lý (Dealer)',
             userName: targetDealer,
             company: 'Đại Lý Phân Phối & Lắp Đặt',
-            email: `${targetDealer}@sungo.vn`,
+            email: '',
             createdAt: new Date().toISOString()
           };
         } else {

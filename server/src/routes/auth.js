@@ -226,7 +226,7 @@ router.post('/login', async (req, res) => {
         userId: roleInfo.userType === 1 ? 1001 : (roleInfo.userType === 2 ? 2001 : 3001),
         account: acc,
         userName: roleInfo.userName || 'Tài khoản Demo',
-        email: `${acc}@sungo.vn`,
+        email: (acc === 'sungo.vn' ? 'admin@sungo.vn' : ''),
         cellphone: '0901234567',
         userType: roleInfo.userType,
         roleName: roleInfo.roleName,
@@ -306,7 +306,7 @@ router.post('/login', async (req, res) => {
       `, [
         userAcc,
         rawData.userName || rawData.nickname || userAcc,
-        rawData.email || `${userAcc}@sungo.vn`,
+        rawData.email || '',
         rawData.cellphone || '',
         uType,
         rName,
@@ -851,7 +851,7 @@ router.post('/verify-recovery-otp', async (req, res) => {
           passwordHash: hashedPass,
           cloudPassword: encryptedCloud,
           cellphone: cleanId,
-          email: `${targetAccount}@sungo.vn`
+          email: ''
         };
       }
       if (typeof deviceOwnership.saveData === 'function') {

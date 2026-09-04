@@ -12,7 +12,10 @@ import api from '../services/api';
 export default function StationDetailView({ station, onBack }) {
   const [activeTab, setActiveTab] = useState('realtime'); // realtime | yield | state | control | info | logs
   const [timeScope, setTimeScope] = useState('MONTH'); // DAY | MONTH | YEAR
-  const [selectedDate, setSelectedDate] = useState('2026-08');
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
   const [viewMode, setViewMode] = useState('auto'); // auto | phone | desktop
   const [activeFilters, setActiveFilters] = useState({
     pv: true,

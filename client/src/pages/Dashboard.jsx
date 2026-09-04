@@ -16,11 +16,26 @@ export default function Dashboard({ initialStationId, initialDeviceId, initialFl
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
   const [fleetConfig, setFleetConfig] = useState(initialFleetConfig || null);
   
-  // Bộ lọc thời gian: DAY (Ngày) | MONTH (Tháng) | YEAR (Năm)
+  // Bộ lọc thời gian: DAY (Ngày) | MONTH (Tháng) | YEAR (Năm) - Mặc định là ngày hôm nay (Today)
+  const getTodayDateString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getTodayMonthString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+  };
+
   const [timeScope, setTimeScope] = useState('DAY'); 
-  const [selectedDay, setSelectedDay] = useState('2026-08-31');
-  const [selectedMonth, setSelectedMonth] = useState('2026-08');
-  const [selectedYear, setSelectedYear] = useState('2026');
+  const [selectedDay, setSelectedDay] = useState(() => getTodayDateString());
+  const [selectedMonth, setSelectedMonth] = useState(() => getTodayMonthString());
+  const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
   const [liveClock, setLiveClock] = useState(new Date().toLocaleTimeString('vi-VN'));
 
   // Line Chart Toggles cho chế độ Ngày (DAY)

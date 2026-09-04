@@ -1,5 +1,5 @@
 {
-  "appId": "com.sungo.zeno",
+  "appId": "com.zenosolar.app",
   "appName": "Zeno Solar",
   "webDir": "dist",
   "bundledWebRuntime": false,

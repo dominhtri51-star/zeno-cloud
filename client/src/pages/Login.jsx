@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/api';
+import { Capacitor } from '@capacitor/core';
 import { 
   Sun, Lock, User, Shield, AlertCircle, ArrowRight, Zap, 
   CheckCircle2, Crown, Wrench, Home, Eye, EyeOff, Sparkles, 
@@ -10,6 +11,19 @@ import {
 
 export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
   const { login, register, loading } = useAuth();
+  const isNative = typeof window !== 'undefined' && Capacitor.isNativePlatform();
+
+  // Đảm bảo nền của body & html luôn là màu tối đồng bộ trên cả mobile và desktop
+  useEffect(() => {
+    const origHtml = document.documentElement.style.backgroundColor;
+    const origBody = document.body.style.backgroundColor;
+    document.documentElement.style.backgroundColor = '#0d1117';
+    document.body.style.backgroundColor = '#0d1117';
+    return () => {
+      document.documentElement.style.backgroundColor = origHtml;
+      document.body.style.backgroundColor = origBody;
+    };
+  }, []);
   
   // Tab Switcher: 'login' | 'register' | 'forgot'
   const [authMode, setAuthMode] = useState('login'); // Mặc định mở tab Đăng Nhập theo yêu cầu
@@ -267,13 +281,13 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center p-3 sm:p-4 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="min-h-[100dvh] w-full bg-[#0d1117] flex flex-col items-center justify-start sm:justify-center p-3 sm:p-4 relative overflow-y-auto overflow-x-hidden font-['Plus_Jakarta_Sans',sans-serif] py-6 sm:py-12">
       {/* Glow Backdrops */}
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
       {/* Main Window Frame matching SUN WISE Image */}
-      <div className="w-full max-w-[420px] bg-[#161922] rounded-3xl border border-slate-800 shadow-2xl overflow-hidden">
+      <div className="w-full max-w-[420px] bg-[#161922] rounded-3xl border border-slate-800 shadow-2xl overflow-hidden my-auto">
         
         {/* Top Window Bar */}
         <div className="text-center px-5 pt-5 pb-2">
@@ -337,7 +351,7 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                     placeholder="Tên đăng nhập / E-mail"
                     value={loginAccount}
                     onChange={(e) => setLoginAccount(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#242936] rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
+                    className="w-full px-4 py-3.5 bg-[#242936] rounded-xl text-base sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
                   />
                 </div>
 
@@ -349,7 +363,7 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                       placeholder="Nhập Mật khẩu"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full pl-4 pr-10 py-3 bg-[#242936] rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
+                      className="w-full pl-4 pr-10 py-3.5 bg-[#242936] rounded-xl text-base sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
                     />
                     <button
                       type="button"
@@ -408,7 +422,7 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                     placeholder="Tên đăng nhập"
                     value={sunwiseAccount}
                     onChange={(e) => setSunwiseAccount(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#242936] rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
+                    className="w-full px-4 py-3.5 bg-[#242936] rounded-xl text-base sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
                   />
                 </div>
 
@@ -420,7 +434,7 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                     placeholder="E-mail"
                     value={sunwiseEmail}
                     onChange={(e) => setSunwiseEmail(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#242936] rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
+                    className="w-full px-4 py-3.5 bg-[#242936] rounded-xl text-base sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
                   />
                 </div>
 
@@ -432,13 +446,13 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                     placeholder="Vui lòng nhập mã xác thực"
                     value={sunwiseOtp}
                     onChange={(e) => setSunwiseOtp(e.target.value)}
-                    className="w-full pl-4 pr-16 py-3 bg-[#242936] rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
+                    className="w-full pl-4 pr-16 py-3.5 bg-[#242936] rounded-xl text-base sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
                   />
                   <button
                     type="button"
                     onClick={handleSendSunwiseOtp}
                     disabled={sunwiseOtpLoading || sunwiseOtpCountdown > 0}
-                    className="absolute right-4 top-3 text-sm font-bold text-[#00d084] hover:text-[#00b875] disabled:text-slate-500 cursor-pointer"
+                    className="absolute right-4 top-3.5 text-sm font-bold text-[#00d084] hover:text-[#00b875] disabled:text-slate-500 cursor-pointer"
                   >
                     {sunwiseOtpLoading ? 'Đang gửi...' : (sunwiseOtpCountdown > 0 ? `${sunwiseOtpCountdown}s` : 'Gửi')}
                   </button>
@@ -452,7 +466,7 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                     placeholder="Nhập Mật khẩu"
                     value={sunwisePassword}
                     onChange={(e) => setSunwisePassword(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#242936] rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
+                    className="w-full px-4 py-3.5 bg-[#242936] rounded-xl text-base sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
                   />
                   <div className="flex items-start gap-1.5 text-[11px] text-[#00d084] mt-1.5 px-1 font-medium leading-tight">
                     <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
@@ -468,7 +482,7 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                     placeholder="Vui lòng nhập lại mật khẩu."
                     value={sunwiseConfirmPassword}
                     onChange={(e) => setSunwiseConfirmPassword(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#242936] rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
+                    className="w-full px-4 py-3.5 bg-[#242936] rounded-xl text-base sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00d084] border-0"
                   />
                 </div>
 
@@ -478,14 +492,14 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                     <select
                       value={sunwiseCurrency}
                       onChange={(e) => setSunwiseCurrency(e.target.value)}
-                      className="w-full px-4 py-3 bg-[#242936] rounded-xl text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#00d084] appearance-none cursor-pointer border-0"
+                      className="w-full px-4 py-3.5 bg-[#242936] rounded-xl text-base sm:text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#00d084] appearance-none cursor-pointer border-0"
                     >
                       <option value="VND" className="bg-[#242936] text-white">VND (₫) - Đồng Việt Nam</option>
                       <option value="USD" className="bg-[#242936] text-white">USD ($) - US Dollar</option>
                       <option value="EUR" className="bg-[#242936] text-white">EUR (€) - Euro</option>
                       <option value="CNY" className="bg-[#242936] text-white">CNY (¥) - Chinese Yuan</option>
                     </select>
-                    <ChevronDown className="w-4 h-4 absolute right-4 top-3.5 text-slate-400 pointer-events-none" />
+                    <ChevronDown className="w-4 h-4 absolute right-4 top-4 text-slate-400 pointer-events-none" />
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px] text-[#00d084] mt-1.5 px-1 font-medium">
                     <Info className="w-3.5 h-3.5 shrink-0" />
@@ -577,7 +591,7 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                           placeholder="E-mail"
                           value={recoveryIdentity}
                           onChange={(e) => setRecoveryIdentity(e.target.value)}
-                          className="w-full px-4 py-3 bg-slate-900/90 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#00d084] transition"
+                          className="w-full px-4 py-3.5 bg-slate-900/90 border border-slate-800 rounded-xl text-base sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#00d084] transition"
                         />
                       </div>
                     </div>
@@ -587,7 +601,7 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                         <select
                           value={recoveryAreaCode}
                           onChange={(e) => setRecoveryAreaCode(e.target.value)}
-                          className="bg-transparent text-xs font-bold text-slate-200 px-3 py-3 border-r border-slate-800 focus:outline-none cursor-pointer"
+                          className="bg-transparent text-xs font-bold text-slate-200 px-3 py-3.5 border-r border-slate-800 focus:outline-none cursor-pointer"
                         >
                           <option value="+84" className="bg-slate-900 text-slate-200">+84 (VN)</option>
                           <option value="+86" className="bg-slate-900 text-slate-200">+86 (CN)</option>
@@ -602,7 +616,7 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                           placeholder="Số điện thoại"
                           value={recoveryIdentity}
                           onChange={(e) => setRecoveryIdentity(e.target.value)}
-                          className="w-full px-3 py-3 bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
+                          className="w-full px-3 py-3.5 bg-transparent text-base sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -640,7 +654,7 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                         placeholder="Vui lòng nhập mã xác thực..."
                         value={recoveryOtp}
                         onChange={(e) => setRecoveryOtp(e.target.value.trim())}
-                        className="w-full px-3.5 py-3 bg-transparent text-sm font-mono tracking-widest text-[#00d084] placeholder-slate-500 focus:outline-none"
+                        className="w-full px-3.5 py-3.5 bg-transparent text-base sm:text-sm font-mono tracking-widest text-[#00d084] placeholder-slate-500 focus:outline-none"
                       />
                       <button
                         type="button"
@@ -672,7 +686,7 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                         placeholder="Nhập Mật khẩu"
                         value={recoveryNewPassword}
                         onChange={(e) => setRecoveryNewPassword(e.target.value)}
-                        className="w-full px-3.5 pr-10 py-3 bg-slate-900/90 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#00d084] transition"
+                        className="w-full px-3.5 pr-10 py-3.5 bg-slate-900/90 border border-slate-800 rounded-xl text-base sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#00d084] transition"
                       />
                       <button
                         type="button"
@@ -693,7 +707,7 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                         placeholder="Vui lòng nhập lại mật khẩu."
                         value={recoveryConfirmPassword}
                         onChange={(e) => setRecoveryConfirmPassword(e.target.value)}
-                        className="w-full px-3.5 pr-10 py-3 bg-slate-900/90 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#00d084] transition"
+                        className="w-full px-3.5 pr-10 py-3.5 bg-slate-900/90 border border-slate-800 rounded-xl text-base sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#00d084] transition"
                       />
                       <button
                         type="button"
@@ -722,27 +736,29 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
           )}
         </div>
 
-        {/* Google Play Store Button */}
-        <div className="mt-4">
-          <a
-            href="https://play.google.com/store/apps/details?id=com.zenosolar.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-slate-900 to-slate-950 hover:from-slate-800 hover:to-slate-900 border border-slate-700/80 hover:border-emerald-500/60 text-slate-100 text-xs font-bold flex items-center justify-center gap-3 transition-all duration-200 shadow-xl cursor-pointer group"
-          >
-            {/* Google Play Color SVG Icon */}
-            <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none">
-              <path d="M3.609 1.814L13.792 12 3.61 22.186A2.25 2.25 0 0 1 3 20.596V3.404c0-.62.228-1.206.609-1.59z" fill="#00C1A6"/>
-              <path d="M17.186 8.608L13.792 12l3.394 3.392 3.847-2.185a1.408 1.408 0 0 0 0-2.414l-3.847-2.185z" fill="#FFD400"/>
-              <path d="M3.609 1.814L13.792 12 17.186 8.608 5.617 2.036c-.636-.361-1.396-.342-2.008-.222z" fill="#00E676"/>
-              <path d="M13.792 12L3.609 22.186c.612.12 1.372.139 2.008-.222l11.569-6.572L13.792 12z" fill="#FF3D00"/>
-            </svg>
-            <div className="text-left">
-              <div className="text-[9.5px] text-slate-400 font-medium uppercase tracking-wider leading-none">TẢI VỀ TỪ</div>
-              <div className="text-xs font-black text-white group-hover:text-emerald-400 transition leading-tight mt-0.5">Google Play (CH Play)</div>
-            </div>
-          </a>
-        </div>
+        {/* Google Play Store Button (Chỉ hiển thị trên trình duyệt Web, TỰ ĐỘNG ẨN HOÀN TOÀN khi đang chạy trong App Native) */}
+        {!isNative && (
+          <div className="mt-4 px-5 sm:px-6 pb-2">
+            <a
+              href="https://play.google.com/store/apps/details?id=com.zenosolar.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-slate-900 to-slate-950 hover:from-slate-800 hover:to-slate-900 border border-slate-700/80 hover:border-emerald-500/60 text-slate-100 text-xs font-bold flex items-center justify-center gap-3 transition-all duration-200 shadow-xl cursor-pointer group"
+            >
+              {/* Google Play Color SVG Icon */}
+              <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                <path d="M3.609 1.814L13.792 12 3.61 22.186A2.25 2.25 0 0 1 3 20.596V3.404c0-.62.228-1.206.609-1.59z" fill="#00C1A6"/>
+                <path d="M17.186 8.608L13.792 12l3.394 3.392 3.847-2.185a1.408 1.408 0 0 0 0-2.414l-3.847-2.185z" fill="#FFD400"/>
+                <path d="M3.609 1.814L13.792 12 17.186 8.608 5.617 2.036c-.636-.361-1.396-.342-2.008-.222z" fill="#00E676"/>
+                <path d="M13.792 12L3.609 22.186c.612.12 1.372.139 2.008-.222l11.569-6.572L13.792 12z" fill="#FF3D00"/>
+              </svg>
+              <div className="text-left">
+                <div className="text-[9.5px] text-slate-400 font-medium uppercase tracking-wider leading-none">TẢI VỀ TỪ</div>
+                <div className="text-xs font-black text-white group-hover:text-emerald-400 transition leading-tight mt-0.5">Google Play (CH Play)</div>
+              </div>
+            </a>
+          </div>
+        )}
 
         {/* Footer Note */}
         <div className="text-center mt-3 text-[11px] text-slate-500 flex flex-col items-center justify-center gap-1">

@@ -18,6 +18,11 @@
       "style": "DARK",
       "backgroundColor": "#0d1117",
       "overlaysWebView": false
+    },
+    "Keyboard": {
+      "resize": "body",
+      "style": "DARK",
+      "resizeOnFullScreen": true
     }
   }
 }

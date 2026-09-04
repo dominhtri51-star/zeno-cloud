@@ -1,21 +1,24 @@
 {
+  "name": "Zeno Solar",
   "short_name": "Zeno Solar",
-  "name": "Zeno Solar - Giám Sát Năng Lượng Mặt Trời",
+  "description": "Quản lý và giám sát biến tần Inverter Solar Zeno, pin lưu trữ lithium BMS",
   "icons": [
     {
       "src": "/icon-192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/",
-  "background_color": "#0d1117",
-  "theme_color": "#0d1117",
+  "background_color": "#070b14",
+  "theme_color": "#070b14",
   "display": "standalone",
   "orientation": "portrait"
 }

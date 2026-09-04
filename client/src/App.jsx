@@ -13,6 +13,7 @@ import PublicRegister from './pages/PublicRegister';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import PwaInstallBanner from './components/PwaInstallBanner';
 
 function MainApp() {
   const { isAuthenticated, user } = useAuth();
@@ -164,6 +165,7 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <MainApp />
+        <PwaInstallBanner />
       </AuthProvider>
     </ThemeProvider>
   );

@@ -722,17 +722,38 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
           )}
         </div>
 
-        {/* Direct APK Download Button */}
-        <div className="mt-4">
+        {/* Google Play Store & APK Download Buttons */}
+        <div className="mt-4 space-y-2">
           <a
-            href="/Zeno-Solar.apk"
-            download="Zeno-Solar.apk"
-            className="w-full py-2.5 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-emerald-500/50 text-slate-200 text-xs font-bold flex items-center justify-center gap-2 transition duration-200 shadow-lg cursor-pointer group"
+            href="https://play.google.com/store/apps/details?id=com.zenosolar.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-slate-900 to-slate-950 hover:from-slate-800 hover:to-slate-900 border border-slate-700/80 hover:border-emerald-500/60 text-slate-100 text-xs font-bold flex items-center justify-center gap-3 transition-all duration-200 shadow-xl cursor-pointer group"
           >
-            <span className="text-base">📲</span>
-            <span className="text-slate-200 group-hover:text-emerald-400 transition">Tải App Cho Samsung / Android (.APK)</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono">6.0 MB</span>
+            {/* Google Play Color SVG Icon */}
+            <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+              <path d="M3.609 1.814L13.792 12 3.61 22.186A2.25 2.25 0 0 1 3 20.596V3.404c0-.62.228-1.206.609-1.59z" fill="#00C1A6"/>
+              <path d="M17.186 8.608L13.792 12l3.394 3.392 3.847-2.185a1.408 1.408 0 0 0 0-2.414l-3.847-2.185z" fill="#FFD400"/>
+              <path d="M3.609 1.814L13.792 12 17.186 8.608 5.617 2.036c-.636-.361-1.396-.342-2.008-.222z" fill="#00E676"/>
+              <path d="M13.792 12L3.609 22.186c.612.12 1.372.139 2.008-.222l11.569-6.572L13.792 12z" fill="#FF3D00"/>
+            </svg>
+            <div className="text-left">
+              <div className="text-[9.5px] text-slate-400 font-medium uppercase tracking-wider leading-none">TẢI VỀ TỪ</div>
+              <div className="text-xs font-black text-white group-hover:text-emerald-400 transition leading-tight mt-0.5">Google Play (CH Play)</div>
+            </div>
           </a>
+
+          <div className="text-center pt-0.5">
+            <a
+              href="/Zeno-Solar.apk"
+              download="Zeno-Solar.apk"
+              className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-emerald-400 transition"
+            >
+              <span>Hoặc tải file cài đặt trực tiếp:</span>
+              <span className="underline font-bold text-slate-300 hover:text-emerald-400">Zeno-Solar.apk</span>
+              <span className="text-[9px] px-1 rounded bg-slate-800 text-slate-400 font-mono">13 MB</span>
+            </a>
+          </div>
         </div>
 
         {/* Footer Note */}

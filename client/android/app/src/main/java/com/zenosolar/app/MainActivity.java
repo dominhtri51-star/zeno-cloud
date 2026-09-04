@@ -1,4 +1,4 @@
-package com.sungo.zeno;
+package com.zenosolar.app;
 
 import com.getcapacitor.BridgeActivity;
 

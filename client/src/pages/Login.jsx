@@ -722,8 +722,8 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
           )}
         </div>
 
-        {/* Google Play Store & APK Download Buttons */}
-        <div className="mt-4 space-y-2">
+        {/* Google Play Store Button */}
+        <div className="mt-4">
           <a
             href="https://play.google.com/store/apps/details?id=com.zenosolar.app"
             target="_blank"
@@ -742,18 +742,6 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
               <div className="text-xs font-black text-white group-hover:text-emerald-400 transition leading-tight mt-0.5">Google Play (CH Play)</div>
             </div>
           </a>
-
-          <div className="text-center pt-0.5">
-            <a
-              href="/Zeno-Solar.apk"
-              download="Zeno-Solar.apk"
-              className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-emerald-400 transition"
-            >
-              <span>Hoặc tải file cài đặt trực tiếp:</span>
-              <span className="underline font-bold text-slate-300 hover:text-emerald-400">Zeno-Solar.apk</span>
-              <span className="text-[9px] px-1 rounded bg-slate-800 text-slate-400 font-mono">13 MB</span>
-            </a>
-          </div>
         </div>
 
         {/* Footer Note */}

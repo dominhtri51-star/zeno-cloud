@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, PlusCircle, CheckCircle2, AlertCircle, ShieldCheck, Cpu,
   Wifi, RefreshCw, Radio, Server, Check, ArrowRight, ArrowLeft,
   Signal, ExternalLink, HelpCircle, Laptop, Smartphone, Home, Bluetooth,
-  Search, ChevronRight, Activity, Wrench, MapPin, Zap, UserCheck, Link2
+  Search, ChevronRight, Activity, Wrench, MapPin, Zap, UserCheck, Link2,
+  Battery, SlidersHorizontal, SignalHigh
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { bleService, classifyBleDevice } from '../services/bleService';
 
 export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
   const { user } = useAuth();
@@ -21,6 +23,11 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
   // ================= TAB 1: WI-FI SETUP (REAL BLE & SOFTAP) =================
   const [bleStage, setBleStage] = useState('guide'); // 'guide' | 'connected' | 'done'
   const [connectedBleDevice, setConnectedBleDevice] = useState(null);
+  const [discoveredBleDevices, setDiscoveredBleDevices] = useState([]);
+  const [isScanningBle, setIsScanningBle] = useState(false);
+  const [filterOnlySolar, setFilterOnlySolar] = useState(true);
+  const scanHandleRef = useRef(null);
+
   const [detectedDtuCode, setDetectedDtuCode] = useState('');
   const [detectedSn, setDetectedSn] = useState('');
   const [bleError, setBleError] = useState('');
@@ -65,6 +72,8 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
       setSuccessMsg('');
       setBleStage('guide');
       setConnectedBleDevice(null);
+      setDiscoveredBleDevices([]);
+      setIsScanningBle(false);
       setDetectedDtuCode('');
       setDetectedSn('');
       setBleError('');
@@ -72,8 +81,17 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
       setStationName(`Trạm Năng Lượng Nhà ${user?.fullName || currentAccount}`);
 
       scanWifiNetworks();
+    } else {
+      handleStopBleScan();
     }
   }, [isOpen, user]);
+
+  // Dọn dẹp BLE khi unmount
+  useEffect(() => {
+    return () => {
+      handleStopBleScan();
+    };
+  }, []);
 
   // Quét mạng Wi-Fi thực tế từ máy tính
   const scanWifiNetworks = async () => {
@@ -93,51 +111,63 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  // Kích hoạt Web Bluetooth API THỰC TẾ của trình duyệt
-  const handleRealWebBluetoothScan = async () => {
+  // Bắt đầu quét Bluetooth BLE Native / Web
+  const handleStartBleScan = async () => {
     setBleError('');
-    if (!navigator.bluetooth || !navigator.bluetooth.requestDevice) {
-      setBleError('Trình duyệt của bạn chưa hỗ trợ Web Bluetooth API hoặc đang chạy trên kết nối không bảo mật. Vui lòng sử dụng Google Chrome / Microsoft Edge hoặc cài đặt qua SoftAP Hotspot bên dưới.');
-      return;
-    }
+    setIsScanningBle(true);
+    setDiscoveredBleDevices([]);
 
-    try {
-      const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: ['generic_access', '0000ffe0-0000-1000-8000-00805f9b34fb']
-      });
-
-      if (device) {
-        setConnectedBleDevice({
-          id: device.id,
-          name: device.name || 'Inverter Datalogger BLE',
-          connected: true
+    const result = await bleService.startScan({
+      onDeviceDiscovered: (device) => {
+        setDiscoveredBleDevices((prev) => {
+          const index = prev.findIndex((d) => d.id === device.id);
+          if (index >= 0) {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], ...device };
+            return updated;
+          }
+          return [...prev, device];
         });
-        setBleStage('connected');
-
-        // TỰ ĐỘNG THU NẠP MÃ DTU VÀ SN TỪ TÊN HOẶC ID BLUETOOTH
-        let dtu = '';
-        if (device.name) {
-          const match = device.name.match(/\d{10,20}/);
-          if (match) dtu = match[0];
-        }
-        if (!dtu && device.id) {
-          const match = device.id.match(/\d{10,20}/);
-          if (match) dtu = match[0];
-        }
-
-        if (dtu) {
-          const sn = dtu.length >= 10 ? `${dtu.slice(0, 10)}-1` : `${dtu}-1`;
-          setDetectedDtuCode(dtu);
-          setDetectedSn(sn);
-          setDtuCode(dtu);
-          setSerialNumber(sn);
-        }
+      },
+      onError: (errorMsg) => {
+        setBleError(errorMsg);
+        setIsScanningBle(false);
+      },
+      onScanComplete: () => {
+        setIsScanningBle(false);
       }
-    } catch (err) {
-      if (err.name !== 'NotFoundError') {
-        setBleError(`Lỗi Bluetooth: ${err.message}`);
-      }
+    });
+
+    if (result && result.stop) {
+      scanHandleRef.current = result.stop;
+    }
+  };
+
+  // Dừng quét Bluetooth
+  const handleStopBleScan = async () => {
+    if (scanHandleRef.current) {
+      try {
+        await scanHandleRef.current();
+      } catch (e) {}
+      scanHandleRef.current = null;
+    }
+    await bleService.stopScan();
+    setIsScanningBle(false);
+  };
+
+  // Chọn và ghép nối thiết bị BLE được phát hiện
+  const handleSelectBleDevice = (device) => {
+    handleStopBleScan();
+    setConnectedBleDevice(device);
+    setBleStage('connected');
+
+    if (device.extractedDtu) {
+      const dtu = device.extractedDtu;
+      const sn = dtu.length >= 10 ? `${dtu.slice(0, 10)}-1` : `${dtu}-1`;
+      setDetectedDtuCode(dtu);
+      setDetectedSn(sn);
+      setDtuCode(dtu);
+      setSerialNumber(sn);
     }
   };
 
@@ -340,61 +370,195 @@ export default function ClaimDeviceModal({ isOpen, onClose, onSuccess }) {
           {activeTab === 'wifi' && (
             <div className="space-y-4 animate-fade-in">
               
-              {/* Card 1: Web Bluetooth Thực Tế */}
+              {/* Card 1: Bluetooth Radar Scanner Thông Minh Cho Inverter & DTU */}
               <div className={`p-4 rounded-2xl border transition ${
                 isDark ? 'bg-[#11192d] border-slate-800' : 'bg-slate-50 border-slate-200'
               }`}>
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-9 h-9 rounded-xl bg-cyan-500/15 text-cyan-500 flex items-center justify-center">
-                    <Bluetooth className="w-5 h-5" />
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                      isScanningBle 
+                        ? 'bg-cyan-500/20 text-cyan-400 animate-pulse border border-cyan-500/40' 
+                        : 'bg-cyan-500/15 text-cyan-500'
+                    }`}>
+                      <Bluetooth className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        Cách 1: Radar Quét Bluetooth Inverter / DTU
+                      </h3>
+                      <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Tự động nhận diện Biến Tần & Pin Solar, lọc bỏ tai nghe/loa rác
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      Cách 1: Ghép Nối Web Bluetooth Thực Tế
-                    </h3>
-                    <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      Quét Bluetooth trực tiếp từ Datalogger và tự động lấy mã DTU
-                    </p>
-                  </div>
+
+                  {/* Nút bật/tắt bộ lọc Solar */}
+                  <button
+                    type="button"
+                    onClick={() => setFilterOnlySolar(!filterOnlySolar)}
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer flex items-center gap-1 ${
+                      filterOnlySolar
+                        ? isDark
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                        : isDark
+                          ? 'bg-slate-800 text-slate-400 border-slate-700'
+                          : 'bg-slate-200 text-slate-600 border-slate-300'
+                    }`}
+                  >
+                    <SlidersHorizontal className="w-3 h-3" />
+                    <span>{filterOnlySolar ? '⚡ Chỉ hiện Inverter' : 'Hiện tất cả BLE'}</span>
+                  </button>
                 </div>
 
                 {connectedBleDevice ? (
                   <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-2 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4" /> Đã kết nối: {connectedBleDevice.name}
+                        <CheckCircle2 className="w-4 h-4" /> Đã ghép nối: {connectedBleDevice.displayName || connectedBleDevice.name}
                       </span>
                       <button 
                         type="button" 
                         onClick={() => {
                           setConnectedBleDevice(null);
                           setDetectedDtuCode('');
+                          setDetectedSn('');
                         }}
                         className="text-[10px] text-slate-400 hover:text-white underline cursor-pointer"
                       >
-                        Ngắt kết nối
+                        Đổi thiết bị khác
                       </button>
                     </div>
+                    {connectedBleDevice.deviceType && (
+                      <div className="text-[10px] inline-block font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        {connectedBleDevice.deviceType}
+                      </div>
+                    )}
                     {detectedDtuCode && (
-                      <div className="text-[11px] font-mono text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-500/15 p-2 rounded-lg">
-                        ✓ Đã tự động thu nạp Mã DTU: <strong>{detectedDtuCode}</strong>
+                      <div className="text-[11px] font-mono text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-500/15 p-2 rounded-lg flex items-center justify-between">
+                        <span>✓ Đã thu nạp Mã DTU: <strong>{detectedDtuCode}</strong></span>
+                        <span className="text-[10px] font-sans opacity-80">(Tự điền sang Tab 2)</span>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handleRealWebBluetoothScan}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600/20 to-teal-600/20 hover:from-cyan-600/30 hover:to-teal-600/30 text-cyan-600 dark:text-cyan-400 border border-cyan-500/40 text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer shadow-sm"
-                  >
-                    <Bluetooth className="w-4 h-4" />
-                    <span>Bật Bluetooth Trình Duyệt Để Quét Thiết Bị Thật</span>
-                  </button>
+                  <div className="space-y-3">
+                    {/* Nút hành động Quét Bluetooth */}
+                    <div className="flex gap-2">
+                      {!isScanningBle ? (
+                        <button
+                          type="button"
+                          onClick={handleStartBleScan}
+                          className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer shadow-md shadow-cyan-500/20"
+                        >
+                          <Bluetooth className="w-4 h-4" />
+                          <span>📡 Bật Bluetooth Quét Biến Tần & DTU</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleStopBleScan}
+                          className="flex-1 py-2.5 rounded-xl bg-rose-600/80 hover:bg-rose-500 text-white text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer shadow-md animate-pulse"
+                        >
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>Đang Quét Radar BLE... (Bấm để dừng)</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Danh sách thiết bị quét được */}
+                    {isScanningBle && discoveredBleDevices.length === 0 && (
+                      <div className="p-4 rounded-xl border border-dashed border-cyan-500/30 bg-cyan-500/5 text-center space-y-2">
+                        <div className="inline-block p-2 rounded-full bg-cyan-500/10 text-cyan-400 animate-spin">
+                          <Activity className="w-5 h-5" />
+                        </div>
+                        <p className={`text-xs font-bold ${isDark ? 'text-cyan-300' : 'text-cyan-800'}`}>
+                          Đang tìm kiếm sóng Bluetooth từ Inverter / Datalogger...
+                        </p>
+                        <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                          Đảm bảo bạn đứng gần Inverter dưới 5 mét và máy đang mở nguồn.
+                        </p>
+                      </div>
+                    )}
+
+                    {discoveredBleDevices.length > 0 && (
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {discoveredBleDevices
+                          .filter(dev => filterOnlySolar ? (dev.isInverter || !dev.isBlacklisted) : true)
+                          .map((device, idx) => (
+                            <div
+                              key={device.id || idx}
+                              className={`p-2.5 rounded-xl border flex items-center justify-between transition ${
+                                isDark 
+                                  ? 'bg-slate-900/90 border-slate-700/80 hover:border-cyan-500/60' 
+                                  : 'bg-white border-slate-200 hover:border-cyan-400 shadow-sm'
+                              }`}
+                            >
+                              <div className="flex items-center space-x-2.5 min-w-0 pr-2">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                  device.deviceCategory === 'battery'
+                                    ? 'bg-amber-500/20 text-amber-400'
+                                    : device.deviceCategory === 'dtu'
+                                    ? 'bg-cyan-500/20 text-cyan-400'
+                                    : 'bg-emerald-500/20 text-emerald-400'
+                                }`}>
+                                  {device.deviceCategory === 'battery' ? (
+                                    <Battery className="w-4 h-4" />
+                                  ) : device.deviceCategory === 'dtu' ? (
+                                    <Wifi className="w-4 h-4" />
+                                  ) : (
+                                    <Zap className="w-4 h-4" />
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                      {device.displayName || device.name || 'Inverter DTU'}
+                                    </span>
+                                    <span className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded ${
+                                      device.deviceCategory === 'battery'
+                                        ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                        : device.deviceCategory === 'dtu'
+                                        ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30'
+                                        : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                                    }`}>
+                                      {device.deviceCategory === 'battery' ? 'PIN BMS' : device.deviceCategory === 'dtu' ? 'DTU WI-FI' : 'INVERTER'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-0.5 text-[10px]">
+                                    {device.extractedDtu && (
+                                      <span className="font-mono text-cyan-500 dark:text-cyan-400 font-bold">
+                                        DTU: {device.extractedDtu}
+                                      </span>
+                                    )}
+                                    <span className="text-slate-400 flex items-center gap-0.5">
+                                      <SignalHigh className="w-3 h-3 text-emerald-400" />
+                                      {device.rssi} dBm
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleSelectBleDevice(device)}
+                                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer shrink-0 flex items-center gap-1 shadow"
+                              >
+                                <span>Ghép Nối</span>
+                                <ArrowRight className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {bleError && (
-                  <div className="mt-2.5 p-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs rounded-xl">
-                    {bleError}
+                  <div className="mt-2.5 p-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs rounded-xl flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{bleError}</span>
                   </div>
                 )}
               </div>

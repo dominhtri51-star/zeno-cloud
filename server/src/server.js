@@ -84,14 +84,15 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Serve frontend built assets in production
+const clientDistPath = path.join(__dirname, '../../client/dist');
+
 // Direct APK Download route for Android / Samsung phones
 app.get(['/download/app', '/Zeno-Solar.apk', '/zeno.apk'], (req, res) => {
   const apkPath = path.join(clientDistPath, 'Zeno-Solar.apk');
   res.download(apkPath, 'Zeno-Solar.apk');
 });
 
-// Serve frontend built assets in production
-const clientDistPath = path.join(__dirname, '../../client/dist');
 app.use(express.static(clientDistPath));
 
 app.get('*', (req, res) => {

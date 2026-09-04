@@ -132,12 +132,13 @@ router.get('/', checkAuth, async (req, res) => {
       // Postgres offline/empty on Render fallback smoothly
     }
 
-    // Nếu là Thợ Lắp Đặt (userType: 2), xác định danh sách khách hàng được phân bổ / chia sẻ
+    // Nếu là Thợ Lắp Đặt / Đại Lý (userType: 2), xác định danh sách khách hàng được phân bổ / chia sẻ
     const assignedCustomerAccounts = new Set();
     if (isInstaller) {
       claimedDevices.forEach(d => {
         if (
           (d.installer && String(d.installer).toLowerCase() === currentAccLower) ||
+          (d.distributor && String(d.distributor).toLowerCase() === currentAccLower) ||
           (Array.isArray(d.sharedInstallers) && d.sharedInstallers.some(acc => String(acc).toLowerCase() === currentAccLower))
         ) {
           if (d.customer) assignedCustomerAccounts.add(String(d.customer).toLowerCase());
@@ -148,6 +149,19 @@ router.get('/', checkAuth, async (req, res) => {
         deviceOwnership.data.shares.forEach(s => {
           if (s.dealerAccount && String(s.dealerAccount).toLowerCase() === currentAccLower) {
             if (s.customerAccount) assignedCustomerAccounts.add(String(s.customerAccount).toLowerCase());
+          }
+        });
+      }
+
+      if (deviceOwnership.data?.users) {
+        Object.entries(deviceOwnership.data.users).forEach(([uAcc, uObj]) => {
+          if (
+            (uObj.dealer && String(uObj.dealer).toLowerCase() === currentAccLower) ||
+            (uObj.installer && String(uObj.installer).toLowerCase() === currentAccLower) ||
+            (uObj.distributor && String(uObj.distributor).toLowerCase() === currentAccLower) ||
+            (uObj.createdBy && String(uObj.createdBy).toLowerCase() === currentAccLower)
+          ) {
+            assignedCustomerAccounts.add(String(uAcc).toLowerCase());
           }
         });
       }

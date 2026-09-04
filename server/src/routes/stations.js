@@ -165,14 +165,43 @@ router.get('/', async (req, res) => {
       return matchOwner || matchDevice || matchName;
     });
   } else if (isDealer && !isMaster) {
-    // Nếu là Thợ Lắp Đặt / Đại Lý (userType: 2): Chỉ trả về các trạm phụ trách hoặc trạm được chủ nhà chia sẻ
+    // Nếu là Thợ Lắp Đặt / Đại Lý (userType: 2): Trả về các trạm phụ trách, trạm khách hàng của đại lý, hoặc trạm được chia sẻ
     const installerAccountLower = currentUserAccount.toLowerCase();
+    
+    // Thu thập toàn bộ danh sách khách hàng thuộc quyền quản lý của đại lý này
+    const dealerCustomerAccounts = new Set();
+    if (deviceOwnership.data?.users) {
+      Object.entries(deviceOwnership.data.users).forEach(([uAcc, uObj]) => {
+        if (
+          (uObj.dealer && String(uObj.dealer).toLowerCase() === installerAccountLower) ||
+          (uObj.installer && String(uObj.installer).toLowerCase() === installerAccountLower) ||
+          (uObj.distributor && String(uObj.distributor).toLowerCase() === installerAccountLower) ||
+          (uObj.createdBy && String(uObj.createdBy).toLowerCase() === installerAccountLower)
+        ) {
+          dealerCustomerAccounts.add(String(uAcc).toLowerCase());
+        }
+      });
+    }
+
+    if (Array.isArray(deviceOwnership.data?.shares)) {
+      deviceOwnership.data.shares.forEach(s => {
+        if (s.dealerAccount && String(s.dealerAccount).toLowerCase() === installerAccountLower) {
+          if (s.customerAccount) dealerCustomerAccounts.add(String(s.customerAccount).toLowerCase());
+        }
+      });
+    }
+
     allStations = allStations.filter(st => {
       // 1. Kiểm tra trạm được chia sẻ qua shares
       const isSharedWithInstaller = Array.isArray(st.sharedDealers) && st.sharedDealers.some(
-        s => s.dealerAccount && s.dealerAccount.toLowerCase() === installerAccountLower
+        s => s.dealerAccount && String(s.dealerAccount).toLowerCase() === installerAccountLower
       );
-      // 2. Kiểm tra thiết bị được gán cho installer
+
+      // 2. Kiểm tra chủ trạm là khách hàng của đại lý này hoặc chính là đại lý
+      const ownerLower = String(st.ownerName || '').toLowerCase();
+      const isOwner = ownerLower === installerAccountLower || dealerCustomerAccounts.has(ownerLower);
+
+      // 3. Kiểm tra thiết bị được gán cho installer, distributor hoặc customer của đại lý
       const matchDevice = st.devices && st.devices.some(dev => {
         const dObj = claimedDevices.find(cd => 
           String(cd.deviceId) === String(dev.deviceId) || 
@@ -180,10 +209,21 @@ router.get('/', async (req, res) => {
           (dev.dtuCode && cd.dtuCode === dev.dtuCode)
         );
         if (!dObj) return false;
-        return (dObj.installer && dObj.installer.toLowerCase() === installerAccountLower) ||
-               (Array.isArray(dObj.sharedInstallers) && dObj.sharedInstallers.some(acc => acc.toLowerCase() === installerAccountLower));
+        
+        const devInstaller = String(dObj.installer || '').toLowerCase();
+        const devDistributor = String(dObj.distributor || '').toLowerCase();
+        const devCustomer = String(dObj.customer || '').toLowerCase();
+        const devShared = Array.isArray(dObj.sharedInstallers) && dObj.sharedInstallers.some(acc => String(acc).toLowerCase() === installerAccountLower);
+
+        return (
+          devInstaller === installerAccountLower ||
+          devDistributor === installerAccountLower ||
+          devShared ||
+          (devCustomer && (devCustomer === installerAccountLower || dealerCustomerAccounts.has(devCustomer)))
+        );
       });
-      return (isSharedWithInstaller || matchDevice) && st.devices.length > 0;
+
+      return isSharedWithInstaller || isOwner || matchDevice;
     });
   }
   // Nếu là Master (isMaster === true / userType: 1): Trả về 100% toàn bộ trạm và thiết bị trên hệ thống!

@@ -281,13 +281,13 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
   };
 
   return (
-    <div className="min-h-[100dvh] w-full bg-[#0d1117] flex flex-col items-center justify-start sm:justify-center p-3 sm:p-4 relative overflow-y-auto overflow-x-hidden font-['Plus_Jakarta_Sans',sans-serif] py-6 sm:py-12">
+    <div className="min-h-screen w-full bg-[#0d1117] flex flex-col items-center justify-start sm:justify-center p-3 sm:p-6 relative overflow-y-auto font-['Plus_Jakarta_Sans',sans-serif] py-4 sm:py-10">
       {/* Glow Backdrops */}
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
       {/* Main Window Frame matching SUN WISE Image */}
-      <div className="w-full max-w-[420px] bg-[#161922] rounded-3xl border border-slate-800 shadow-2xl overflow-hidden my-auto">
+      <div className="w-full max-w-[420px] bg-[#161922] rounded-3xl border border-slate-800 shadow-2xl overflow-hidden my-2 sm:my-auto shrink-0">
         
         {/* Top Window Bar */}
         <div className="text-center px-5 pt-5 pb-2">

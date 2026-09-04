@@ -1,7 +1,22 @@
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
+
+export const getBaseURL = () => {
+  if (typeof window !== 'undefined') {
+    if (
+      Capacitor.isNativePlatform() || 
+      window.location.hostname === 'localhost' || 
+      window.location.protocol === 'capacitor:' || 
+      window.location.protocol === 'file:'
+    ) {
+      return 'https://zeno-cloud.onrender.com/api';
+    }
+  }
+  return '/api';
+};
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: getBaseURL(),
   timeout: 60000,
   headers: {
     'Content-Type': 'application/json'
@@ -26,7 +41,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const oldToken = localStorage.getItem('zeno_token');
-        const refreshRes = await axios.post('/api/auth/refresh', { token: oldToken });
+        const refreshRes = await axios.post(`${getBaseURL()}/auth/refresh`, { token: oldToken });
         if (refreshRes.data && refreshRes.data.success && refreshRes.data.token) {
           const newToken = refreshRes.data.token;
           localStorage.setItem('zeno_token', newToken);

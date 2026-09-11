@@ -1,0 +1,105 @@
+{
+  "backupTimestamp": "2026-09-11T10:07:16.340Z",
+  "sourceUrl": "https://zeno-cloud.onrender.com",
+  "targetOfflineDirectory": "/Users/5sensesimac/Downloads/SUN+WISE_1.1.7_APKPure/zeno/backups/backup_2026-09-11_17-07-16",
+  "statistics": {
+    "totalStations": 4,
+    "totalCustomers": 11,
+    "totalAlarms": 0,
+    "totalGroups": 0
+  },
+  "stationsSummary": [
+    {
+      "id": "454586755050340353",
+      "name": "sungoPlant",
+      "capacity": "6 kWp",
+      "devices": 1
+    },
+    {
+      "id": "498807992005656576",
+      "name": "zenoPlant",
+      "capacity": "12 kWp",
+      "devices": 1
+    },
+    {
+      "id": "495450468162437120",
+      "name": "Hien_newtech.sgPlant",
+      "capacity": "12 kWp",
+      "devices": 1
+    },
+    {
+      "id": "178817432746558411",
+      "name": "phúc trung",
+      "capacity": "12 kWp",
+      "devices": 1
+    }
+  ],
+  "customersSummary": [
+    {
+      "account": "sungo.vn",
+      "name": "SUNGO SOLAR VIỆT NAM (Master)",
+      "role": "👑 Tổng Phân Phối (Distributor)",
+      "type": 1
+    },
+    {
+      "account": "newtech",
+      "name": "Đại Lý NEWTECH",
+      "role": "🏢 Đại Lý (Dealer)",
+      "type": 2
+    },
+    {
+      "account": "newtech.sg",
+      "name": "Đại Lý Newtech Solar (Nguyễn Hồng Sơn)",
+      "role": "🏢 Đại Lý (Dealer)",
+      "type": 2
+    },
+    {
+      "account": "thodien_mientay",
+      "name": "Đại Lý Trần Văn Hưng (Miền Tây)",
+      "role": "🏢 Đại Lý (Dealer)",
+      "type": 2
+    },
+    {
+      "account": "tuan_solar",
+      "name": "Đại Lý Tuấn Solar Miền Nam",
+      "role": "🏢 Đại Lý (Dealer)",
+      "type": 2
+    },
+    {
+      "account": "chuhanatest",
+      "name": "Chủ Nhà Dũng Kiệp (zenoPlant)",
+      "role": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "type": 3
+    },
+    {
+      "account": "dungkiep",
+      "name": "dungkiep",
+      "role": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "type": 3
+    },
+    {
+      "account": "sungo123",
+      "name": "sungo123",
+      "role": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "type": 3
+    },
+    {
+      "account": "triminh123",
+      "name": "triminh123",
+      "role": "Chủ Nhà / Người Dùng Cuối (View-Only)",
+      "type": 3
+    },
+    {
+      "account": "vothehien1006",
+      "name": "Khách Hàng Võ Thế Hiển",
+      "role": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "type": 3
+    },
+    {
+      "account": "zeno_home_9200",
+      "name": "Anh Nam (Chủ Nhà Thảo Điền)",
+      "role": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "type": 3
+    }
+  ]
+}

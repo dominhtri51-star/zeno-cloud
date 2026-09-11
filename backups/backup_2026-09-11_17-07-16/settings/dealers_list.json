@@ -1,0 +1,37 @@
+{
+  "success": true,
+  "dealers": [
+    {
+      "account": "newtech.sg",
+      "userName": "Đại Lý Newtech Solar (Nguyễn Hồng Sơn)",
+      "company": "Newtech Solar Solutions Co., Ltd",
+      "email": "newtech.sg@gmail.com",
+      "cellphone": "0938123456",
+      "technicianCode": "DL_NEWTECH"
+    },
+    {
+      "account": "tuan_solar",
+      "userName": "Đại Lý Tuấn Solar Miền Nam",
+      "company": "Tuấn Solar Energy",
+      "email": "",
+      "cellphone": "0918765432",
+      "technicianCode": "DL_TUANSOLAR"
+    },
+    {
+      "account": "thodien_mientay",
+      "userName": "Đại Lý Trần Văn Hưng (Miền Tây)",
+      "company": "Điện Mặt Trời Miền Tây",
+      "email": "hung.solar@gmail.com",
+      "cellphone": "0933445566",
+      "technicianCode": "DL_MIENTAY"
+    },
+    {
+      "account": "newtech",
+      "userName": "Đại Lý NEWTECH",
+      "company": "Đại Lý Lắp Đặt",
+      "email": "",
+      "cellphone": "",
+      "technicianCode": "DL_NEWTECH"
+    }
+  ]
+}

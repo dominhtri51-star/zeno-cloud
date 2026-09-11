@@ -1,0 +1,20 @@
+{
+  "success": true,
+  "stationId": "454586755050340353",
+  "shares": [
+    {
+      "shareId": "SH-1788413983319",
+      "stationId": "454586755050340353",
+      "customerAccount": "sungo123",
+      "dealerAccount": "newtech",
+      "dealerName": "Đại Lý NEWTECH",
+      "dealerEmail": "",
+      "dealerCompany": "Đại Lý Phân Phối & Lắp Đặt",
+      "permissions": [
+        "VIEW",
+        "CONFIG"
+      ],
+      "createdAt": "2026-09-03T05:39:43.319Z"
+    }
+  ]
+}

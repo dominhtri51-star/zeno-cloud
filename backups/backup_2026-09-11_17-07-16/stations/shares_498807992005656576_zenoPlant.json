@@ -1,0 +1,21 @@
+{
+  "success": true,
+  "stationId": "498807992005656576",
+  "shares": [
+    {
+      "shareId": "SH-1788172948153",
+      "stationId": "498807992005656576",
+      "customerAccount": "dungkiep",
+      "dealerAccount": "newtech.sg",
+      "dealerName": "Đại Lý Newtech Solar (Nguyễn Hồng Sơn)",
+      "dealerEmail": "newtech.sg@gmail.com",
+      "dealerCompany": "Newtech Solar Solutions Co., Ltd",
+      "permissions": [
+        "VIEW",
+        "CONFIG"
+      ],
+      "createdAt": "2026-08-31T10:42:28.153Z",
+      "updatedAt": "2026-08-31T10:42:44.906Z"
+    }
+  ]
+}

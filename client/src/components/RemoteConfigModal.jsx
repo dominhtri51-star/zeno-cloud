@@ -17,6 +17,7 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
   const [workMode, setWorkMode] = useState('SELF_CONSUMPTION'); // Tự Dùng Tối Đa
   const [pvEnergyModel, setPvEnergyModel] = useState('LOAD_FIRST'); // Ưu Tiên Tải Đầu Tiên
   const [ctMeterType, setCtMeterType] = useState('CT'); // Kẹp Dòng CT
+  const [ctRatio, setCtRatio] = useState('2500'); // Tỷ lệ biến dòng CT (Chuẩn Zeno Solar Inverter: 2500)
   const [syncVnTime, setSyncVnTime] = useState(true); // Tự đồng bộ UTC+7 (VN)
   const [batteryType, setBatteryType] = useState('lithium'); // Mặc định: lithium (Lithium BMS CAN/485)
   const [liProtocol, setLiProtocol] = useState('1'); // Mặc định: 1: CANBUS (CANBUS Lithium BMS)
@@ -131,6 +132,8 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
       else if (val === '3') setPvEnergyModel('GRID_FIRST');
     } else if (key === 'CT_MeterSetting') {
       setCtMeterType(val === '1' ? 'CT' : 'METER');
+    } else if (key === 'CTRatio') {
+      setCtRatio(String(val));
     } else if (key === 'maxTotalChargeCurrentSetting') {
       setChargeCurrent(parseInt(val, 10) || 60);
     } else if (key === 'MaximumBatteryDischargeCurrent') {
@@ -140,6 +143,11 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
     } else if (key === 'StopDischargeSOC') {
       setCutoffSoc(parseInt(val, 10) || 20);
     }
+  };
+
+  const handleCtRatioChange = (val) => {
+    setCtRatio(String(val));
+    setAdvConfig(prev => ({ ...prev, CTRatio: String(val) }));
   };
 
   const handleBatteryTypeChange = (val) => {
@@ -257,6 +265,8 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
           if (quick.workMode) { setWorkMode(quick.workMode); initialMap.workMode = quick.workMode; }
           if (quick.pvEnergyModel) { setPvEnergyModel(quick.pvEnergyModel); initialMap.pvEnergyModel = quick.pvEnergyModel; }
           if (quick.ctMeterType) { setCtMeterType(quick.ctMeterType); initialMap.ctMeterType = quick.ctMeterType; }
+          if (quick.ctRatio !== undefined) { setCtRatio(String(quick.ctRatio)); initialMap.ctRatio = String(quick.ctRatio); }
+          else if (advanced?.CTRatio) { setCtRatio(String(advanced.CTRatio)); initialMap.ctRatio = String(advanced.CTRatio); }
           if (quick.batteryType) { setBatteryType(quick.batteryType); initialMap.batteryType = quick.batteryType; }
           if (quick.liProtocol) { setLiProtocol(String(quick.liProtocol)); initialMap.liProtocol = String(quick.liProtocol); }
           if (quick.chargeCurrent !== undefined) { setChargeCurrent(Number(quick.chargeCurrent)); initialMap.chargeCurrent = Number(quick.chargeCurrent); }
@@ -268,6 +278,9 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
           setAdvConfig(prev => {
             const next = { ...prev, ...advanced };
             Object.assign(initialMap, next);
+            if (advanced.CTRatio) {
+              setCtRatio(String(advanced.CTRatio));
+            }
             return next;
           });
         }
@@ -285,6 +298,7 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
     workMode === 'SELF_CONSUMPTION' &&
     pvEnergyModel === 'LOAD_FIRST' &&
     ctMeterType === 'CT' &&
+    String(ctRatio) === '2500' &&
     syncVnTime === true &&
     batteryType === 'lithium' &&
     liProtocol === '1' &&
@@ -297,6 +311,7 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
     handleWorkModeChange('SELF_CONSUMPTION');
     handlePvModelChange('LOAD_FIRST');
     handleCtMeterChange('CT');
+    handleCtRatioChange('2500');
     setSyncVnTime(true);
     handleBatteryTypeChange('lithium');
     handleLiProtocolChange('1');
@@ -382,6 +397,7 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
     setWorkMode('SELF_CONSUMPTION');
     setPvEnergyModel('LOAD_FIRST');
     setCtMeterType('CT');
+    setCtRatio('2500');
     setLiProtocol('1');
     setChargeCurrent(60);
     setDischargeCurrent(100);
@@ -432,6 +448,9 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
         }
         if (ctMeterType !== initial.ctMeterType) {
           changedConfigs.CT_MeterSetting = ctMeterType === 'CT' ? '1' : '2';
+        }
+        if (ctMeterType === 'CT' && String(ctRatio) !== String(initial.ctRatio || initial.CTRatio || '2500')) {
+          changedConfigs.CTRatio = String(ctRatio);
         }
         if (batteryType !== initial.batteryType) {
           changedConfigs.batteryTypeSettings = batTypeVal;
@@ -486,6 +505,8 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
         initialConfigRef.current.workMode = workMode;
         initialConfigRef.current.pvEnergyModel = pvEnergyModel;
         initialConfigRef.current.ctMeterType = ctMeterType;
+        initialConfigRef.current.ctRatio = ctRatio;
+        initialConfigRef.current.CTRatio = ctRatio;
         initialConfigRef.current.batteryType = batteryType;
         initialConfigRef.current.liProtocol = liProtocol;
         initialConfigRef.current.chargeCurrent = chargeCurrent;
@@ -688,28 +709,67 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
                   </div>
                 </div>
 
-                {/* 3. Thiết Bị Đo Đếm Phụ Tải -> Mặc định: Kẹp Dòng CT */}
-                <div className="space-y-1">
-                  <label className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} block`}>
-                    3. Thiết Bị Đo Đếm Phụ Tải (Cảm biến đo bám tải — CT_MeterSetting)
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={ctMeterType}
-                      onChange={(e) => handleCtMeterChange(e.target.value)}
-                      className={`w-full ${
-                        isDark ? 'bg-[#101828] border-slate-800 text-slate-100 hover:border-teal-500/60' : 'bg-white border-slate-300 text-slate-900 shadow-sm hover:border-teal-500'
-                      } border focus:border-teal-500 text-xs font-bold rounded-xl py-2.5 pl-3.5 pr-9 appearance-none cursor-pointer focus:outline-none transition`}
-                    >
-                      <option value="CT" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
-                        🧲 Kẹp Dòng CT (CT Clamp) — Đo tức thời chống phát ngược
-                      </option>
-                      <option value="METER" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
-                        📟 Đồng Hồ Điện Meter — Đo 2 chiều qua cổng RS485
-                      </option>
-                    </select>
-                    <ChevronDown className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-500'} absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none`} />
+                {/* 3. Thiết Bị Đo Đếm Phụ Tải -> Mặc định: Kẹp Dòng CT & Tỷ lệ CT = 2500 */}
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <label className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} block`}>
+                      3. Thiết Bị Đo Đếm Phụ Tải (Cảm biến đo bám tải — CT_MeterSetting)
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={ctMeterType}
+                        onChange={(e) => handleCtMeterChange(e.target.value)}
+                        className={`w-full ${
+                          isDark ? 'bg-[#101828] border-slate-800 text-slate-100 hover:border-teal-500/60' : 'bg-white border-slate-300 text-slate-900 shadow-sm hover:border-teal-500'
+                        } border focus:border-teal-500 text-xs font-bold rounded-xl py-2.5 pl-3.5 pr-9 appearance-none cursor-pointer focus:outline-none transition`}
+                      >
+                        <option value="CT" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
+                          🧲 Kẹp Dòng CT (CT Clamp) — Đo tức thời chống phát ngược
+                        </option>
+                        <option value="METER" className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
+                          📟 Đồng Hồ Điện Meter — Đo 2 chiều qua cổng RS485
+                        </option>
+                      </select>
+                      <ChevronDown className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-500'} absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none`} />
+                    </div>
                   </div>
+
+                  {/* Thông số tỷ lệ biến dòng CT chuẩn 2500 khi chọn Kẹp CT */}
+                  {ctMeterType === 'CT' && (
+                    <div className={`p-3 rounded-xl border ${
+                      isDark ? 'bg-teal-950/20 border-teal-800/40 text-teal-300' : 'bg-teal-50/70 border-teal-200 text-teal-800'
+                    } flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 animate-fade-in`}>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Gauge className="w-4 h-4 text-teal-400 shrink-0" />
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs font-bold">Tỷ lệ biến dòng CT (CTRatio):</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-400 font-extrabold border border-teal-500/30">
+                              Chuẩn 2500:1 (Zeno Solar)
+                            </span>
+                          </div>
+                          <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} mt-0.5`}>
+                            Cài đặt chuẩn cho Inverter Zeno Solar / Sun Wise là 2500
+                          </p>
+                        </div>
+                      </div>
+                      <div className="relative w-full sm:w-auto shrink-0">
+                        <select
+                          value={ctRatio}
+                          onChange={(e) => handleCtRatioChange(e.target.value)}
+                          className={`w-full sm:w-auto ${
+                            isDark ? 'bg-slate-900 border-teal-700/60 text-teal-300' : 'bg-white border-teal-300 text-teal-800 shadow-sm'
+                          } border text-xs font-bold font-mono rounded-lg py-1.5 pl-3 pr-8 focus:outline-none focus:border-teal-500 cursor-pointer`}
+                        >
+                          <option value="2500">2500 (Chuẩn Zeno Solar)</option>
+                          <option value="2000">2000 (Tùy chọn CT 2000:1)</option>
+                          <option value="3000">3000 (Tùy chọn CT 3000:1)</option>
+                          <option value="1000">1000 (Tùy chọn CT 1000:1)</option>
+                        </select>
+                        <ChevronDown className={`w-3.5 h-3.5 ${isDark ? 'text-teal-400' : 'text-teal-600'} absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none`} />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* 4. Cài Đặt Thời Gian & 5. Loại Pin (Mặc định lithium theo hình) */}

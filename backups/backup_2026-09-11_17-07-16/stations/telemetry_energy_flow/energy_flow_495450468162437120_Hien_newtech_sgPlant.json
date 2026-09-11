@@ -1,0 +1,64 @@
+{
+  "code": 0,
+  "message": "Success",
+  "data": {
+    "source": "MANUFACTURER_CLOUD_SERVER",
+    "stationId": "495450468162437120",
+    "stationName": "Hien_newtech.sgPlant",
+    "installedCapacity": "12.0 kWp",
+    "allUserStations": [
+      {
+        "stationId": "454586755050340353",
+        "stationName": "sungoPlant",
+        "installedCapacity": "6 kWp"
+      },
+      {
+        "stationId": "498807992005656576",
+        "stationName": "zenoPlant",
+        "installedCapacity": "12.0 kWp"
+      },
+      {
+        "stationId": "495450468162437120",
+        "stationName": "Hien_newtech.sgPlant",
+        "installedCapacity": "12.0 kWp"
+      },
+      {
+        "stationId": "178817432746558411",
+        "stationName": "phúc trung",
+        "installedCapacity": "12.0 kWp"
+      }
+    ],
+    "deviceId": "495450468187602944",
+    "deviceName": "Inverter",
+    "serialNumber": "4163930009-1",
+    "dtuCode": "41639300099725757805",
+    "isOnline": true,
+    "statusText": "Đang hoạt động (Trực tuyến)",
+    "pvPower": 344,
+    "pv1Power": 344,
+    "pv2Power": 0,
+    "gridPower": 296,
+    "batteryPower": 0,
+    "batterySoc": 100,
+    "backupPower": 35,
+    "loadPower": 524,
+    "gridVoltage": 227.9,
+    "gridFreq": 50.2,
+    "gridCurrent": 1.3,
+    "pv1Voltage": 393.4,
+    "pv1Current": 6.2,
+    "pv2Voltage": 0,
+    "pv2Current": 0,
+    "batteryVoltage": 1,
+    "batteryCurrent": 0,
+    "batteryTemp": 0,
+    "backupVoltage": 227.9,
+    "backupCurrent": 0.15,
+    "loadCurrent": 2.3,
+    "temperature": 0,
+    "tempF": 0,
+    "lastSync": "2026-09-11T10:05:25Z",
+    "updatedAt": "2026-09-11T10:07:23.737Z",
+    "serverTimestamp": 1789121243737
+  }
+}

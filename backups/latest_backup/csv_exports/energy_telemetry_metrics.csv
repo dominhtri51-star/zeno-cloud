@@ -1,0 +1,5 @@
+stationId,stationName,capacityKw,pvPower,gridPower,loadPower,batteryPower,batterySoc,gridVoltage,temperature,isOnline,lastSync
+"454586755050340353","sungoPlant","6 kWp","195","0","259","306","100","229.3","35","true","2026-09-11T10:05:42Z"
+"498807992005656576","zenoPlant","12 kWp","269","0","374","187","100","232.9","35","true","2026-09-11T10:05:36Z"
+"495450468162437120","Hien_newtech.sgPlant","12 kWp","344","296","524","0","100","227.9","35","true","2026-09-11T10:05:25Z"
+"178817432746558411","phúc trung","12 kWp","0","0","0","0","100","220","35","false","2026-09-11T10:07:27.544Z"

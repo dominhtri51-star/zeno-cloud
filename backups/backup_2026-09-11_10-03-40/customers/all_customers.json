@@ -1,0 +1,305 @@
+{
+  "success": true,
+  "mode": "UNIFIED_DATA",
+  "total": 11,
+  "customers": [
+    {
+      "userId": 1001,
+      "account": "sungo.vn",
+      "userName": "SUNGO SOLAR VIỆT NAM (Master)",
+      "email": "admin@sungo.vn",
+      "cellphone": "0901234567",
+      "userType": 1,
+      "roleName": "👑 Tổng Phân Phối (Distributor)",
+      "status": "ACTIVE",
+      "groupId": 2,
+      "groupName": "Hệ Thống Tổng",
+      "createdAt": "2026-08-31 06:54:00",
+      "technicianCode": null,
+      "deviceCount": 4,
+      "stationCount": 4,
+      "stationNames": [
+        "sungoPlant",
+        "zenoPlant",
+        "Hien_newtech.sgPlant",
+        "phúc trung"
+      ],
+      "devices": [
+        {
+          "deviceId": "465132145264787456",
+          "serialNumber": "3528214760-1",
+          "dtuCode": "35282147608648059097",
+          "stationName": "sungoPlant",
+          "status": "ONLINE"
+        },
+        {
+          "deviceId": "498807992030822400",
+          "serialNumber": "5037108978-1",
+          "dtuCode": "50371089784075173825",
+          "stationName": "zenoPlant",
+          "status": "ONLINE"
+        },
+        {
+          "deviceId": "495450468187602944",
+          "serialNumber": "4163930009-1",
+          "dtuCode": "41639300099725757805",
+          "stationName": "Hien_newtech.sgPlant",
+          "status": "ONLINE"
+        },
+        {
+          "deviceId": "178817432746814411",
+          "serialNumber": "6074969919-1",
+          "dtuCode": "60749699196447581049",
+          "stationName": "phúc trung",
+          "status": "OFFLINE"
+        }
+      ]
+    },
+    {
+      "userId": 1011,
+      "account": "newtech",
+      "userName": "Đại Lý NEWTECH",
+      "email": "",
+      "cellphone": "",
+      "userType": 2,
+      "roleName": "🏢 Đại Lý (Dealer)",
+      "status": "ACTIVE",
+      "groupId": 1,
+      "groupName": "Nhóm Đại Lý Lắp Đặt",
+      "createdAt": "2026-09-03 05:39:43",
+      "technicianCode": "DL_NEWTECH",
+      "deviceCount": 0,
+      "stationCount": 0,
+      "stationNames": [],
+      "devices": []
+    },
+    {
+      "userId": 1002,
+      "account": "newtech.sg",
+      "userName": "Đại Lý Newtech Solar (Nguyễn Hồng Sơn)",
+      "email": "newtech.sg@gmail.com",
+      "cellphone": "0938123456",
+      "userType": 2,
+      "roleName": "🏢 Đại Lý (Dealer)",
+      "status": "ACTIVE",
+      "groupId": 1,
+      "groupName": "Nhóm Đại Lý Lắp Đặt",
+      "createdAt": "2026-08-31 09:25:43",
+      "technicianCode": "DL_NEWTECH",
+      "deviceCount": 2,
+      "stationCount": 2,
+      "stationNames": [
+        "zenoPlant",
+        "Hien_newtech.sgPlant"
+      ],
+      "devices": [
+        {
+          "deviceId": "498807992030822400",
+          "serialNumber": "5037108978-1",
+          "dtuCode": "50371089784075173825",
+          "stationName": "zenoPlant",
+          "status": "ONLINE"
+        },
+        {
+          "deviceId": "495450468187602944",
+          "serialNumber": "4163930009-1",
+          "dtuCode": "41639300099725757805",
+          "stationName": "Hien_newtech.sgPlant",
+          "status": "ONLINE"
+        }
+      ]
+    },
+    {
+      "userId": 1004,
+      "account": "thodien_mientay",
+      "userName": "Đại Lý Trần Văn Hưng (Miền Tây)",
+      "email": "hung.solar@gmail.com",
+      "cellphone": "0933445566",
+      "userType": 2,
+      "roleName": "🏢 Đại Lý (Dealer)",
+      "status": "ACTIVE",
+      "groupId": 1,
+      "groupName": "Nhóm Đại Lý Lắp Đặt",
+      "createdAt": "2026-08-31 09:42:26",
+      "technicianCode": "DL_MIENTAY",
+      "deviceCount": 0,
+      "stationCount": 0,
+      "stationNames": [],
+      "devices": []
+    },
+    {
+      "userId": 1003,
+      "account": "tuan_solar",
+      "userName": "Đại Lý Tuấn Solar Miền Nam",
+      "email": "",
+      "cellphone": "0918765432",
+      "userType": 2,
+      "roleName": "🏢 Đại Lý (Dealer)",
+      "status": "ACTIVE",
+      "groupId": 1,
+      "groupName": "Nhóm Đại Lý Lắp Đặt",
+      "createdAt": "2026-08-31 08:00:00",
+      "technicianCode": "DL_TUANSOLAR",
+      "deviceCount": 2,
+      "stationCount": 2,
+      "stationNames": [
+        "sungoPlant",
+        "phúc trung"
+      ],
+      "devices": [
+        {
+          "deviceId": "465132145264787456",
+          "serialNumber": "3528214760-1",
+          "dtuCode": "35282147608648059097",
+          "stationName": "sungoPlant",
+          "status": "ONLINE"
+        },
+        {
+          "deviceId": "178817432746814411",
+          "serialNumber": "6074969919-1",
+          "dtuCode": "60749699196447581049",
+          "stationName": "phúc trung",
+          "status": "OFFLINE"
+        }
+      ]
+    },
+    {
+      "userId": 8,
+      "account": "chuhanatest",
+      "userName": "Chủ Nhà Dũng Kiệp (zenoPlant)",
+      "email": "",
+      "cellphone": "0912345678",
+      "userType": 3,
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "status": "ACTIVE",
+      "groupId": 2,
+      "groupName": "Nhóm Khách Hàng Hộ Gia Đình",
+      "createdAt": "2026-08-31 08:44:14",
+      "technicianCode": null,
+      "deviceCount": 0,
+      "stationCount": 0,
+      "stationNames": [],
+      "devices": []
+    },
+    {
+      "userId": 1005,
+      "account": "dungkiep",
+      "userName": "dungkiep",
+      "email": "",
+      "cellphone": "0912345678",
+      "userType": 3,
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "status": "ACTIVE",
+      "groupId": 2,
+      "groupName": "Nhóm Khách Hàng Hộ Gia Đình",
+      "createdAt": "2026-08-31 07:38:26",
+      "technicianCode": null,
+      "deviceCount": 1,
+      "stationCount": 1,
+      "stationNames": [
+        "zenoPlant"
+      ],
+      "devices": [
+        {
+          "deviceId": "498807992030822400",
+          "serialNumber": "5037108978-1",
+          "dtuCode": "50371089784075173825",
+          "stationName": "zenoPlant",
+          "status": "ONLINE"
+        }
+      ]
+    },
+    {
+      "userId": 1007,
+      "account": "sungo123",
+      "userName": "sungo123",
+      "email": "",
+      "cellphone": "",
+      "userType": 3,
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "status": "ACTIVE",
+      "groupId": 2,
+      "groupName": "Nhóm Khách Hàng Hộ Gia Đình",
+      "createdAt": "2026-08-31 11:50:34",
+      "technicianCode": null,
+      "deviceCount": 1,
+      "stationCount": 1,
+      "stationNames": [
+        "sungoPlant"
+      ],
+      "devices": [
+        {
+          "deviceId": "465132145264787456",
+          "serialNumber": "3528214760-1",
+          "dtuCode": "35282147608648059097",
+          "stationName": "sungoPlant",
+          "status": "ONLINE"
+        }
+      ]
+    },
+    {
+      "userId": 1010,
+      "account": "triminh123",
+      "userName": "triminh123",
+      "email": "",
+      "cellphone": "",
+      "userType": 3,
+      "roleName": "Chủ Nhà / Người Dùng Cuối (View-Only)",
+      "status": "ACTIVE",
+      "groupId": 2,
+      "groupName": "Nhóm Khách Hàng Hộ Gia Đình",
+      "createdAt": "2026-09-02 05:40:48",
+      "technicianCode": null,
+      "deviceCount": 0,
+      "stationCount": 0,
+      "stationNames": [],
+      "devices": []
+    },
+    {
+      "userId": 1006,
+      "account": "vothehien1006",
+      "userName": "Khách Hàng Võ Thế Hiển",
+      "email": "",
+      "cellphone": "",
+      "userType": 3,
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "status": "ACTIVE",
+      "groupId": 2,
+      "groupName": "Nhóm Khách Hàng Hộ Gia Đình",
+      "createdAt": "2026-08-31 08:26:05",
+      "technicianCode": null,
+      "deviceCount": 1,
+      "stationCount": 1,
+      "stationNames": [
+        "Hien_newtech.sgPlant"
+      ],
+      "devices": [
+        {
+          "deviceId": "495450468187602944",
+          "serialNumber": "4163930009-1",
+          "dtuCode": "41639300099725757805",
+          "stationName": "Hien_newtech.sgPlant",
+          "status": "ONLINE"
+        }
+      ]
+    },
+    {
+      "userId": 9,
+      "account": "zeno_home_9200",
+      "userName": "Anh Nam (Chủ Nhà Thảo Điền)",
+      "email": "zeno_home_9200@gmail.com",
+      "cellphone": "0988776655",
+      "userType": 3,
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "status": "ACTIVE",
+      "groupId": 2,
+      "groupName": "Nhóm Khách Hàng Hộ Gia Đình",
+      "createdAt": "2026-08-31 09:46:30",
+      "technicianCode": null,
+      "deviceCount": 0,
+      "stationCount": 0,
+      "stationNames": [],
+      "devices": []
+    }
+  ]
+}

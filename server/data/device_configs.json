@@ -14,7 +14,7 @@
     "gridTieOperationSetting": "0",
     "OnlyPVSell": "0",
     "machineNotAllowOutput": "0",
-    "CTRatio": "2000",
+    "CTRatio": "2500",
     "ZeroToGrid": "0",
     "FeedPower": "0",
     "BMSAddress": "0",

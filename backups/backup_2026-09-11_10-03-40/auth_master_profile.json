@@ -1,0 +1,21 @@
+{
+  "success": true,
+  "mode": "LIVE",
+  "token": "zeno_token_sungo.vn_1_1789121022188",
+  "rawCloudToken": "5E30B4AC80B7EEC02A39138594B8484E",
+  "refreshToken": "master_refresh_1789121022189",
+  "user": {
+    "userId": 1001,
+    "account": "sungo.vn",
+    "userName": "SUNGO SOLAR VIỆT NAM (Master)",
+    "email": "admin@sungo.vn",
+    "cellphone": "0901234567",
+    "userType": 1,
+    "roleName": "👑 Tổng Phân Phối (Distributor)",
+    "canConfig": true,
+    "canAssign": true,
+    "canViewAll": true,
+    "company": "SUNGO Clean Energy Corp",
+    "currency": "VND"
+  }
+}

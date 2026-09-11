@@ -1,0 +1,12 @@
+userId,account,userName,roleName,userType,email,cellphone,status,groupName,createdAt
+"1001","sungo.vn","SUNGO SOLAR VIỆT NAM (Master)","👑 Tổng Phân Phối (Distributor)","1","admin@sungo.vn","0901234567","ACTIVE","Hệ Thống Tổng","2026-08-31 06:54:00"
+"1011","newtech","Đại Lý NEWTECH","🏢 Đại Lý (Dealer)","2","","","ACTIVE","Nhóm Đại Lý Lắp Đặt","2026-09-03 05:39:43"
+"1002","newtech.sg","Đại Lý Newtech Solar (Nguyễn Hồng Sơn)","🏢 Đại Lý (Dealer)","2","newtech.sg@gmail.com","0938123456","ACTIVE","Nhóm Đại Lý Lắp Đặt","2026-08-31 09:25:43"
+"1004","thodien_mientay","Đại Lý Trần Văn Hưng (Miền Tây)","🏢 Đại Lý (Dealer)","2","hung.solar@gmail.com","0933445566","ACTIVE","Nhóm Đại Lý Lắp Đặt","2026-08-31 09:42:26"
+"1003","tuan_solar","Đại Lý Tuấn Solar Miền Nam","🏢 Đại Lý (Dealer)","2","","0918765432","ACTIVE","Nhóm Đại Lý Lắp Đặt","2026-08-31 08:00:00"
+"8","chuhanatest","Chủ Nhà Dũng Kiệp (zenoPlant)","🏠 Người Tiêu Dùng Cuối (End-User)","3","","0912345678","ACTIVE","Nhóm Khách Hàng Hộ Gia Đình","2026-08-31 08:44:14"
+"1005","dungkiep","dungkiep","🏠 Người Tiêu Dùng Cuối (End-User)","3","","0912345678","ACTIVE","Nhóm Khách Hàng Hộ Gia Đình","2026-08-31 07:38:26"
+"1007","sungo123","sungo123","🏠 Người Tiêu Dùng Cuối (End-User)","3","","","ACTIVE","Nhóm Khách Hàng Hộ Gia Đình","2026-08-31 11:50:34"
+"1010","triminh123","triminh123","Chủ Nhà / Người Dùng Cuối (View-Only)","3","","","ACTIVE","Nhóm Khách Hàng Hộ Gia Đình","2026-09-02 05:40:48"
+"1006","vothehien1006","Khách Hàng Võ Thế Hiển","🏠 Người Tiêu Dùng Cuối (End-User)","3","","","ACTIVE","Nhóm Khách Hàng Hộ Gia Đình","2026-08-31 08:26:05"
+"9","zeno_home_9200","Anh Nam (Chủ Nhà Thảo Điền)","🏠 Người Tiêu Dùng Cuối (End-User)","3","zeno_home_9200@gmail.com","0988776655","ACTIVE","Nhóm Khách Hàng Hộ Gia Đình","2026-08-31 09:46:30"

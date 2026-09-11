@@ -1,0 +1,5 @@
+stationId,stationName,installedCapacity,currentPowerKw,todayEnergyKwh,totalEnergyKwh,batterySoc,address,ownerName,devicesCount
+"454586755050340353","sungoPlant","6 kWp","0","0","2626.77","100","1 Hẻm 419 Nguyễn Văn Bá","Chủ trạm","1"
+"498807992005656576","zenoPlant","12 kWp","0","0","0","100","Việt Nam","dungkiep","1"
+"495450468162437120","Hien_newtech.sgPlant","12 kWp","0","0","0","100","Việt Nam","vothehien1006","1"
+"178817432746558411","phúc trung","12 kWp","0","0","0","100","Việt Nam","sungo.vn","1"

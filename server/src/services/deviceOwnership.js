@@ -98,12 +98,12 @@ class DeviceOwnershipService {
     }
   }
 
-  // Kiểm tra blacklist xóa
-  isStationDeleted(stationIdOrName) {
-    if (!stationIdOrName) return false;
-    const target = String(stationIdOrName).toLowerCase().trim();
+  // Kiểm tra blacklist xóa trạm THEO MÃ TRẠM (STATION ID) DUY NHẤT
+  isStationDeleted(stationId) {
+    if (!stationId) return false;
+    const target = String(stationId).trim();
     if (!this.data.deletedStations) return false;
-    return this.data.deletedStations.some(s => String(s).toLowerCase().trim() === target);
+    return this.data.deletedStations.some(s => String(s).trim() === target);
   }
 
   isDeviceDeleted(deviceIdOrSn, dealerAccount = null) {
@@ -242,18 +242,17 @@ class DeviceOwnershipService {
     return this.data.devices[deviceId];
   }
 
-  deleteStation(stationIdOrName) {
-    if (!stationIdOrName) return false;
-    const target = String(stationIdOrName).toLowerCase().trim();
+  deleteStation(stationId) {
+    if (!stationId) return false;
+    const target = String(stationId).trim();
     let deletedCount = 0;
     
-    // Xóa tất cả các thiết bị thuộc trạm này
+    // Xóa tất cả các thiết bị thuộc trạm này THEO STATION ID DUY NHẤT
     Object.keys(this.data.devices).forEach(devId => {
       const dev = this.data.devices[devId];
-      const matchId = String(dev.stationId || '').toLowerCase() === target;
-      const matchDevId = String(dev.deviceId || '').toLowerCase() === target;
-      const matchName = String(dev.stationName || '').toLowerCase() === target;
-      if (matchId || matchDevId || matchName) {
+      const matchId = String(dev.stationId || '').trim() === target;
+      const matchDevId = String(dev.deviceId || '').trim() === target;
+      if (matchId || matchDevId) {
         delete this.data.devices[devId];
         deletedCount++;
       }
@@ -540,7 +539,7 @@ class DeviceOwnershipService {
     Object.keys(this.data.devices || {}).forEach(key => {
       const dev = this.data.devices[key];
       const matchDevice = dId && (String(dev.deviceId) === dId || String(dev.serialNumber) === dId || String(dev.dtuCode) === dId);
-      const matchStation = !dId && sId && (String(dev.stationId) === sId || String(dev.deviceId) === sId || String(dev.stationName) === sId);
+      const matchStation = !dId && sId && (String(dev.stationId) === sId || String(dev.deviceId) === sId);
 
       if (matchDevice || matchStation) {
         if (isRemoving) {
@@ -919,7 +918,7 @@ class DeviceOwnershipService {
     // Cập nhật installer và sharedInstallers cho tất cả thiết bị thuộc trạm này
     Object.keys(this.data.devices || {}).forEach(devId => {
       const dev = this.data.devices[devId];
-      if (String(dev.stationId) === sId || String(dev.deviceId) === sId || dev.stationName === sId) {
+      if (String(dev.stationId) === sId || String(dev.deviceId) === sId) {
         if (!dev.sharedInstallers) dev.sharedInstallers = [];
         if (!dev.sharedInstallers.includes(dealerAcc)) {
           dev.sharedInstallers.push(dealerAcc);
@@ -958,7 +957,7 @@ class DeviceOwnershipService {
     // Gỡ quyền khỏi các thiết bị
     Object.keys(this.data.devices || {}).forEach(devId => {
       const dev = this.data.devices[devId];
-      if (String(dev.stationId) === sId || String(dev.deviceId) === sId || dev.stationName === sId) {
+      if (String(dev.stationId) === sId || String(dev.deviceId) === sId) {
         if (dev.sharedInstallers) {
           dev.sharedInstallers = dev.sharedInstallers.filter(acc => acc.toLowerCase() !== dAcc);
         }

@@ -93,11 +93,12 @@ router.get('/', async (req, res) => {
     cloudStations.forEach(st => {
       const sId = String(st.stationId);
       const sName = st.stationName;
-      if (deviceOwnership.isStationDeleted(sId) || deviceOwnership.isStationDeleted(sName)) {
+      if (deviceOwnership.isStationDeleted(sId)) {
         return;
       }
 
-      const sKey = sId || sName;
+      // QUẢN LÝ THEO MÃ TRẠM (STATION ID) DUY NHẤT - TUYỆT ĐỐI KHÔNG DÙNG TÊN TRẠM LÀM KEY
+      const sKey = sId;
       stationsMap[sKey] = {
         stationId: sId,
         stationName: sName,
@@ -126,10 +127,10 @@ router.get('/', async (req, res) => {
   // 3. Merge toàn bộ các thiết bị đã thu nạp trong deviceOwnership
   claimedDevices.forEach(d => {
     const sName = d.stationName || `Trạm Inverter ${d.serialNumber}`;
-    const sId = String(d.stationId || d.deviceId || sName);
+    const sId = String(d.stationId || d.deviceId || '');
 
-    // Kiểm tra blacklist xóa trạm & thiết bị
-    if (deviceOwnership.isStationDeleted(sId) || deviceOwnership.isStationDeleted(sName)) return;
+    // Kiểm tra blacklist xóa trạm & thiết bị theo ID duy nhất
+    if (deviceOwnership.isStationDeleted(sId)) return;
     if (
       deviceOwnership.isDeviceDeleted(d.deviceId, isDealer ? currentUserAccount : null) ||
       deviceOwnership.isDeviceDeleted(d.serialNumber, isDealer ? currentUserAccount : null) ||
@@ -138,9 +139,9 @@ router.get('/', async (req, res) => {
       return;
     }
 
-    // Tìm xem trạm đã có trong stationsMap chưa
+    // TÌM THEO MÃ TRẠM (STATION ID) DUY NHẤT - TUYỆT ĐỐI KHÔNG TÌM THEO TÊN TRẠM (TRÁNH DÍNH TRẠM TRÙNG TÊN)
     let existingStationKey = Object.keys(stationsMap).find(k => 
-      k === sId || stationsMap[k].stationName === sName || String(stationsMap[k].stationId) === String(d.stationId)
+      k === sId || (d.stationId && String(stationsMap[k].stationId) === String(d.stationId))
     );
 
     const dInfo = getDealerInfo(d.installer);
@@ -1085,7 +1086,7 @@ router.post('/reassign-dealer', async (req, res) => {
       await pool.query(`
         UPDATE devices 
         SET installer = $1 
-        WHERE station_name = $2 OR device_id = $3 OR serial_number = $3
+        WHERE station_id = $2 OR device_id = $3 OR serial_number = $3
       `, [
         newDealerAccount === 'none' ? null : newDealerAccount, 
         stationId || '', 

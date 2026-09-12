@@ -409,6 +409,9 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
           <div className="text-sm font-black text-slate-300 tracking-wider">
             ZENO CLOUD
           </div>
+          <div className="text-[10px] font-mono text-emerald-400 font-bold tracking-widest mt-0.5">
+            Phiên bản v1.1.8
+          </div>
         </div>
 
         {/* Card Content */}

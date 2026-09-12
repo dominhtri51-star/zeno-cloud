@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -15,6 +17,20 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        try {
+            // Force clear WebView cache and disable caching of bundled assets so updates apply instantly
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                WebView webView = getBridge().getWebView();
+                webView.clearCache(true);
+                WebSettings settings = webView.getSettings();
+                if (settings != null) {
+                    settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         try {
             Window window = getWindow();

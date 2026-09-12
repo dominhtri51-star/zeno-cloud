@@ -92,11 +92,14 @@ const candidateDist1 = path.join(__dirname, '../../client/dist');
 const candidateDist2 = path.join(__dirname, '../public');
 const clientDistPath = fs.existsSync(path.join(candidateDist1, 'index.html')) ? candidateDist1 : candidateDist2;
 
-const APK_STORAGE_URL = process.env.APK_DOWNLOAD_URL || 'https://storage.googleapis.com/zeno-solar-downloads-718053420093/Zeno-Solar.apk';
+const APK_STORAGE_URL = process.env.APK_DOWNLOAD_URL || 'https://storage.googleapis.com/zeno-solar-downloads-718053420093/Zeno-Solar-v1.1.8.apk';
 
 // Direct APK Download route for Android / Samsung phones (bypassing Cloud Run 32MB limit via Google Cloud Storage CDN)
-app.get(['/download/app', '/download/apk', '/Zeno-Solar.apk', '/zeno.apk', '/app.apk'], (req, res) => {
-  res.redirect(302, APK_STORAGE_URL);
+app.get(['/download/app', '/download/apk', '/Zeno-Solar.apk', '/zeno.apk', '/app.apk', '/Zeno-Solar-v1.1.8.apk'], (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.redirect(302, `${APK_STORAGE_URL}?v=1.1.8&t=${Date.now()}`);
 });
 
 app.use(express.static(clientDistPath));

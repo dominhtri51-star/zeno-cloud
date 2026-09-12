@@ -6,8 +6,9 @@ import {
   Sun, Lock, User, Shield, AlertCircle, ArrowRight, Zap, 
   CheckCircle2, Crown, Wrench, Home, Eye, EyeOff, Sparkles, 
   Mail, Phone, Cpu, Check, HelpCircle, ArrowLeft, MessageSquare, KeyRound,
-  Info, Scan, ChevronDown, QrCode
+  Info, Scan, ChevronDown, QrCode, Download
 } from 'lucide-react';
+import DownloadAppModal from '../components/DownloadAppModal';
 
 export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
   const { login, register, loading } = useAuth();
@@ -27,6 +28,7 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
   
   // Tab Switcher: 'login' | 'register' | 'forgot'
   const [authMode, setAuthMode] = useState('login'); // Mặc định mở tab Đăng Nhập theo yêu cầu
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   // ================= LOGIN FORM STATE =================
   const [loginAccount, setLoginAccount] = useState('');
@@ -736,29 +738,62 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
           )}
         </div>
 
-        {/* Google Play Store Button (Chỉ hiển thị trên trình duyệt Web, TỰ ĐỘNG ẨN HOÀN TOÀN khi đang chạy trong App Native) */}
+        {/* APK & App Store Download Section (Chỉ hiển thị trên trình duyệt Web, TỰ ĐỘNG ẨN HOÀN TOÀN khi đang chạy trong App Native) */}
         {!isNative && (
-          <div className="mt-4 px-5 sm:px-6 pb-2">
+          <div className="mt-4 px-5 sm:px-6 pb-2 space-y-2.5">
+            {/* Direct APK Download Card (Nổi bật cho khách tải file cài đặt) */}
+            <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-slate-900 to-cyan-950/40 border border-emerald-500/40 shadow-xl shadow-emerald-500/10">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wide">Ứng dụng Android (APK)</span>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800/90 text-slate-300 font-semibold border border-slate-700">v1.1.7 • 44.5MB</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <a
+                  href="https://storage.googleapis.com/zeno-solar-downloads-718053420093/Zeno-Solar.apk"
+                  download="Zeno-Solar.apk"
+                  className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black flex items-center justify-center gap-2 transition duration-150 shadow-md cursor-pointer group"
+                >
+                  <Download className="w-4 h-4 group-hover:translate-y-0.5 transition" />
+                  <span>Tải trực tiếp APK</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setShowDownloadModal(true)}
+                  className="py-2.5 px-3 rounded-xl bg-slate-800/90 hover:bg-slate-750 border border-slate-700 hover:border-cyan-500/50 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <QrCode className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Quét QR / Hướng dẫn</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Google Play Store Link */}
             <a
               href="https://play.google.com/store/apps/details?id=com.zenosolar.app"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-slate-900 to-slate-950 hover:from-slate-800 hover:to-slate-900 border border-slate-700/80 hover:border-emerald-500/60 text-slate-100 text-xs font-bold flex items-center justify-center gap-3 transition-all duration-200 shadow-xl cursor-pointer group"
+              className="w-full py-2 px-3 rounded-xl bg-slate-900/60 hover:bg-slate-850 border border-slate-800/80 hover:border-slate-700 text-slate-400 hover:text-slate-200 text-[11px] font-medium flex items-center justify-center gap-2 transition cursor-pointer"
             >
-              {/* Google Play Color SVG Icon */}
-              <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+              <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none">
                 <path d="M3.609 1.814L13.792 12 3.61 22.186A2.25 2.25 0 0 1 3 20.596V3.404c0-.62.228-1.206.609-1.59z" fill="#00C1A6"/>
                 <path d="M17.186 8.608L13.792 12l3.394 3.392 3.847-2.185a1.408 1.408 0 0 0 0-2.414l-3.847-2.185z" fill="#FFD400"/>
                 <path d="M3.609 1.814L13.792 12 17.186 8.608 5.617 2.036c-.636-.361-1.396-.342-2.008-.222z" fill="#00E676"/>
                 <path d="M13.792 12L3.609 22.186c.612.12 1.372.139 2.008-.222l11.569-6.572L13.792 12z" fill="#FF3D00"/>
               </svg>
-              <div className="text-left">
-                <div className="text-[9.5px] text-slate-400 font-medium uppercase tracking-wider leading-none">TẢI VỀ TỪ</div>
-                <div className="text-xs font-black text-white group-hover:text-emerald-400 transition leading-tight mt-0.5">Google Play (CH Play)</div>
-              </div>
+              <span>Xem trên Google Play Store</span>
             </a>
           </div>
         )}
+
+        <DownloadAppModal 
+          isOpen={showDownloadModal} 
+          onClose={() => setShowDownloadModal(false)} 
+        />
 
         {/* Footer Note */}
         <div className="text-center mt-3 text-[11px] text-slate-500 flex flex-col items-center justify-center gap-1">

@@ -21,9 +21,9 @@ RUN cd server && npm install --production
 COPY server/ ./server/
 COPY --from=builder /app/client/dist ./client/dist
 
-EXPOSE 4000
+EXPOSE 8080
 
-ENV PORT=4000
+ENV PORT=8080
 ENV NODE_ENV=production
 
 WORKDIR /app/server

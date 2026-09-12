@@ -16,17 +16,18 @@ export default function ReassignDealerModal({ isOpen, station, device, onClose, 
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const currentDealer = device?.installer || station?.sharedDealers?.[0]?.dealerAccount || '';
+  const currentDealer = device?.installer || station?.installer || station?.dealerAccount || station?.sharedDealers?.[0]?.dealerAccount || '';
 
   useEffect(() => {
     if (isOpen) {
       setError('');
       setSuccessMsg('');
-      setSelectedDealer(currentDealer || 'none');
+      const initDealer = (currentDealer && currentDealer !== 'none' && currentDealer !== 'null') ? currentDealer : 'none';
+      setSelectedDealer(initDealer);
       setCustomDealer('');
       loadDealers();
     }
-  }, [isOpen, station, device]);
+  }, [isOpen, station, device, currentDealer]);
 
   const loadDealers = async () => {
     try {
@@ -167,7 +168,7 @@ export default function ReassignDealerModal({ isOpen, station, device, onClose, 
                   : 'bg-white border-slate-300 text-slate-900 focus:border-cyan-500'
               }`}
             >
-              <option value="none">-- 👑 Bỏ gán / Thu hồi về Tổng quản lý trực tiếp --</option>
+              <option value="none">-- 👑 Không gán đại lý (Tổng sungo.vn tự quản lý trực tiếp) --</option>
               {dealers.map((d) => (
                 <option key={d.account} value={d.account}>
                   🏢 {d.userName} (@{d.account}) {d.company ? `- ${d.company}` : ''}

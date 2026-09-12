@@ -2,18 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { 
   Sun, Zap, Battery, BatteryCharging, Shield, Gauge, Calendar,
   ChevronDown, ArrowLeft, RefreshCw, Activity, DollarSign, TrendingUp, Cpu, Settings,
-  Home, CloudSun, Layers, Globe, CheckCircle2
+  Home, CloudSun, Layers, Globe, CheckCircle2, Sliders
 } from 'lucide-react';
 import InteractiveTopology from '../components/InteractiveTopology';
 import api, { monitoringService, authService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import StationSettingsModal from '../components/StationSettingsModal';
+import RemoteConfigModal from '../components/RemoteConfigModal';
 
 export default function Dashboard({ initialStationId, initialDeviceId, initialFleetConfig, onNavigate }) {
   const { user } = useAuth();
   const { isDark } = useTheme();
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [fleetConfig, setFleetConfig] = useState(initialFleetConfig || null);
   
   // Bộ lọc thời gian: DAY (Ngày) | MONTH (Tháng) | YEAR (Năm) - Mặc định là ngày hôm nay (Today)
@@ -437,6 +439,20 @@ export default function Dashboard({ initialStationId, initialDeviceId, initialFl
           >
             <Settings className="w-3.5 h-3.5 text-cyan-500" />
             <span>Cài Đặt Dự Án</span>
+          </button>
+
+          {/* Nút Cấu Hình Inverter (Mở cho tất cả người dùng trong giai đoạn phát triển) */}
+          <button
+            onClick={() => setIsConfigOpen(true)}
+            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer ${
+              isDark 
+                ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30 hover:border-amber-400 shadow-sm' 
+                : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 hover:border-amber-400 shadow-sm'
+            }`}
+            title="Cấu hình thông số biến tần Inverter từ xa"
+          >
+            <Sliders className="w-3.5 h-3.5 text-amber-500" />
+            <span>Cài Đặt Inverter</span>
           </button>
 
           <span className={`px-2 py-0.5 sm:py-1 rounded-lg border font-mono font-semibold flex items-center gap-1 text-[10px] sm:text-xs max-w-[180px] sm:max-w-none truncate ${isDark ? 'bg-slate-900 border-slate-800 text-cyan-400' : 'bg-slate-100 border-slate-200 text-cyan-700'}`}>
@@ -939,6 +955,23 @@ export default function Dashboard({ initialStationId, initialDeviceId, initialFl
             setElectricityPrice(newCfg.electricityPrice);
           }
         }}
+      />
+
+      {/* Modal Cấu Hình Biến Tần Inverter (Remote Config - Mở cho tất cả vai trò trong giai đoạn phát triển) */}
+      <RemoteConfigModal
+        station={{
+          stationId: currentStationId,
+          stationName: fleetConfig?.stationName || deviceInfo.stationName,
+          deviceId: deviceInfo.deviceId,
+          serialNumber: deviceInfo.serialNumber,
+          devices: [{
+            deviceId: deviceInfo.deviceId,
+            serialNumber: deviceInfo.serialNumber,
+            deviceName: deviceInfo.deviceName
+          }]
+        }}
+        isOpen={isConfigOpen}
+        onClose={() => setIsConfigOpen(false)}
       />
 
     </div>

@@ -79,11 +79,11 @@ export default function AvatarModal({ isOpen, onClose }) {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-[fadeIn_0.2s_ease-out] font-['Plus_Jakarta_Sans',sans-serif]"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-[fadeIn_0.2s_ease-out] font-['Plus_Jakarta_Sans',sans-serif]"
       onClick={onClose}
     >
       <div 
-        className={`relative w-full max-w-lg ${isDark ? 'bg-[#0d1527] border-slate-700/80 text-white shadow-cyan-950/50' : 'bg-white border-slate-200 text-slate-900 shadow-2xl'} rounded-3xl p-5 sm:p-7 border shadow-2xl transition-all duration-300 max-h-[92vh] overflow-y-auto`}
+        className={`relative w-full max-w-lg ${isDark ? 'bg-[#0d1527] border-slate-700/80 text-white shadow-cyan-950/50' : 'bg-white border-slate-200 text-slate-900 shadow-2xl'} rounded-3xl p-5 sm:p-7 border shadow-2xl transition-all duration-300 max-h-[90vh] overflow-y-auto`}
         onClick={e => e.stopPropagation()}
       >
         {/* Nút Đóng (X) */}

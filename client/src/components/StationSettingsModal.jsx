@@ -104,8 +104,8 @@ export default function StationSettingsModal({ isOpen, onClose, station, onSaved
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fade-in font-['Plus_Jakarta_Sans',sans-serif]">
-      <div className={`w-full max-w-2xl ${isDark ? 'bg-[#0b101e] border-slate-700/80 text-white' : 'bg-white border-slate-200 text-slate-900'} border rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[94vh] transition-colors duration-300`}>
+    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fade-in font-['Plus_Jakarta_Sans',sans-serif]">
+      <div className={`w-full max-w-2xl ${isDark ? 'bg-[#0b101e] border-slate-700/80 text-white' : 'bg-white border-slate-200 text-slate-900'} border rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] transition-colors duration-300`}>
         
         {/* Modal Header */}
         <div className={`p-3.5 sm:p-5 border-b ${isDark ? 'border-slate-800 bg-slate-900/80' : 'border-slate-200 bg-slate-50/90'} flex items-center justify-between shrink-0`}>

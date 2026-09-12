@@ -13,13 +13,19 @@ import PublicRegister from './pages/PublicRegister';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import DownloadPage from './pages/DownloadPage';
 
 function MainApp() {
   const { isAuthenticated, user } = useAuth();
   const { isDark } = useTheme();
   const [currentPage, setCurrentPage] = useState(() => {
-    if (typeof window !== 'undefined' && (window.location.pathname === '/privacy' || window.location.hash.includes('privacy'))) {
-      return 'privacy';
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname === '/privacy' || window.location.hash.includes('privacy')) {
+        return 'privacy';
+      }
+      if (window.location.pathname === '/download' || window.location.hash.includes('download')) {
+        return 'download';
+      }
     }
     return 'dashboard';
   });
@@ -107,6 +113,16 @@ function MainApp() {
     );
   }
 
+  // If user opens the public download page directly
+  if (currentPage === 'download') {
+    return (
+      <DownloadPage onBackToHome={() => {
+        if (typeof window !== 'undefined') window.history.pushState({}, '', '/');
+        setCurrentPage(isAuthenticated ? 'stations' : 'login');
+      }} />
+    );
+  }
+
   // If not logged in, show login
   if (!isAuthenticated) {
     return <Login onLoginSuccess={() => setCurrentPage('stations')} onNavigateToPrivacy={() => setCurrentPage('privacy')} />;
@@ -122,7 +138,7 @@ function MainApp() {
         <Sidebar currentPage={currentPage} onNavigate={handleNavigate} />
 
         {/* Main Content Area */}
-        <main className="flex-1 p-3 sm:p-5 md:p-6 max-w-7xl mx-auto w-full pb-24 md:pb-8">
+        <main className="flex-1 p-3 sm:p-5 md:p-6 max-w-7xl mx-auto w-full pb-20 md:pb-8">
           {currentPage === 'stations' && (
             <Stations 
               onNavigate={handleNavigate} 

@@ -144,20 +144,39 @@ class LiveCloudService {
     if (!token) return 'sungo.vn';
     const s = String(token).trim();
 
-    // 1. Nếu là zeno_token_<account>_<userType>_<timestamp> hoặc demo_token_<account>_<timestamp>
-    if (s.startsWith('zeno_token_') || s.startsWith('demo_token_')) {
-      const parts = s.split('_');
-      if (parts.length >= 3) {
-        return parts[2].toLowerCase();
-      }
-    }
-
-    // 2. Tra trong bảng ánh xạ tokenToAccount
+    // 1. Tra trong bảng ánh xạ tokenToAccount trước
     if (this.tokenToAccount[s] && this.tokenToAccount[s] !== s) {
       return this.tokenToAccount[s].toLowerCase();
     }
     if (this.tokenToAccount[s.toLowerCase()] && this.tokenToAccount[s.toLowerCase()] !== s.toLowerCase()) {
       return this.tokenToAccount[s.toLowerCase()].toLowerCase();
+    }
+
+    // 2. Nếu là zeno_token_<account>_<userType>_<timestamp> (account có thể chứa dấu gạch dưới như tuan_solar)
+    if (s.startsWith('zeno_token_')) {
+      const withoutPrefix = s.substring('zeno_token_'.length);
+      const lastUnderscore = withoutPrefix.lastIndexOf('_');
+      if (lastUnderscore !== -1) {
+        const secondLastUnderscore = withoutPrefix.lastIndexOf('_', lastUnderscore - 1);
+        if (secondLastUnderscore !== -1) {
+          const acc = withoutPrefix.substring(0, secondLastUnderscore).toLowerCase();
+          this.tokenToAccount[s] = acc;
+          return acc;
+        }
+        const acc = withoutPrefix.substring(0, lastUnderscore).toLowerCase();
+        this.tokenToAccount[s] = acc;
+        return acc;
+      }
+    }
+
+    if (s.startsWith('demo_token_')) {
+      const withoutPrefix = s.substring('demo_token_'.length);
+      const lastUnderscore = withoutPrefix.lastIndexOf('_');
+      if (lastUnderscore !== -1) {
+        const acc = withoutPrefix.substring(0, lastUnderscore).toLowerCase();
+        this.tokenToAccount[s] = acc;
+        return acc;
+      }
     }
 
     // 3. Giải mã Payload JWT nếu là Token từ Cloud

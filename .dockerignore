@@ -1,0 +1,16 @@
+.git
+.DS_Store
+node_modules
+client/node_modules
+server/node_modules
+client/android
+client/ios
+backups
+*.jks
+*.zip
+*.log
+*.aab
+*.apk
+client/public/*.aab
+client/public/*.apk
+client/dist

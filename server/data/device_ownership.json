@@ -7,6 +7,9 @@
       "cellphone": "0901234567",
       "userType": 1,
       "roleName": "👑 Tổng Phân Phối (Distributor)",
+      "company": "SUNGO Clean Energy Corp",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$5971dbf772040bab38bde784$c0c995bd5f1a6769f28c44aebd932632$46a5fae11e9ba963bdd1",
       "createdAt": "2026-08-31 06:54:00"
     },
     "newtech.sg": {
@@ -16,15 +19,36 @@
       "cellphone": "0938123456",
       "userType": 2,
       "roleName": "🏢 Đại Lý (Dealer)",
+      "company": "Newtech Solar Solutions Co., Ltd",
+      "technicianCode": "DL_NEWTECH",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$fa8299b23359cc2fcc93d2f3$71b6ff1aa83c604112e694fb99c2e908$66fcced5c6ae",
+      "createdAt": "2026-08-31 09:25:43"
+    },
+    "newtech": {
+      "userId": 1002,
+      "userName": "Đại Lý Newtech Solar (Nguyễn Hồng Sơn)",
+      "email": "newtech.sg@gmail.com",
+      "cellphone": "0938123456",
+      "userType": 2,
+      "roleName": "🏢 Đại Lý (Dealer)",
+      "company": "Newtech Solar Solutions Co., Ltd",
+      "technicianCode": "DL_NEWTECH",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$1d2e34151fbe5af4a5836ac9$a3ce65b7dc2b967b0a84c898642e3a59$f1677f9b0134",
       "createdAt": "2026-08-31 09:25:43"
     },
     "tuan_solar": {
       "userId": 1003,
       "userName": "Đại Lý Tuấn Solar Miền Nam",
-      "email": "",
+      "email": "tuan.solar@gmail.com",
       "cellphone": "0918765432",
       "userType": 2,
       "roleName": "🏢 Đại Lý (Dealer)",
+      "company": "Tuấn Solar Energy",
+      "technicianCode": "DL_TUANSOLAR",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$e4526dcfc015be9add697236$6deb4af59996bbcf9d85cc937551586c$6dbcba69b156",
       "createdAt": "2026-08-31 08:00:00"
     },
     "thodien_mientay": {
@@ -34,70 +58,129 @@
       "cellphone": "0933445566",
       "userType": 2,
       "roleName": "🏢 Đại Lý (Dealer)",
+      "company": "Thợ Điện Miền Tây",
+      "technicianCode": "DL_MIENTAY",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$e3bc8fb8bdd8d6860decd972$b72ba6661b01e8a8096d3711fcb23838$0ecd9c2a30ff",
       "createdAt": "2026-08-31 09:42:26"
     },
-    "dungkiep": {
+    "dangthien": {
       "userId": 1005,
-      "userName": "dungkiep",
-      "email": "",
+      "userName": "Đại Lý Nguyễn Đăng Thiện",
+      "email": "dangthien@gmail.com",
+      "cellphone": "0977889900",
+      "userType": 2,
+      "roleName": "🏢 Đại Lý (Dealer)",
+      "company": "Thiện Solar",
+      "technicianCode": "DL_DANGTHIEN",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$1d2e34151fbe5af4a5836ac9$a3ce65b7dc2b967b0a84c898642e3a59$f1677f9b0134",
+      "createdAt": "2026-09-01 10:00:00"
+    },
+    "dungkiep": {
+      "userId": 1010,
+      "userName": "Chủ Hộ Dũng Kiệp",
+      "email": "dungkiep@gmail.com",
       "cellphone": "0912345678",
       "userType": 3,
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "company": "Hộ Gia Đình Dũng Kiệp",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$e40f5d69c88b527e1b2f173f$8a37fd142f59fbe0e3a307339e5f4ea8$7783d64d5b66",
       "createdAt": "2026-08-31 07:38:26"
     },
     "vothehien1006": {
-      "userId": 1006,
+      "userId": 1011,
       "userName": "Khách Hàng Võ Thế Hiển",
-      "email": "",
-      "cellphone": "",
+      "email": "vothehien@gmail.com",
+      "cellphone": "0908889999",
       "userType": 3,
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "company": "Hộ Gia Đình Võ Thế Hiển",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$6686b3ff7da8e3a8adec4f63$141655bef3d5b011b15cfc57c3e4f8eb$f983c7bc590e",
       "createdAt": "2026-08-31 08:26:05"
     },
     "sungo123": {
-      "userId": 1007,
-      "userName": "sungo123",
-      "email": "",
-      "cellphone": "",
+      "userId": 1012,
+      "userName": "Khách Hàng sungo123",
+      "email": "sungo123@sungo.vn",
+      "cellphone": "0901112222",
       "userType": 3,
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "company": "Hộ Gia Đình sungoPlant",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$61b6556347289aa787935b98$5fdd7df578655736f19d688276aa1a3c$960cf202b0856f77",
       "createdAt": "2026-08-31 11:50:34"
     },
+    "haithao": {
+      "userId": 1013,
+      "userName": "Chủ Nhà Hải Thảo",
+      "email": "haithao@gmail.com",
+      "cellphone": "0903334444",
+      "userType": 3,
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "company": "Hộ Gia Đình Hải Thảo",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$1d2e34151fbe5af4a5836ac9$a3ce65b7dc2b967b0a84c898642e3a59$f1677f9b0134",
+      "createdAt": "2026-09-02 08:00:00"
+    },
+    "phanthao1234": {
+      "userId": 1014,
+      "userName": "Chủ Nhà Phan Thảo",
+      "email": "phanthao1234@gmail.com",
+      "cellphone": "0905556666",
+      "userType": 3,
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "company": "Hộ Gia Đình Phan Thảo",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$1d2e34151fbe5af4a5836ac9$a3ce65b7dc2b967b0a84c898642e3a59$f1677f9b0134",
+      "createdAt": "2026-09-02 08:30:00"
+    },
+    "phuctrung": {
+      "userId": 1015,
+      "userName": "Chủ Hộ Phúc Trung",
+      "email": "phuctrung@gmail.com",
+      "cellphone": "0907778888",
+      "userType": 3,
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "company": "Hộ Gia Đình Phúc Trung",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$1d2e34151fbe5af4a5836ac9$a3ce65b7dc2b967b0a84c898642e3a59$f1677f9b0134",
+      "createdAt": "2026-08-31 11:05:00"
+    },
     "chuhanatest": {
-      "userId": 8,
+      "userId": 1016,
       "userName": "Chủ Nhà Dũng Kiệp (zenoPlant)",
       "email": "",
       "cellphone": "0912345678",
       "userType": 3,
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$1d2e34151fbe5af4a5836ac9$a3ce65b7dc2b967b0a84c898642e3a59$f1677f9b0134",
       "createdAt": "2026-08-31 08:44:14"
     },
     "zeno_home_9200": {
-      "userId": 9,
+      "userId": 1017,
       "userName": "Anh Nam (Chủ Nhà Thảo Điền)",
       "email": "zeno_home_9200@gmail.com",
       "cellphone": "0988776655",
       "userType": 3,
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$1d2e34151fbe5af4a5836ac9$a3ce65b7dc2b967b0a84c898642e3a59$f1677f9b0134",
       "createdAt": "2026-08-31 09:46:30"
     },
     "triminh123": {
-      "userId": 1010,
+      "userId": 1018,
       "userName": "triminh123",
       "email": "",
       "cellphone": "",
       "userType": 3,
-      "roleName": "Chủ Nhà / Người Dùng Cuối (View-Only)",
+      "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
+      "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
+      "cloudPassword": "enc$gcm$1d2e34151fbe5af4a5836ac9$a3ce65b7dc2b967b0a84c898642e3a59$f1677f9b0134",
       "createdAt": "2026-09-02 05:40:48"
-    },
-    "newtech": {
-      "userId": 1011,
-      "userName": "Đại Lý NEWTECH",
-      "email": "",
-      "cellphone": "",
-      "userType": 2,
-      "roleName": "🏢 Đại Lý (Dealer)",
-      "createdAt": "2026-09-03 05:39:43"
     }
   },
   "devices": {
@@ -108,19 +191,33 @@
       "stationId": "454586755050340353",
       "stationName": "sungoPlant",
       "distributor": "sungo.vn",
-      "installer": "tuan_solar",
+      "installer": "",
       "customer": "sungo123",
       "isConfigLocked": false,
       "status": "ONLINE",
       "claimedAt": "2026-08-31T11:03:05.372Z",
-      "sharedInstallers": [
-        "newtech"
-      ]
+      "sharedInstallers": []
     },
     "498807992030822400": {
       "deviceId": "498807992030822400",
       "serialNumber": "5037108978-1",
       "dtuCode": "50371089784075173825",
+      "stationId": "498807992005656576",
+      "stationName": "zenoPlant",
+      "distributor": "sungo.vn",
+      "installer": "newtech.sg",
+      "customer": "dungkiep",
+      "isConfigLocked": false,
+      "status": "ONLINE",
+      "autoIngestedAt": "2026-08-31T07:38:26.965Z",
+      "sharedInstallers": [
+        "newtech.sg"
+      ]
+    },
+    "515402924184276992": {
+      "deviceId": "515402924184276992",
+      "serialNumber": "2156506375-1",
+      "dtuCode": "21565063752960269060",
       "stationId": "498807992005656576",
       "stationName": "zenoPlant",
       "distributor": "sungo.vn",
@@ -144,7 +241,10 @@
       "customer": "vothehien1006",
       "isConfigLocked": false,
       "status": "ONLINE",
-      "autoIngestedAt": "2026-08-31T08:26:05.743Z"
+      "autoIngestedAt": "2026-08-31T08:26:05.743Z",
+      "sharedInstallers": [
+        "newtech.sg"
+      ]
     },
     "178817432746814411": {
       "deviceId": "178817432746814411",
@@ -154,10 +254,46 @@
       "stationName": "phúc trung",
       "distributor": "sungo.vn",
       "installer": "tuan_solar",
-      "customer": "",
+      "customer": "phuctrung",
       "isConfigLocked": false,
       "status": "OFFLINE",
-      "claimedAt": "2026-08-31T11:05:27.468Z"
+      "claimedAt": "2026-08-31T11:05:27.468Z",
+      "sharedInstallers": [
+        "tuan_solar",
+        "thodien_mientay"
+      ]
+    },
+    "500684576882917376": {
+      "deviceId": "500684576882917376",
+      "serialNumber": "4833787968-1",
+      "dtuCode": "48337879686434664613",
+      "stationId": "500684576857751552",
+      "stationName": "zeno ivtPlant",
+      "distributor": "sungo.vn",
+      "installer": "thodien_mientay",
+      "customer": "haithao",
+      "isConfigLocked": false,
+      "status": "ONLINE",
+      "autoIngestedAt": "2026-09-02T08:00:00.000Z",
+      "sharedInstallers": [
+        "thodien_mientay"
+      ]
+    },
+    "493253693041246209": {
+      "deviceId": "493253693041246209",
+      "serialNumber": "2755757935-1",
+      "dtuCode": "27557579358876869096",
+      "stationId": "493253693016080385",
+      "stationName": "ZenoPlant",
+      "distributor": "sungo.vn",
+      "installer": "thodien_mientay",
+      "customer": "phanthao1234",
+      "isConfigLocked": false,
+      "status": "ONLINE",
+      "autoIngestedAt": "2026-09-02T08:30:00.000Z",
+      "sharedInstallers": [
+        "thodien_mientay"
+      ]
     }
   },
   "shares": [
@@ -177,37 +313,88 @@
       "updatedAt": "2026-08-31T10:42:44.906Z"
     },
     {
-      "shareId": "SH-1788413983319",
-      "stationId": "454586755050340353",
-      "customerAccount": "sungo123",
-      "dealerAccount": "newtech",
-      "dealerName": "Đại Lý NEWTECH",
-      "dealerEmail": "",
-      "dealerCompany": "Đại Lý Phân Phối & Lắp Đặt",
+      "shareId": "SH-1788172948154",
+      "stationId": "495450468162437120",
+      "customerAccount": "vothehien1006",
+      "dealerAccount": "newtech.sg",
+      "dealerName": "Đại Lý Newtech Solar (Nguyễn Hồng Sơn)",
+      "dealerEmail": "newtech.sg@gmail.com",
+      "dealerCompany": "Newtech Solar Solutions Co., Ltd",
       "permissions": [
         "VIEW",
         "CONFIG"
       ],
-      "createdAt": "2026-09-03T05:39:43.319Z"
+      "createdAt": "2026-08-31T10:45:00.000Z"
+    },
+    {
+      "shareId": "SH-1788172948156",
+      "stationId": "500684576857751552",
+      "customerAccount": "haithao",
+      "dealerAccount": "thodien_mientay",
+      "dealerName": "Đại Lý Trần Văn Hưng (Miền Tây)",
+      "dealerEmail": "hung.solar@gmail.com",
+      "dealerCompany": "Thợ Điện Miền Tây",
+      "permissions": [
+        "VIEW",
+        "CONFIG"
+      ],
+      "createdAt": "2026-09-02T08:00:00.000Z"
+    },
+    {
+      "shareId": "SH-1788172948157",
+      "stationId": "493253693016080385",
+      "customerAccount": "phanthao1234",
+      "dealerAccount": "thodien_mientay",
+      "dealerName": "Đại Lý Trần Văn Hưng (Miền Tây)",
+      "dealerEmail": "hung.solar@gmail.com",
+      "dealerCompany": "Thợ Điện Miền Tây",
+      "permissions": [
+        "VIEW",
+        "CONFIG"
+      ],
+      "createdAt": "2026-09-02T08:30:00.000Z"
+    },
+    {
+      "shareId": "SH-ASSIGN-1789194732824",
+      "stationId": "178817432746558411",
+      "dealerAccount": "tuan_solar",
+      "dealerName": "Đại Lý Tuấn Solar Miền Nam",
+      "dealerEmail": "tuan.solar@gmail.com",
+      "dealerCompany": "Tuấn Solar Energy",
+      "permissions": [
+        "VIEW",
+        "CONFIG"
+      ],
+      "createdAt": "2026-09-12T06:32:12.824Z"
     }
   ],
   "technicianCodes": [
     {
       "code": "DL_NEWTECH",
       "name": "Mã Kích Hoạt Đại Lý Newtech Solar",
+      "account": "newtech.sg",
       "createdAt": "2026-08-31T00:00:00.000Z",
-      "usageCount": 0
+      "usageCount": 2
     },
     {
       "code": "DL_TUANSOLAR",
       "name": "Mã Kích Hoạt Đại Lý Tuấn Solar",
+      "account": "tuan_solar",
       "createdAt": "2026-08-31T00:00:00.000Z",
-      "usageCount": 0
+      "usageCount": 1
     },
     {
       "code": "DL_MIENTAY",
       "name": "Mã Kích Hoạt Đại Lý Miền Tây",
+      "account": "thodien_mientay",
       "createdAt": "2026-08-31T00:00:00.000Z",
+      "usageCount": 2
+    },
+    {
+      "code": "DL_DANGTHIEN",
+      "name": "Mã Kích Hoạt Đại Lý Đăng Thiện",
+      "account": "dangthien",
+      "createdAt": "2026-09-01T00:00:00.000Z",
       "usageCount": 0
     }
   ],

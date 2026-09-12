@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
+const fs = require('fs');
 const config = require('./config');
 const { initDatabase, logApiCall } = require('./db');
 
@@ -87,10 +88,11 @@ app.get('/api/health', (req, res) => {
 // Serve frontend built assets in production
 const clientDistPath = path.join(__dirname, '../../client/dist');
 
-// Direct APK Download route for Android / Samsung phones
-app.get(['/download/app', '/Zeno-Solar.apk', '/zeno.apk'], (req, res) => {
-  const apkPath = path.join(clientDistPath, 'Zeno-Solar.apk');
-  res.download(apkPath, 'Zeno-Solar.apk');
+const APK_STORAGE_URL = process.env.APK_DOWNLOAD_URL || 'https://storage.googleapis.com/zeno-solar-downloads-718053420093/Zeno-Solar.apk';
+
+// Direct APK Download route for Android / Samsung phones (bypassing Cloud Run 32MB limit via Google Cloud Storage CDN)
+app.get(['/download/app', '/download/apk', '/Zeno-Solar.apk', '/zeno.apk', '/app.apk'], (req, res) => {
+  res.redirect(302, APK_STORAGE_URL);
 });
 
 app.use(express.static(clientDistPath));

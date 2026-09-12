@@ -528,9 +528,9 @@ export default function RemoteConfigModal({ station, isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* Cửa sổ Popup: Chiều cao linh hoạt, responsive tràn viền trên mobile */}
-      <div className={`w-full max-w-2xl sm:rounded-3xl rounded-2xl shadow-2xl animate-scale-up h-[92vh] max-h-[820px] flex flex-col overflow-hidden relative transition-colors duration-300 ${
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Cửa sổ Popup */}
+      <div className={`w-full max-w-2xl sm:rounded-3xl rounded-2xl shadow-2xl animate-scale-up h-[90vh] max-h-[820px] flex flex-col overflow-hidden relative transition-colors duration-300 ${
         isDark ? 'bg-[#0b101e] border border-slate-800/90 text-white' : 'bg-white border border-slate-200 text-slate-900 shadow-2xl'
       }`}>
         

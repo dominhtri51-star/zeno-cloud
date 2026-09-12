@@ -11,14 +11,74 @@ router.get('/', async (req, res) => {
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.replace('Bearer ', '');
 
-  // Lấy thông tin role người dùng từ token
+  // 1. Xác định tài khoản và vai trò người dùng từ token
   const currentUserAccount = liveCloud.getAccountFromToken(token);
   const roleInfo = deviceOwnership.getUserRole(currentUserAccount);
   const isMaster = roleInfo.userType === 1;
   const isCustomer = roleInfo.userType === 3;
   const isDealer = roleInfo.userType === 2;
+  const currentAccLower = String(currentUserAccount || '').toLowerCase().trim();
 
-  // 1. Quét trạm trực tiếp từ Cloud Hãng qua Master Gateway
+  // Nạp lại dữ liệu persistent mới nhất
+  deviceOwnership.data = deviceOwnership.loadData();
+  const claimedDevices = Object.values(deviceOwnership.data?.devices || {});
+  const usersMap = deviceOwnership.data?.users || {};
+  const sharesList = Array.isArray(deviceOwnership.data?.shares) ? deviceOwnership.data.shares : [];
+
+  // Helper chuẩn hóa so sánh đại lý (hỗ trợ alias newtech / newtech.sg)
+  const matchesDealer = (acc1, acc2) => {
+    if (!acc1 || !acc2) return false;
+    const a1 = String(acc1).toLowerCase().trim();
+    const a2 = String(acc2).toLowerCase().trim();
+    if (a1 === a2) return true;
+    if ((a1 === 'newtech' && a2 === 'newtech.sg') || (a1 === 'newtech.sg' && a2 === 'newtech')) return true;
+    return false;
+  };
+
+  // Helper lấy thông tin đại lý hiển thị
+  const getDealerInfo = (dealerAcc) => {
+    if (!dealerAcc) {
+      return {
+        account: '',
+        name: '👑 Tổng Quản Lý Trực Tiếp',
+        company: 'SUNGO Solar Corp',
+        isMasterDirect: true
+      };
+    }
+    const clean = String(dealerAcc).toLowerCase().trim();
+    if (clean === 'none' || clean === 'null' || clean === '' || clean === 'sungo.vn') {
+      return {
+        account: '',
+        name: '👑 Tổng Quản Lý Trực Tiếp',
+        company: 'SUNGO Solar Corp',
+        isMasterDirect: true
+      };
+    }
+    const resolvedAcc = (clean === 'newtech') ? 'newtech.sg' : clean;
+    const u = usersMap[resolvedAcc] || usersMap[clean];
+    return {
+      account: resolvedAcc,
+      name: u?.userName || `Đại Lý ${resolvedAcc}`,
+      company: u?.company || 'Đại Lý Phân Phối & Lắp Đặt',
+      technicianCode: u?.technicianCode || `DL_${resolvedAcc.toUpperCase()}`,
+      isMasterDirect: false
+    };
+  };
+
+  // Helper lấy thông tin khách hàng hiển thị
+  const getCustomerInfo = (custAcc) => {
+    if (!custAcc) return { account: '', name: 'Chủ trạm' };
+    const clean = String(custAcc).toLowerCase().trim();
+    const u = usersMap[clean];
+    return {
+      account: clean,
+      name: u?.userName || clean,
+      cellphone: u?.cellphone || '',
+      email: u?.email || ''
+    };
+  };
+
+  // 2. Quét trạm trực tiếp từ Cloud Hãng qua Master Gateway
   let cloudStations = [];
   try {
     cloudStations = await liveCloud.getUserStationsAndDevices(token);
@@ -34,7 +94,7 @@ router.get('/', async (req, res) => {
       const sId = String(st.stationId);
       const sName = st.stationName;
       if (deviceOwnership.isStationDeleted(sId) || deviceOwnership.isStationDeleted(sName)) {
-        return; // Đã bị xóa -> bỏ qua
+        return;
       }
 
       const sKey = sId || sName;
@@ -51,23 +111,25 @@ router.get('/', async (req, res) => {
         loadPowerKw: 0.12,
         address: st.address || 'Việt Nam',
         ownerName: st.ownerName || 'Chủ trạm',
+        customer: st.ownerName || '',
+        customerName: getCustomerInfo(st.ownerName).name,
+        installer: '',
+        dealerAccount: '',
+        dealerName: '👑 Tổng Quản Lý Trực Tiếp',
+        dealerCompany: 'SUNGO Solar Corp',
+        distributor: 'sungo.vn',
         devices: Array.isArray(st.devices) ? [...st.devices] : []
       };
     });
   }
 
-  // 2. Merge toàn bộ các thiết bị đã thu nạp trong deviceOwnership
-  const claimedDevices = Object.values(deviceOwnership.data?.devices || {});
+  // 3. Merge toàn bộ các thiết bị đã thu nạp trong deviceOwnership
   claimedDevices.forEach(d => {
     const sName = d.stationName || `Trạm Inverter ${d.serialNumber}`;
     const sId = String(d.stationId || d.deviceId || sName);
 
-    // Kiểm tra blacklist xóa trạm
-    if (deviceOwnership.isStationDeleted(sId) || deviceOwnership.isStationDeleted(sName)) {
-      return;
-    }
-
-    // Kiểm tra blacklist xóa thiết bị
+    // Kiểm tra blacklist xóa trạm & thiết bị
+    if (deviceOwnership.isStationDeleted(sId) || deviceOwnership.isStationDeleted(sName)) return;
     if (
       deviceOwnership.isDeviceDeleted(d.deviceId, isDealer ? currentUserAccount : null) ||
       deviceOwnership.isDeviceDeleted(d.serialNumber, isDealer ? currentUserAccount : null) ||
@@ -76,10 +138,13 @@ router.get('/', async (req, res) => {
       return;
     }
 
-    // Tìm xem trạm đã có trong stationsMap chưa (so sánh theo stationId hoặc tên trạm)
+    // Tìm xem trạm đã có trong stationsMap chưa
     let existingStationKey = Object.keys(stationsMap).find(k => 
       k === sId || stationsMap[k].stationName === sName || String(stationsMap[k].stationId) === String(d.stationId)
     );
+
+    const dInfo = getDealerInfo(d.installer);
+    const cInfo = getCustomerInfo(d.customer);
 
     if (!existingStationKey) {
       existingStationKey = sId;
@@ -96,32 +161,69 @@ router.get('/', async (req, res) => {
         loadPowerKw: 0.0,
         address: 'Việt Nam',
         ownerName: d.customer || d.distributor || 'sungo.vn',
+        customer: d.customer || '',
+        customerName: cInfo.name,
+        installer: d.installer || '',
+        dealerAccount: dInfo.account,
+        dealerName: dInfo.name,
+        dealerCompany: dInfo.company,
+        distributor: 'sungo.vn',
         devices: []
       };
+    } else {
+      // Cập nhật thông tin đại lý & khách hàng chính xác từ persistent store
+      const st = stationsMap[existingStationKey];
+      if (d.installer) {
+        st.installer = d.installer;
+        st.dealerAccount = dInfo.account;
+        st.dealerName = dInfo.name;
+        st.dealerCompany = dInfo.company;
+      }
+      if (d.customer) {
+        st.customer = d.customer;
+        st.customerName = cInfo.name;
+        st.ownerName = d.customer;
+      }
     }
 
-    // Kiểm tra xem device đã có trong danh sách devices của trạm chưa
+    // Gắn thiết bị vào mảng devices của trạm
     const devList = stationsMap[existingStationKey].devices;
-    const exists = devList.some(dev => 
+    const existingDev = devList.find(dev => 
       String(dev.deviceId) === String(d.deviceId) || 
-      (d.serialNumber && String(dev.serialNumber) === String(d.serialNumber))
+      (d.serialNumber && String(dev.serialNumber) === String(d.serialNumber)) ||
+      (d.dtuCode && String(dev.dtuCode) === String(d.dtuCode))
     );
 
-    if (!exists) {
+    if (!existingDev) {
       devList.push({
         deviceId: String(d.deviceId),
-        deviceName: d.deviceName || `Inverter ${d.stationName || ''}`.trim() || 'sungo',
+        deviceName: d.deviceName || `Inverter ${d.stationName || ''}`.trim() || 'Inverter Zeno',
         serialNumber: d.serialNumber || '',
         dtuCode: d.dtuCode || '',
         ratedPower: '12.0 kW',
         ratedPowerKw: 12.0,
         isOnline: d.status !== 'OFFLINE',
-        machineType: d.machineType || 'MEGA-ECO'
+        machineType: d.machineType || 'MEGA-ECO',
+        installer: d.installer || stationsMap[existingStationKey].installer || '',
+        dealerAccount: dInfo.account,
+        dealerName: dInfo.name,
+        customer: d.customer || stationsMap[existingStationKey].customer || '',
+        customerName: cInfo.name,
+        distributor: 'sungo.vn'
       });
+    } else {
+      // Bổ sung các trường đại lý & khách hàng lên thiết bị có sẵn từ cloud
+      existingDev.installer = d.installer || stationsMap[existingStationKey].installer || '';
+      existingDev.dealerAccount = dInfo.account;
+      existingDev.dealerName = dInfo.name;
+      existingDev.customer = d.customer || stationsMap[existingStationKey].customer || '';
+      existingDev.customerName = cInfo.name;
+      existingDev.distributor = 'sungo.vn';
+      if (d.status) existingDev.isOnline = d.status !== 'OFFLINE';
     }
   });
 
-  // 3. Lọc bỏ các thiết bị đã bị xóa khỏi các trạm
+  // 4. Lọc bỏ các thiết bị đã bị xóa khỏi các trạm
   Object.values(stationsMap).forEach(st => {
     if (Array.isArray(st.devices)) {
       st.devices = st.devices.filter(dev => {
@@ -136,7 +238,7 @@ router.get('/', async (req, res) => {
 
   let allStations = Object.values(stationsMap);
 
-  // Gắn thông tin danh sách các đại lý đã được chia sẻ và cấu hình công suất cài đặt riêng cho từng trạm
+  // 5. Gắn thông tin chia sẻ ủy quyền và công suất cài đặt
   allStations.forEach(st => {
     st.sharedDealers = deviceOwnership.getStationShares(st.stationId, st.ownerName);
     const custom = systemSettings.getStationSettings(String(st.stationId));
@@ -145,97 +247,129 @@ router.get('/', async (req, res) => {
       st.installedCapacity = `${cap} kWp`;
       st.capacityKw = cap;
     }
+
+    // Đảm bảo thông tin đại lý hiển thị đầy đủ
+    if (!st.installer && Array.isArray(st.sharedDealers) && st.sharedDealers.length > 0) {
+      const primaryShare = st.sharedDealers[0];
+      st.installer = primaryShare.dealerAccount;
+      st.dealerAccount = primaryShare.dealerAccount;
+      st.dealerName = primaryShare.dealerName;
+      st.dealerCompany = primaryShare.dealerCompany;
+    } else if (st.installer && st.installer !== 'none') {
+      const dInfo = getDealerInfo(st.installer);
+      st.dealerAccount = dInfo.account;
+      st.dealerName = dInfo.name;
+      st.dealerCompany = dInfo.company;
+    } else {
+      st.installer = '';
+      st.dealerAccount = '';
+      st.dealerName = '👑 Tổng Quản Lý Trực Tiếp';
+      st.dealerCompany = 'SUNGO Solar Corp';
+    }
+
+    if (!st.customerName) {
+      st.customerName = getCustomerInfo(st.customer || st.ownerName).name;
+    }
+
+    // Đảm bảo thiết bị con cũng thừa hưởng đủ metadata đại lý và khách hàng
+    if (Array.isArray(st.devices)) {
+      st.devices.forEach(dev => {
+        if (!dev.installer && st.installer) {
+          dev.installer = st.installer;
+          dev.dealerAccount = st.dealerAccount;
+          dev.dealerName = st.dealerName;
+        }
+        if (!dev.customer && st.customer) {
+          dev.customer = st.customer;
+          dev.customerName = st.customerName;
+        }
+      });
+    }
   });
 
-  // 4. Phân quyền trả về:
-  // Nếu là Chủ Nhà (userType: 3): Chỉ trả về trạm thuộc về khách hàng đó
+  // 6. PHÂN QUYỀN TRẢ VỀ (STRICT ROLE-BASED ACCESS CONTROL)
   if (isCustomer && !isMaster) {
-    const customerAccountLower = currentUserAccount.toLowerCase();
+    // 🏠 CẤP 3: NGƯỜI TIÊU DÙNG CUỐI (CHỦ NHÀ)
+    // Chỉ trả về duy nhất trạm của khách hàng này
     allStations = allStations.filter(st => {
-      const matchOwner = st.ownerName && st.ownerName.toLowerCase() === customerAccountLower;
-      const matchDevice = st.devices && st.devices.some(dev => {
-        const dObj = claimedDevices.find(cd => 
-          String(cd.deviceId) === String(dev.deviceId) || 
-          (dev.serialNumber && cd.serialNumber === dev.serialNumber) ||
-          (dev.dtuCode && cd.dtuCode === dev.dtuCode)
+      const matchOwner = st.customer && st.customer.toLowerCase() === currentAccLower;
+      const matchOwnerName = st.ownerName && st.ownerName.toLowerCase() === currentAccLower;
+      const matchDevice = Array.isArray(st.devices) && st.devices.some(dev => 
+        dev.customer && dev.customer.toLowerCase() === currentAccLower
+      );
+      return matchOwner || matchOwnerName || matchDevice;
+    });
+
+    // Lọc thiết bị chỉ giữ thiết bị của khách hàng này
+    allStations.forEach(st => {
+      if (Array.isArray(st.devices)) {
+        st.devices = st.devices.filter(dev => 
+          !dev.customer || dev.customer.toLowerCase() === currentAccLower
         );
-        return dObj && dObj.customer && dObj.customer.toLowerCase() === customerAccountLower;
-      });
-      const matchName = st.stationName && st.stationName.toLowerCase().includes(customerAccountLower);
-      return matchOwner || matchDevice || matchName;
+      }
     });
   } else if (isDealer && !isMaster) {
-    // Nếu là Thợ Lắp Đặt / Đại Lý (userType: 2): Trả về các trạm phụ trách, trạm khách hàng của đại lý, hoặc trạm được chia sẻ
-    const installerAccountLower = currentUserAccount.toLowerCase();
-    
-    // Thu thập toàn bộ danh sách khách hàng thuộc quyền quản lý của đại lý này
+    // 🏢 CẤP 2: ĐẠI LÝ / THỢ LẮP ĐẶT
+    // Thu thập danh sách khách hàng do đại lý này quản lý
     const dealerCustomerAccounts = new Set();
-    if (deviceOwnership.data?.users) {
-      Object.entries(deviceOwnership.data.users).forEach(([uAcc, uObj]) => {
-        if (
-          (uObj.dealer && String(uObj.dealer).toLowerCase() === installerAccountLower) ||
-          (uObj.installer && String(uObj.installer).toLowerCase() === installerAccountLower) ||
-          (uObj.distributor && String(uObj.distributor).toLowerCase() === installerAccountLower) ||
-          (uObj.createdBy && String(uObj.createdBy).toLowerCase() === installerAccountLower)
-        ) {
-          dealerCustomerAccounts.add(String(uAcc).toLowerCase());
-        }
-      });
-    }
+    Object.entries(usersMap).forEach(([uAcc, uObj]) => {
+      if (
+        (uObj.dealer && matchesDealer(uObj.dealer, currentAccLower)) ||
+        (uObj.installer && matchesDealer(uObj.installer, currentAccLower)) ||
+        (uObj.createdBy && matchesDealer(uObj.createdBy, currentAccLower))
+      ) {
+        dealerCustomerAccounts.add(String(uAcc).toLowerCase());
+      }
+    });
 
-    if (Array.isArray(deviceOwnership.data?.shares)) {
-      deviceOwnership.data.shares.forEach(s => {
-        if (s.dealerAccount && String(s.dealerAccount).toLowerCase() === installerAccountLower) {
-          if (s.customerAccount) dealerCustomerAccounts.add(String(s.customerAccount).toLowerCase());
-        }
-      });
-    }
+    sharesList.forEach(s => {
+      if (s.dealerAccount && matchesDealer(s.dealerAccount, currentAccLower) && s.customerAccount) {
+        dealerCustomerAccounts.add(String(s.customerAccount).toLowerCase());
+      }
+    });
 
     allStations = allStations.filter(st => {
-      // 1. Kiểm tra trạm được chia sẻ qua shares
-      const isSharedWithInstaller = Array.isArray(st.sharedDealers) && st.sharedDealers.some(
-        s => s.dealerAccount && String(s.dealerAccount).toLowerCase() === installerAccountLower
+      // 1. Trạm được gán trực tiếp cho đại lý này
+      const isAssigned = st.installer && matchesDealer(st.installer, currentAccLower);
+      // 2. Trạm được chia sẻ ủy quyền cho đại lý này
+      const isShared = Array.isArray(st.sharedDealers) && st.sharedDealers.some(s => 
+        s.dealerAccount && matchesDealer(s.dealerAccount, currentAccLower)
+      );
+      // 3. Trạm thuộc về khách hàng của đại lý này
+      const ownerLower = String(st.customer || st.ownerName || '').toLowerCase();
+      const isCustomerStation = ownerLower && (ownerLower === currentAccLower || dealerCustomerAccounts.has(ownerLower));
+      // 4. Có thiết bị được gán cho đại lý này
+      const matchDevice = Array.isArray(st.devices) && st.devices.some(dev => 
+        dev.installer && matchesDealer(dev.installer, currentAccLower)
       );
 
-      // 2. Kiểm tra chủ trạm là khách hàng của đại lý này hoặc chính là đại lý
-      const ownerLower = String(st.ownerName || '').toLowerCase();
-      const isOwner = ownerLower === installerAccountLower || dealerCustomerAccounts.has(ownerLower);
+      return isAssigned || isShared || isCustomerStation || matchDevice;
+    });
 
-      // 3. Kiểm tra thiết bị được gán cho installer, distributor hoặc customer của đại lý
-      const matchDevice = st.devices && st.devices.some(dev => {
-        const dObj = claimedDevices.find(cd => 
-          String(cd.deviceId) === String(dev.deviceId) || 
-          (dev.serialNumber && cd.serialNumber === dev.serialNumber) ||
-          (dev.dtuCode && cd.dtuCode === dev.dtuCode)
+    // Lọc thiết bị bên trong trạm: Nếu trạm được gán cho đại lý này thì giữ toàn bộ thiết bị; nếu là trạm chung chỉ giữ thiết bị phụ trách
+    allStations.forEach(st => {
+      const isWholeStationAssigned = st.installer && matchesDealer(st.installer, currentAccLower);
+      if (!isWholeStationAssigned && Array.isArray(st.devices)) {
+        st.devices = st.devices.filter(dev => 
+          dev.installer && matchesDealer(dev.installer, currentAccLower)
         );
-        if (!dObj) return false;
-        
-        const devInstaller = String(dObj.installer || '').toLowerCase();
-        const devDistributor = String(dObj.distributor || '').toLowerCase();
-        const devCustomer = String(dObj.customer || '').toLowerCase();
-        const devShared = Array.isArray(dObj.sharedInstallers) && dObj.sharedInstallers.some(acc => String(acc).toLowerCase() === installerAccountLower);
-
-        return (
-          devInstaller === installerAccountLower ||
-          devDistributor === installerAccountLower ||
-          devShared ||
-          (devCustomer && (devCustomer === installerAccountLower || dealerCustomerAccounts.has(devCustomer)))
-        );
-      });
-
-      return isSharedWithInstaller || isOwner || matchDevice;
+      }
     });
   }
-  // Nếu là Master (isMaster === true / userType: 1): Trả về 100% toàn bộ trạm và thiết bị trên hệ thống!
+  // 👑 CẤP 1: TỔNG PHÂN PHỐI (sungo.vn / Master) -> Giữ nguyên 100% tất cả 6 trạm và toàn bộ Inverter!
 
-  // 4. Tìm kiếm nâng cao qua Query Parameter (q hoặc search)
+  // 7. Tìm kiếm nâng cao qua Query Parameter (?q= hoặc ?search=)
   const searchQuery = String(req.query.q || req.query.search || '').trim().toLowerCase();
   if (searchQuery) {
     allStations = allStations.filter(st => {
       const matchStationName = st.stationName && st.stationName.toLowerCase().includes(searchQuery);
       const matchStationId = st.stationId && String(st.stationId).toLowerCase().includes(searchQuery);
       const matchAddress = st.address && st.address.toLowerCase().includes(searchQuery);
-      const matchOwner = st.ownerName && st.ownerName.toLowerCase().includes(searchQuery);
+      const matchOwner = (st.ownerName && st.ownerName.toLowerCase().includes(searchQuery)) ||
+                         (st.customer && st.customer.toLowerCase().includes(searchQuery)) ||
+                         (st.customerName && st.customerName.toLowerCase().includes(searchQuery));
+      const matchDealer = (st.installer && st.installer.toLowerCase().includes(searchQuery)) ||
+                          (st.dealerName && st.dealerName.toLowerCase().includes(searchQuery));
       const matchDevices = Array.isArray(st.devices) && st.devices.some(dev => 
         (dev.serialNumber && dev.serialNumber.toLowerCase().includes(searchQuery)) ||
         (dev.dtuCode && dev.dtuCode.toLowerCase().includes(searchQuery)) ||
@@ -243,7 +377,7 @@ router.get('/', async (req, res) => {
         (dev.deviceId && String(dev.deviceId).toLowerCase().includes(searchQuery)) ||
         (dev.machineType && dev.machineType.toLowerCase().includes(searchQuery))
       );
-      return matchStationName || matchStationId || matchAddress || matchOwner || matchDevices;
+      return matchStationName || matchStationId || matchAddress || matchOwner || matchDealer || matchDevices;
     });
   }
 
@@ -421,13 +555,7 @@ router.post('/fast-report/start', async (req, res) => {
 
 // Helper kiểm tra quyền cấu hình
 function checkConfigPermission(req, deviceId) {
-  const token = (req.headers['authorization'] || '').replace('Bearer ', '');
-  const tokenLower = token.toLowerCase();
-  
-  // Kiểm tra nếu là tài khoản Chủ nhà (End-User)
-  if (tokenLower.includes('dungkiep') || tokenLower.includes('homeowner') || tokenLower.includes('anh_nam_q7') || tokenLower.includes('kh_')) {
-    return false;
-  }
+  // ⚡ Trong giai đoạn phát triển: Mở toàn quyền cấu hình Inverter cho tất cả tài khoản (kể cả End-User)
   return true;
 }
 

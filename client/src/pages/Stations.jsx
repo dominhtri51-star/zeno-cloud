@@ -4,7 +4,7 @@ import {
   CheckCircle, RefreshCw, Sliders, Radio, ArrowRight, Eye, 
   Cpu, Server, ChevronRight, ShieldCheck, Users, PlusCircle, Wifi,
   Trash2, AlertOctagon, Search, X, Filter, Hash, Tag, Check, Sparkles,
-  ArrowUpDown, Layers, Share2, UserCheck, ArrowRightLeft
+  ArrowUpDown, Layers, Share2, UserCheck, ArrowRightLeft, Building
 } from 'lucide-react';
 import api, { monitoringService, authService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -79,7 +79,7 @@ export default function Stations({ onNavigate, onSelectDevice }) {
 
   const handleOpenConfig = (st, e) => {
     if (e) e.stopPropagation();
-    if (isHomeowner) return; // Chủ nhà không thể mở
+    // ⚡ Trong giai đoạn phát triển: Mở quyền cấu hình Inverter cho cả Chủ nhà (End-User)
     setConfigStation(st);
     setIsConfigOpen(true);
   };
@@ -497,9 +497,35 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                     <span className={`text-xs font-mono font-bold ${isDark ? 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' : 'text-cyan-700 bg-cyan-50 border-cyan-200'} border px-2 py-0.5 rounded-md`}>
                       ID: {st.stationId}
                     </span>
-                    {st.ownerName && (
-                      <span className={`text-[11px] font-medium border px-2 py-0.5 rounded-md ${isDark ? 'text-slate-400 bg-slate-900 border-slate-800' : 'text-slate-600 bg-slate-100 border-slate-200'}`}>
-                        Chủ: <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>{st.ownerName}</span>
+                    {/* Chủ Trạm Badge */}
+                    <span className={`text-[11px] font-medium border px-2.5 py-0.5 rounded-lg flex items-center gap-1.5 ${
+                      isDark ? 'text-slate-300 bg-slate-900/90 border-slate-800' : 'text-slate-700 bg-slate-100 border-slate-200'
+                    }`}>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">Chủ trạm:</span>
+                      <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {st.customerName || st.customer || st.ownerName || 'Chưa cập nhật'}
+                      </span>
+                      {st.customer && st.customer !== (st.customerName || st.ownerName) && (
+                        <span className="text-[10px] text-cyan-500 font-mono">(@{st.customer})</span>
+                      )}
+                    </span>
+
+                    {/* Đại Lý Phụ Trách / Tổng Trực Tiếp Badge */}
+                    {st.installer && st.installer !== 'none' ? (
+                      <span className={`text-[11px] font-medium border px-2.5 py-0.5 rounded-lg flex items-center gap-1.5 ${
+                        isDark ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' : 'text-amber-800 bg-amber-50 border-amber-300'
+                      }`}>
+                        <Building className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <span className="text-[10px] font-bold uppercase opacity-80">Đại lý phụ trách:</span>
+                        <span className="font-bold">{st.dealerName || st.installer}</span>
+                        <span className="text-[10px] font-mono opacity-80">(@{st.installer})</span>
+                      </span>
+                    ) : (
+                      <span className={`text-[11px] font-medium border px-2.5 py-0.5 rounded-lg flex items-center gap-1.5 ${
+                        isDark ? 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30' : 'text-cyan-800 bg-cyan-50 border-cyan-300'
+                      }`}>
+                        <span>👑</span>
+                        <span className="font-bold">Tổng SUNGO Quản Lý Trực Tiếp</span>
                       </span>
                     )}
                   </div>
@@ -508,14 +534,14 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                     <span>{st.address || 'Hồ Chí Minh, Vietnam'}</span>
                   </div>
 
-                  {/* Danh sách đại lý được ủy quyền (nếu có) */}
-                  {Array.isArray(st.sharedDealers) && st.sharedDealers.length > 0 && (
+                  {/* Danh sách đại lý được ủy quyền thêm (nếu có khác đại lý chính) */}
+                  {Array.isArray(st.sharedDealers) && st.sharedDealers.filter(sh => sh.dealerAccount !== st.installer).length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
                         <Users className="w-3 h-3 text-cyan-400" />
-                        Đại lý ủy quyền:
+                        Đại lý ủy quyền thêm:
                       </span>
-                      {st.sharedDealers.map((sh) => (
+                      {st.sharedDealers.filter(sh => sh.dealerAccount !== st.installer).map((sh) => (
                         <span
                           key={sh.shareId || sh.dealerAccount}
                           onClick={(e) => isHomeowner && handleOpenShareModal(st, e)}
@@ -577,21 +603,19 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                     <span>Cài đặt dự án</span>
                   </button>
 
-                  {/* Nút Cấu Hình Inverter */}
-                  {!isHomeowner && (
-                    <button
-                      onClick={(e) => handleOpenConfig(st, e)}
-                      className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer ${
-                        isDark 
-                          ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700' 
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 shadow-sm'
-                      }`}
-                      title="Cấu hình Inverter từ xa"
-                    >
-                      <Sliders className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Cấu hình</span>
-                    </button>
-                  )}
+                  {/* Nút Cấu Hình Inverter (Mở cho tất cả vai trò trong giai đoạn phát triển) */}
+                  <button
+                    onClick={(e) => handleOpenConfig(st, e)}
+                    className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border transition flex items-center gap-1 font-bold text-[11px] sm:text-xs cursor-pointer ${
+                      isDark 
+                        ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700 hover:border-amber-500/40' 
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 shadow-sm hover:border-amber-500'
+                    }`}
+                    title="Cấu hình biến tần Inverter từ xa"
+                  >
+                    <Sliders className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Cấu hình</span>
+                  </button>
 
                   {/* Nút Xóa Trạm (Master - Bắt buộc nhập mật khẩu sungo123) */}
                   {isDistributor && (
@@ -727,6 +751,28 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                                 {dev.dtuCode}
                               </span>
                             </div>
+
+                            {/* Phân bổ Đại lý & Chủ máy */}
+                            <div className={`pt-1.5 border-t ${isDark ? 'border-slate-800/80' : 'border-slate-200'} flex items-center justify-between gap-1 text-[10px]`}>
+                              <span className="text-slate-400 flex items-center gap-1 shrink-0">
+                                <Building className="w-2.5 h-2.5 text-amber-500" />
+                                Đại lý:
+                              </span>
+                              <span className={`font-bold font-mono truncate max-w-[130px] ${dev.installer ? 'text-amber-400' : 'text-cyan-400'}`}>
+                                {dev.installer ? `@${dev.installer}` : '👑 Tổng trực tiếp'}
+                              </span>
+                            </div>
+                            {(dev.customerName || dev.customer) && (
+                              <div className="flex items-center justify-between gap-1 text-[10px]">
+                                <span className="text-slate-400 flex items-center gap-1 shrink-0">
+                                  <Users className="w-2.5 h-2.5 text-cyan-400" />
+                                  Chủ máy:
+                                </span>
+                                <span className={`font-medium truncate max-w-[130px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                  {dev.customerName || dev.customer}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -775,14 +821,12 @@ export default function Stations({ onNavigate, onSelectDevice }) {
         </div>
       )}
 
-      {/* Remote Configuration Modal (Chỉ mở khi có quyền) */}
-      {!isHomeowner && (
-        <RemoteConfigModal
-          station={configStation}
-          isOpen={isConfigOpen}
-          onClose={() => setIsConfigOpen(false)}
-        />
-      )}
+      {/* Remote Configuration Modal (Mở cho tất cả các vai trò trong giai đoạn phát triển) */}
+      <RemoteConfigModal
+        station={configStation}
+        isOpen={isConfigOpen}
+        onClose={() => setIsConfigOpen(false)}
+      />
 
       {/* Claim Device & WiFi Provisioning Modal (Mở cho tất cả các vai trò: Tổng PP, Thợ & Chủ Nhà) */}
       <ClaimDeviceModal

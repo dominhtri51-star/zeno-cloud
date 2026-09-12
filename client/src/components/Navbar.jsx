@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import AvatarModal from './AvatarModal';
+import DownloadAppModal from './DownloadAppModal';
 import { 
   Sun, Moon, Shield, LogOut, Globe, UserCheck, Bell, Activity, Menu, X, 
   LayoutDashboard, Zap, Users, Layers, AlertTriangle, UserPlus, Settings,
-  Crown, BatteryCharging, Diamond, Feather, Rocket, Flame, Camera
+  Crown, BatteryCharging, Diamond, Feather, Rocket, Flame, Camera, Smartphone
 } from 'lucide-react';
 
 const PRESET_MAP = {
@@ -24,6 +25,7 @@ export default function Navbar({ onNavigate, currentPage }) {
   const { isDark, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const userType = Number(user?.userType || 3);
 
   const handleNavigate = (page) => {
@@ -94,7 +96,9 @@ export default function Navbar({ onNavigate, currentPage }) {
 
   return (
     <>
-      <header className={`h-16 border-b ${isDark ? 'bg-slate-900/90 border-slate-800/80 text-white' : 'bg-white/95 border-slate-200 text-slate-900 shadow-sm'} backdrop-blur-xl sticky top-0 z-40 px-4 sm:px-6 flex items-center justify-between font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-300`}>
+      <header 
+        className={`h-16 border-b ${isDark ? 'bg-slate-900/90 border-slate-800/80 text-white' : 'bg-white/95 border-slate-200 text-slate-900 shadow-sm'} backdrop-blur-xl sticky top-0 z-40 px-4 sm:px-6 flex items-center justify-between font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-300 select-none`}
+      >
         {/* Brand & Logo */}
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigate('dashboard')}>
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-teal-500 to-amber-400 p-0.5 shadow-lg shadow-cyan-500/20 flex items-center justify-center">
@@ -134,7 +138,21 @@ export default function Navbar({ onNavigate, currentPage }) {
         </div>
 
         {/* User profile & Actions */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Nút Tải App APK */}
+          <button
+            onClick={() => setIsDownloadModalOpen(true)}
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm cursor-pointer ${
+              isDark 
+                ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-400 hover:bg-emerald-900/40 hover:border-emerald-400 shadow-emerald-500/10' 
+                : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+            }`}
+            title="Tải ứng dụng Android Zeno Solar (File APK)"
+          >
+            <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Tải App APK</span>
+          </button>
+
           {/* Nút Đổi Theme Nhanh Sáng / Tối */}
           <button
             onClick={toggleTheme}
@@ -198,8 +216,11 @@ export default function Navbar({ onNavigate, currentPage }) {
 
       {/* Mobile Drawer Overlay */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end bg-slate-950/80 backdrop-blur-md animate-fade-in font-['Plus_Jakarta_Sans',sans-serif]">
-          <div className="bg-slate-900 border-t border-slate-800 rounded-t-3xl p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-[100] md:hidden flex flex-col justify-end bg-slate-950/80 backdrop-blur-md animate-fade-in font-['Plus_Jakarta_Sans',sans-serif]">
+          <div 
+            className="bg-slate-900 border-t border-slate-800 rounded-t-3xl p-6 space-y-4 shadow-2xl"
+            style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 1.5rem)' }}
+          >
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="font-bold text-slate-200 text-sm">Danh Mục Chức Năng</div>
               <button
@@ -229,6 +250,18 @@ export default function Navbar({ onNavigate, currentPage }) {
                   </button>
                 );
               })}
+
+              {/* Tải App Android (APK) trong Mobile Menu */}
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setIsDownloadModalOpen(true);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/20 transition mt-2"
+              >
+                <Smartphone className="w-4 h-4 text-emerald-400" />
+                <span>Tải App Android (.APK)</span>
+              </button>
             </div>
           </div>
         </div>
@@ -238,6 +271,12 @@ export default function Navbar({ onNavigate, currentPage }) {
       <AvatarModal 
         isOpen={isAvatarModalOpen} 
         onClose={() => setIsAvatarModalOpen(false)} 
+      />
+
+      {/* Modal Tải Ứng Dụng Zeno Solar APK */}
+      <DownloadAppModal 
+        isOpen={isDownloadModalOpen} 
+        onClose={() => setIsDownloadModalOpen(false)} 
       />
     </>
   );

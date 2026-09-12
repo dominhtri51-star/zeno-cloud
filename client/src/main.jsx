@@ -16,8 +16,8 @@ if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
   }
 }
 
-// Register Service Worker for PWA
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+// Register Service Worker for PWA (browser only, never in native app)
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator && !Capacitor.isNativePlatform() && process.env.NODE_ENV === 'production') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then(
       (registration) => {

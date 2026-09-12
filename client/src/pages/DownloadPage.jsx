@@ -78,7 +78,7 @@ export default function DownloadPage({ onBackToHome }) {
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
             <span>📦 Dung lượng: <strong className="text-white">44.5 MB</strong></span>
-            <span>⚡ Phiên bản: <strong className="text-white">1.1.7</strong></span>
+            <span>⚡ Phiên bản: <strong className="text-white">1.1.8</strong></span>
             <span>📱 Hỗ trợ: <strong className="text-white">Android 7.0+</strong></span>
           </div>
         </div>

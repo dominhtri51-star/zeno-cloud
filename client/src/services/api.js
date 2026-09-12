@@ -9,7 +9,7 @@ export const getBaseURL = () => {
       window.location.protocol === 'capacitor:' || 
       window.location.protocol === 'file:'
     ) {
-      return 'https://zeno-cloud.onrender.com/api';
+      return 'https://zeno-solar-718053420093.asia-southeast1.run.app/api';
     }
   }
   return '/api';

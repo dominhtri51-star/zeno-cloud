@@ -878,7 +878,7 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                   <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wide">Ứng dụng Android (APK)</span>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800/90 text-slate-300 font-semibold border border-slate-700">v1.1.7 • 44.5MB</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800/90 text-emerald-400 font-semibold border border-emerald-500/30">v1.1.8 • Siêu nhẹ ~6.5MB</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

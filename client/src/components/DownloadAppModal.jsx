@@ -40,7 +40,7 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                   Android APK
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">Phiên bản 1.1.7 (Build 27) • Dung lượng 44.5 MB</p>
+              <p className="text-[11px] text-slate-400">Phiên bản 1.1.8 (Build 28) • Dung lượng ~6.5 MB</p>
             </div>
           </div>
           <button

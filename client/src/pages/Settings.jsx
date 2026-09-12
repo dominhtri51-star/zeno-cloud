@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { 
   Lock, KeyRound, User, Shield, Server, Globe, Clock, 
   CheckCircle2, AlertCircle, RefreshCw, Cpu, Zap, Building, 
-  ShieldCheck, Smartphone, Mail, Info, Palette, Sun, Moon, Sparkles, Check
+  ShieldCheck, Smartphone, Mail, Info, Palette, Sun, Moon, Sparkles, Check, LogOut
 } from 'lucide-react';
 import { authService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { theme, setTheme, isDark } = useTheme();
   const userType = user?.userType || 1;
   const userAccount = user?.account || 'default';
@@ -456,6 +456,18 @@ export default function Settings() {
             <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'} leading-relaxed`}>
               {roleInfo.desc}
             </p>
+          </div>
+
+          {/* Nút Đăng Xuất Tài Khoản */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={logout}
+              className="w-full py-3 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Đăng Xuất Khỏi Thiết Bị Này</span>
+            </button>
           </div>
         </div>
       )}

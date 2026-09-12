@@ -257,10 +257,22 @@ export default function Navbar({ onNavigate, currentPage }) {
                   setMobileMenuOpen(false);
                   setIsDownloadModalOpen(true);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/20 transition mt-2"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/20 transition mt-2 cursor-pointer"
               >
                 <Smartphone className="w-4 h-4 text-emerald-400" />
                 <span>Tải App Android (.APK)</span>
+              </button>
+
+              {/* Đăng Xuất trong Mobile Menu */}
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  logout();
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm bg-rose-500/10 text-rose-400 border border-rose-500/25 hover:bg-rose-500/20 transition mt-1 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 text-rose-400" />
+                <span>Đăng Xuất Tài Khoản</span>
               </button>
             </div>
           </div>

@@ -27,6 +27,13 @@ export const AuthProvider = ({ children }) => {
         if (res.refreshToken) {
           localStorage.setItem('zeno_refresh_token', res.refreshToken);
         }
+        if (credentials?.account && credentials?.password && localStorage.getItem('zeno_remember_password') !== 'false') {
+          try {
+            localStorage.setItem('zeno_saved_account', String(credentials.account).trim());
+            localStorage.setItem('zeno_saved_password', btoa(encodeURIComponent(String(credentials.password).trim())));
+            localStorage.setItem('zeno_remember_password', 'true');
+          } catch (e) {}
+        }
         return { success: true, user: res.user };
       }
       return { success: false, message: res.message };
@@ -76,6 +83,11 @@ export const AuthProvider = ({ children }) => {
       await authService.logout();
     } catch (e) {
       // ignore
+    }
+    if (user?.account && !localStorage.getItem('zeno_saved_account')) {
+      try {
+        localStorage.setItem('zeno_saved_account', user.account);
+      } catch (e) {}
     }
     setUser(null);
     setToken(null);

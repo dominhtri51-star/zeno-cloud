@@ -79,6 +79,8 @@ app.get('/api/health', (req, res) => {
     status: 'UP',
     app: 'Zeno Solar Dealer & Customer Portal',
     version: '1.1.7',
+    deployId: '2026-09-12-rbac-v3',
+    nodeVersion: process.version,
     siseliCloud: config.siseli.baseUrl,
     database: 'PostgreSQL (zeno_solar:5432)',
     time: new Date().toISOString()
@@ -86,7 +88,9 @@ app.get('/api/health', (req, res) => {
 });
 
 // Serve frontend built assets in production
-const clientDistPath = path.join(__dirname, '../../client/dist');
+const candidateDist1 = path.join(__dirname, '../../client/dist');
+const candidateDist2 = path.join(__dirname, '../public');
+const clientDistPath = fs.existsSync(path.join(candidateDist1, 'index.html')) ? candidateDist1 : candidateDist2;
 
 const APK_STORAGE_URL = process.env.APK_DOWNLOAD_URL || 'https://storage.googleapis.com/zeno-solar-downloads-718053420093/Zeno-Solar.apk';
 

@@ -22,7 +22,7 @@
       "company": "Newtech Solar Solutions Co., Ltd",
       "technicianCode": "DL_NEWTECH",
       "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
-      "cloudPassword": "enc$gcm$76c98a2cf6adf8890e0d5a4b$a6b331c5eeb37c9565fae4250fb20e40$a359beeeeb4c",
+      "cloudPassword": "enc$gcm$3fc73e93644839108cf2f43f$83c9b929d16d76507cf8f56a804fb15c$d22702cc39ef",
       "createdAt": "2026-08-31 09:25:43"
     },
     "newtech": {
@@ -48,7 +48,7 @@
       "company": "Tuấn Solar Energy",
       "technicianCode": "DL_TUANSOLAR",
       "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
-      "cloudPassword": "enc$gcm$e20b04ad3b9c383b7c9e7e58$0d497b2a14a96daf53be7dd73aee6490$05254aab366c",
+      "cloudPassword": "enc$gcm$b0fffbe6ce7aa66c8bc161f0$aa418b0912333f6309aa15bf0193e71c$8455ae13f45e",
       "createdAt": "2026-08-31 08:00:00"
     },
     "thodien_mientay": {
@@ -61,7 +61,7 @@
       "company": "Thợ Điện Miền Tây",
       "technicianCode": "DL_MIENTAY",
       "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
-      "cloudPassword": "enc$gcm$ce37c3d55068be1db27eb865$a4a5253b6eac00130f072a65f0ddd1a1$9faccd843604",
+      "cloudPassword": "enc$gcm$0490ae25d7e40ca8b8ce52a7$a7f4af89fdd84eeec17d68d5f7434e07$ee185546176d",
       "createdAt": "2026-08-31 09:42:26"
     },
     "dangthien": {
@@ -86,7 +86,7 @@
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
       "company": "Hộ Gia Đình Dũng Kiệp",
       "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
-      "cloudPassword": "enc$gcm$a57c6b81380e2017924e1281$366993cc71c32b50cf2f235597b96fe5$3291d9cd32ae",
+      "cloudPassword": "enc$gcm$ac68f673f222989791e392f9$7c13aa892c379c3d77257aec96907759$5d6d32f6e983",
       "createdAt": "2026-08-31 07:38:26"
     },
     "vothehien1006": {
@@ -98,7 +98,7 @@
       "roleName": "🏠 Người Tiêu Dùng Cuối (End-User)",
       "company": "Hộ Gia Đình Võ Thế Hiển",
       "passwordHash": "pbkdf2$100000$c03cc024af9a441d9a806ef5d1d7242c$f27585b82c489828c2804b6db13231bbdeabed1e9123cc1b533ac1d128d1337ba23998692bbdb991a24b888379092d145bb4f23941b67b58bb6093188ac40514",
-      "cloudPassword": "enc$gcm$a3768e31a8bc70278c675e28$5250127fd6928763952138436eb49ab1$855cd0010302",
+      "cloudPassword": "enc$gcm$08d0ab6888f66124fb34da96$79f6c45efa0bc6837a0e3efaf831433e$e6f9cba9d206",
       "createdAt": "2026-08-31 08:26:05"
     },
     "sungo123": {

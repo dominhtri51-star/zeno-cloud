@@ -67,11 +67,13 @@ export default function Stations({ onNavigate, onSelectDevice }) {
   const loadStations = async () => {
     try {
       setLoading(true);
-      const res = await monitoringService.getStations();
-      const list = res.stations || [];
-      setStations(list);
+      const raw = await monitoringService.getStations();
+      const list = Array.isArray(raw) 
+        ? raw 
+        : (raw?.stations || raw?.data?.stations || raw?.data || []);
+      setStations(Array.isArray(list) ? list : []);
     } catch (e) {
-      console.error(e);
+      console.error('[Stations Load Error]:', e);
     } finally {
       setLoading(false);
     }
@@ -193,7 +195,11 @@ export default function Stations({ onNavigate, onSelectDevice }) {
         const nameMatch = (st.stationName && st.stationName.toLowerCase().includes(query)) ||
                           (st.stationId && String(st.stationId).toLowerCase().includes(query)) ||
                           (st.address && st.address.toLowerCase().includes(query)) ||
-                          (st.ownerName && st.ownerName.toLowerCase().includes(query));
+                          (st.ownerName && st.ownerName.toLowerCase().includes(query)) ||
+                          (st.customer && st.customer.toLowerCase().includes(query)) ||
+                          (st.customerName && st.customerName.toLowerCase().includes(query)) ||
+                          (st.installer && st.installer.toLowerCase().includes(query)) ||
+                          (st.dealerName && st.dealerName.toLowerCase().includes(query));
 
         const snMatch = Array.isArray(st.devices) && st.devices.some(
           (d) => d.serialNumber && d.serialNumber.toLowerCase().includes(query)
@@ -655,16 +661,12 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                  {(st.devices && st.devices.length > 0 ? st.devices : [
-                    {
-                      deviceId: '465132145264787456',
-                      deviceName: 'sungo',
-                      serialNumber: '3528214760-1',
-                      dtuCode: '35282147608648059097',
-                      ratedPower: '12.0 kW',
-                      machineType: 'MEGA-ECO 12kW'
-                    }
-                  ]).map((dev) => {
+                  {(!st.devices || st.devices.length === 0) ? (
+                    <div className={`col-span-full py-4 px-3 text-center rounded-xl border border-dashed ${isDark ? 'border-slate-800 text-slate-500' : 'border-slate-300 text-slate-400'} text-xs`}>
+                      Chưa có thiết bị biến tần nào được liên kết trong trạm này.
+                    </div>
+                  ) : (
+                    st.devices.map((dev) => {
                     const isSnMatch = cleanQuery && dev.serialNumber && dev.serialNumber.toLowerCase().includes(cleanQuery);
                     const isDtuMatch = cleanQuery && dev.dtuCode && dev.dtuCode.toLowerCase().includes(cleanQuery);
                     const isNameMatch = cleanQuery && dev.deviceName && dev.deviceName.toLowerCase().includes(cleanQuery);
@@ -813,7 +815,7 @@ export default function Stations({ onNavigate, onSelectDevice }) {
                         </div>
                       </div>
                     );
-                  })}
+                  }))}
                 </div>
               </div>
             </div>

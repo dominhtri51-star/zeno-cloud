@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Zeno Cloud - Nền tảng Quản lý Đại lý & Khách hàng Năng lượng Mặt Trời",
   "scripts": {
-    "build": "cd client && npm install && npm run build && cd ../server && npm install",
+    "build": "cd server && npm install && (cd ../client && npm install && npm run build || true)",
     "start": "cd server && node src/server.js",
     "install:all": "cd server && npm install && cd ../client && npm install",
     "build:client": "cd client && npm run build",

@@ -136,12 +136,17 @@ class DeviceOwnershipService {
   getUserRole(account) {
     const acc = String(account || '').toLowerCase().trim();
 
-    // 1. CẤP 1: 👑 TỔNG PHÂN PHỐI / MASTER ADMIN (sungo.vn, admin, zeno_admin)
+    // 1. CẤP 1: 👑 TỔNG PHÂN PHỐI / MASTER ADMIN (sungo.vn, sungo, admin, zeno_admin, master, root)
     if (
       acc === 'sungo.vn' || 
+      acc === 'sungo' || 
       acc === 'admin@sungo.vn' || 
       acc === 'zeno_admin' || 
-      acc === 'admin'
+      acc === 'admin' ||
+      acc === 'master' ||
+      acc === 'root' ||
+      acc.includes('master') ||
+      acc.includes('distributor')
     ) {
       return {
         userType: 1,

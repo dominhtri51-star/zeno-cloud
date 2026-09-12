@@ -56,6 +56,11 @@ export default function Settings() {
         type: 'success',
         text: res.message || 'Đổi mật khẩu tài khoản thành công! Mật khẩu mới đã có hiệu lực.'
       });
+      if (localStorage.getItem('zeno_remember_password') !== 'false') {
+        try {
+          localStorage.setItem('zeno_saved_password', btoa(encodeURIComponent(newPassword)));
+        } catch (e) {}
+      }
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');

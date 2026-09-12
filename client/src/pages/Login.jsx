@@ -10,6 +10,23 @@ import {
 } from 'lucide-react';
 import DownloadAppModal from '../components/DownloadAppModal';
 
+// Tiện ích mã hóa & giải mã an toàn cho mật khẩu lưu trữ trong LocalStorage
+const encodePass = (pass) => {
+  try {
+    return btoa(encodeURIComponent(pass));
+  } catch (e) {
+    return pass;
+  }
+};
+
+const decodePass = (encoded) => {
+  try {
+    return decodeURIComponent(atob(encoded));
+  } catch (e) {
+    return encoded || '';
+  }
+};
+
 export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
   const { login, register, loading } = useAuth();
   const isNative = typeof window !== 'undefined' && Capacitor.isNativePlatform();
@@ -31,10 +48,34 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   // ================= LOGIN FORM STATE =================
-  const [loginAccount, setLoginAccount] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
+  const [rememberPassword, setRememberPassword] = useState(() => {
+    try {
+      const saved = localStorage.getItem('zeno_remember_password');
+      return saved !== null ? saved === 'true' : true;
+    } catch (e) {
+      return true;
+    }
+  });
+
+  const [loginAccount, setLoginAccount] = useState(() => {
+    try {
+      return localStorage.getItem('zeno_saved_account') || '';
+    } catch (e) {
+      return '';
+    }
+  });
+
+  const [loginPassword, setLoginPassword] = useState(() => {
+    try {
+      const saved = localStorage.getItem('zeno_saved_password');
+      return saved ? decodePass(saved) : '';
+    } catch (e) {
+      return '';
+    }
+  });
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [autoLoginAttempting, setAutoLoginAttempting] = useState(false);
 
   // ================= SUN WISE CLOUD REGISTER FORM STATE =================
   const [sunwiseAccount, setSunwiseAccount] = useState('');
@@ -82,6 +123,41 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
     }
     return () => clearInterval(timer);
   }, [otpCountdown]);
+
+  // Tự động đăng nhập nếu có tài khoản/mật khẩu đã lưu và người dùng không ấn Đăng Xuất thủ công
+  useEffect(() => {
+    try {
+      const isRemember = localStorage.getItem('zeno_remember_password') !== 'false';
+      const savedAcc = localStorage.getItem('zeno_saved_account');
+      const savedPass = localStorage.getItem('zeno_saved_password');
+      const manualLogout = localStorage.getItem('zeno_manual_logout') === 'true';
+
+      if (isRemember && savedAcc && savedPass && !manualLogout) {
+        const decoded = decodePass(savedPass);
+        if (decoded && savedAcc.trim()) {
+          setAutoLoginAttempting(true);
+          const timer = setTimeout(async () => {
+            try {
+              const res = await login({ account: savedAcc.trim(), password: decoded.trim() });
+              if (res && res.success) {
+                if (onLoginSuccess) onLoginSuccess();
+              } else {
+                setAutoLoginAttempting(false);
+                if (res && res.message) {
+                  setLoginError('Tự động đăng nhập không thành công: ' + res.message);
+                }
+              }
+            } catch (err) {
+              setAutoLoginAttempting(false);
+            }
+          }, 400);
+          return () => clearTimeout(timer);
+        }
+      }
+    } catch (e) {
+      console.warn('Auto login error:', e);
+    }
+  }, []);
 
   // Gửi mã OTP khôi phục qua Phone / Email từ Server Hãng
   const handleSendRecoveryOtp = async (e) => {
@@ -163,14 +239,35 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
 
   // Xử lý submit Đăng Nhập
   const handleLoginSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setLoginError('');
 
-    if (!loginAccount.trim() || !loginPassword.trim()) {
+    const trimmedAcc = loginAccount.trim();
+    const trimmedPass = loginPassword.trim();
+
+    if (!trimmedAcc || !trimmedPass) {
       return setLoginError('Vui lòng nhập tên tài khoản và mật khẩu!');
     }
 
-    const res = await login({ account: loginAccount.trim(), password: loginPassword.trim() });
+    if (rememberPassword) {
+      try {
+        localStorage.setItem('zeno_remember_password', 'true');
+        localStorage.setItem('zeno_saved_account', trimmedAcc);
+        localStorage.setItem('zeno_saved_password', encodePass(trimmedPass));
+      } catch (e) {}
+    } else {
+      try {
+        localStorage.setItem('zeno_remember_password', 'false');
+        localStorage.removeItem('zeno_saved_account');
+        localStorage.removeItem('zeno_saved_password');
+      } catch (e) {}
+    }
+
+    try {
+      localStorage.removeItem('zeno_manual_logout');
+    } catch (e) {}
+
+    const res = await login({ account: trimmedAcc, password: trimmedPass });
     if (res.success) {
       if (onLoginSuccess) onLoginSuccess();
     } else {
@@ -181,6 +278,21 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
   // Đăng nhập nhanh tài khoản mẫu
   const handleRoleQuickLogin = async (acc, pass) => {
     setLoginError('');
+    setLoginAccount(acc);
+    setLoginPassword(pass);
+
+    if (rememberPassword) {
+      try {
+        localStorage.setItem('zeno_remember_password', 'true');
+        localStorage.setItem('zeno_saved_account', acc);
+        localStorage.setItem('zeno_saved_password', encodePass(pass));
+      } catch (e) {}
+    }
+
+    try {
+      localStorage.removeItem('zeno_manual_logout');
+    } catch (e) {}
+
     const res = await login({ account: acc, password: pass });
     if (res.success && onLoginSuccess) {
       onLoginSuccess();
@@ -338,6 +450,13 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
           {/* ======================= TAB 1: ĐĂNG NHẬP ZENO CLOUD ======================= */}
           {authMode === 'login' && (
             <div className="space-y-4 animate-fade-in">
+              {autoLoginAttempting && (
+                <div className="p-3 rounded-xl bg-[#00d084]/10 border border-[#00d084]/30 text-[#00d084] text-xs flex items-center justify-center gap-2.5 animate-pulse">
+                  <div className="w-4 h-4 border-2 border-[#00d084] border-t-transparent rounded-full animate-spin"></div>
+                  <span className="font-bold">Đang tự động đăng nhập tài khoản...</span>
+                </div>
+              )}
+
               {loginError && (
                 <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
@@ -377,11 +496,22 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
                   </div>
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex items-center justify-between pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none group">
+                    <input
+                      type="checkbox"
+                      checked={rememberPassword}
+                      onChange={(e) => setRememberPassword(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-600 bg-[#242936] text-[#00d084] focus:ring-[#00d084] focus:ring-offset-0 focus:ring-1 cursor-pointer accent-[#00d084]"
+                    />
+                    <span className="text-xs font-medium text-slate-300 group-hover:text-white transition">
+                      Ghi nhớ mật khẩu
+                    </span>
+                  </label>
                   <button
                     type="button"
                     onClick={() => { setAuthMode('forgot'); setRecoveryError(''); setRecoverySuccess(''); }}
-                    className="text-xs text-slate-400 hover:text-[#00d084] cursor-pointer"
+                    className="text-xs text-slate-400 hover:text-[#00d084] transition cursor-pointer"
                   >
                     Quên mật khẩu?
                   </button>
@@ -389,10 +519,10 @@ export default function Login({ onLoginSuccess, onNavigateToPrivacy }) {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || autoLoginAttempting}
                   className="w-full py-3.5 rounded-full bg-[#00d084] hover:bg-[#00b875] text-[#0d1117] font-black text-base shadow-lg shadow-[#00d084]/20 transition duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  {loading ? 'Đang Đăng Nhập...' : 'Đăng nhập'}
+                  {autoLoginAttempting ? 'Đang Đăng Nhập...' : loading ? 'Đang Đăng Nhập...' : 'Đăng nhập'}
                 </button>
               </form>
             </div>

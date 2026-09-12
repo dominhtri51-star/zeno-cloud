@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('zeno_user', JSON.stringify(res.user));
         localStorage.setItem('zeno_token', res.token);
         localStorage.setItem('zeno_mode', res.mode || 'LIVE');
+        localStorage.removeItem('zeno_manual_logout');
         if (res.refreshToken) {
           localStorage.setItem('zeno_refresh_token', res.refreshToken);
         }
@@ -47,6 +48,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('zeno_user', JSON.stringify(res.user));
         localStorage.setItem('zeno_token', res.token);
         localStorage.setItem('zeno_mode', res.mode || 'LIVE');
+        localStorage.removeItem('zeno_manual_logout');
         return { success: true, user: res.user, message: res.message };
       }
       return { success: false, message: res.message };
@@ -81,6 +83,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('zeno_token');
     localStorage.removeItem('zeno_mode');
     localStorage.removeItem('zeno_refresh_token');
+    localStorage.setItem('zeno_manual_logout', 'true');
   };
 
   return (
